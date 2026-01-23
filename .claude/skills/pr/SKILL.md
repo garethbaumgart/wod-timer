@@ -13,18 +13,19 @@ Run `git status` to check for uncommitted changes. If there are changes:
 - Stage and commit them with a clear, descriptive message
 - Push to the remote branch
 
-## Step 2: Review and Update Documentation
+## Step 2: Review and Update README.md
 
 Check if any changes in this PR require documentation updates:
 - New features or commands
 - Changed setup/installation steps
 - New environment variables or configuration
-- API changes that affect usage
+- Updated dev workflow
+- API changes that affect usage examples
 - Changes to ARCHITECTURE.md if architectural patterns changed
 
 If updates are needed, make them and commit before proceeding.
 
-## Step 3: Run Analysis and Tests
+## Step 3: Run Tests
 
 Run these checks and **ensure they pass**:
 
@@ -32,54 +33,82 @@ Run these checks and **ensure they pass**:
 2. **Unit tests**: Execute `flutter test` - all tests must pass
 3. **Build check**: Execute `flutter build apk --debug` to verify build works (Android)
 
-**STOP if any checks fail.** Fix the failures and re-run until all pass. Do not proceed to PR creation with failing checks.
+**STOP if any tests fail.** Fix the failures and re-run until all tests pass. Do not proceed to PR creation with failing tests.
 
 ## Step 4: Create the PR
 
-Once checks pass:
+Once tests pass:
 
 1. Push any remaining commits to the remote branch
-2. Create the PR using `gh pr create` with:
-   - Clear title describing the change
-   - Description with:
-     - Summary of changes
-     - Related issue number (e.g., "Closes #1")
-     - Test plan
+2. Create the PR using `gh pr create`
 
-## Step 5: Post-PR Review and Monitoring
+## Step 5: Continuous CI and Review Monitoring Loop
 
-After the PR is created, **actively monitor** and address feedback:
+After the PR is created, **continuously monitor** until ready to merge:
 
-1. **Self code review**: Review the PR diff using `gh pr diff` and look for:
-   - Code duplication that could be extracted (DRY principle)
-   - Patterns that don't match ARCHITECTURE.md conventions
-   - Missing error handling (Either types)
-   - Domain logic leaking into wrong layers
-   - Missing const constructors
+### 5a. Self Code Review
+Review the PR diff using `gh pr diff` and look for:
+- Code duplication that could be extracted (DRY principle)
+- Performance improvements without added complexity
+- Patterns that don't match ARCHITECTURE.md conventions
+- Missing error handling (Either types)
+- Domain logic leaking into wrong layers
+- Missing const constructors
 
-   **Apply good refactoring opportunities** you identify. Add comments for any issues found.
-2. **Wait for CI**: Monitor GitHub Actions for completion using `gh pr checks`
-3. **Check for warnings**: Review action logs AND annotations for any warnings
-4. **Monitor for AI reviews**: Actively poll for CodeRabbit and Copilot reviews to complete
-   - Use `gh pr checks` - wait until reviews show complete
-   - Use `gh pr view <number> --comments` to check for bot comments
-   - Keep checking every 30-60 seconds until reviews are complete
-5. **Address all comments immediately**: When comments appear:
-   - Read each comment carefully
-   - **If addressing**: Add a thumbs up reaction, then make the fix
-   - **If not addressing**: Reply to the comment explaining why
-   - Commit, push, and verify the fix resolves the comment
-6. **Verify CI passes**: After all fixes, ensure all checks pass
+**Apply good refactoring opportunities** you identify - don't defer them to future PRs unless they require significant architectural changes.
 
-**Do not stop monitoring until**: All AI reviews are complete, all comments are addressed, and CI is green.
+### 5b. Monitor CI Status
+1. Check CI status: `gh pr checks`
+2. If checks are still running, wait 30 seconds and check again
+3. If checks fail:
+   - Review the logs: `gh run view <run-id> --log-failed`
+   - Fix the issues, commit, push
+   - Return to monitoring loop
+4. Check for warnings in annotations:
+   - Use `gh api repos/{owner}/{repo}/check-runs/{job_id}/annotations` to fetch annotations
+   - **ALL warnings must be addressed** - either fix or document why not
 
-## Step 6: Manual Testing (Required Before Merge)
+### 5c. Monitor for AI Reviews
+Poll for CodeRabbit and Copilot reviews:
+1. **CodeRabbit**: Use `gh pr checks` - wait until CodeRabbit shows "Review completed"
+2. **Copilot/Sourcery**: Check `gh pr view <number> --comments` for bot comments
+3. If reviews not yet complete, wait 30 seconds and check again
+4. **Keep monitoring** - reviews may come in multiple rounds
 
-Once CI is green and all comments are addressed:
+### 5d. Address All Comments
+When comments appear from reviewers (human or AI):
+1. Read each comment carefully, including **high-level feedback**
+2. **For line comments**:
+   - **If addressing**: React with thumbs up, then make the fix
+   - **If not addressing**: Reply explaining why
+3. **Apply good refactoring suggestions** when they:
+   - Reduce code duplication (DRY principle)
+   - Improve performance without adding complexity
+   - Follow existing patterns in the codebase
+4. Commit, push, and **return to Step 5b** (CI monitoring loop)
 
-1. **Notify the user**: Tell them to run `flutter run` and test the changes
-2. **Wait for approval**: Do NOT merge until the user explicitly approves
-3. **If feedback given**: Make fixes, commit, push, and repeat from Step 5
-4. **If approved**: Proceed to merge with `gh pr merge --squash --delete-branch`
+### 5e. Loop Completion Criteria
+Continue the monitoring loop until ALL of these are true:
+- [ ] All CI checks pass (green)
+- [ ] No warnings in CI annotations
+- [ ] CodeRabbit review is complete
+- [ ] Copilot/Sourcery review is complete (or confirmed not enabled)
+- [ ] All review comments have been addressed
 
-**Exception**: Skip manual testing for documentation-only PRs - merge immediately.
+## Step 6: Automatic Merge
+
+Once the monitoring loop is complete (all CI checks pass, all reviews complete, all comments addressed):
+
+**Merge automatically**:
+```bash
+gh pr merge --squash --delete-branch
+```
+
+Then notify the user the PR was merged and ask what to work on next.
+
+## Post-Merge
+
+After merging:
+1. Confirm the PR was merged successfully
+2. Check if there's an associated GitHub issue to close
+3. Ask the user what to work on next (e.g., next issue in the backlog)
