@@ -1,0 +1,30 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/injection.config.dart"
+    - "build/**"
+    - ".dart_tool/**"
+
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # Disabled rules (override very_good_analysis)
+    public_member_api_docs: false # Too verbose for app code
+    lines_longer_than_80_chars: false # Allow longer lines
+
+    # Additional rules
+    avoid_dynamic_calls: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    sort_constructors_first: true
+    unawaited_futures: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
