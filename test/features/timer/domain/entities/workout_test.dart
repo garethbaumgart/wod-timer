@@ -8,7 +8,7 @@ void main() {
     group('creation', () {
       test('should create workout with all fields', () {
         final id = UniqueId();
-        final name = WorkoutName.defaultAmrap;
+        const name = WorkoutName.defaultAmrap;
         final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
         final prepCountdown = TimerDuration.fromSeconds(10);
         final createdAt = DateTime.now();
@@ -220,7 +220,7 @@ void main() {
     group('equality', () {
       test('workouts with same values should be equal', () {
         final id = UniqueId.fromString('test-id');
-        final createdAt = DateTime(2024, 1, 1);
+        final createdAt = DateTime(2024);
 
         final workout1 = Workout(
           id: id,
@@ -242,7 +242,7 @@ void main() {
       });
 
       test('workouts with different ids should not be equal', () {
-        final createdAt = DateTime(2024, 1, 1);
+        final createdAt = DateTime(2024);
 
         final workout1 = Workout(
           id: UniqueId.fromString('id-1'),
