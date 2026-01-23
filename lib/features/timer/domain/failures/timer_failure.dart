@@ -22,6 +22,10 @@ sealed class TimerFailure with _$TimerFailure {
   const factory TimerFailure.invalidWorkout({String? message}) =
       _InvalidWorkout;
 
+  /// Timer configuration is invalid (e.g., negative duration).
+  const factory TimerFailure.invalidConfiguration({String? message}) =
+      _InvalidConfiguration;
+
   /// Session not found.
   const factory TimerFailure.sessionNotFound() = _SessionNotFound;
 
@@ -37,6 +41,7 @@ extension TimerFailureMessage on TimerFailure {
         timerNotActive: () => 'Timer is not active',
         alreadyCompleted: () => 'Workout is already completed',
         invalidWorkout: (msg) => msg ?? 'Invalid workout configuration',
+        invalidConfiguration: (msg) => msg ?? 'Invalid timer configuration',
         sessionNotFound: () => 'Timer session not found',
         unexpected: (msg) => msg ?? 'An unexpected error occurred',
       );
