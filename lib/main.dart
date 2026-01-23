@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:wod_timer/core/presentation/theme/app_theme.dart';
 import 'package:wod_timer/injection.dart';
 
 Future<void> main() async {
@@ -17,13 +17,9 @@ class WodTimerApp extends StatelessWidget {
     return MaterialApp(
       title: 'WOD Timer',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepOrange,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
       home: const Scaffold(
         body: Center(
           child: Text('WOD Timer - Coming Soon'),
