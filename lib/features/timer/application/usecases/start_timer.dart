@@ -18,10 +18,16 @@ class StartTimer {
   ///
   /// Returns [Either<TimerFailure, TimerSession>]:
   /// - Right(TimerSession) with the session in started state
-  /// - Left(TimerFailure) if the session cannot be started
+  /// - Left(TimerFailure) if the session cannot be started or audio preload fails
   Future<Either<TimerFailure, TimerSession>> call(Workout workout) async {
     // Preload sounds for responsive audio during the workout
-    await _audioService.preloadSounds();
+    // We catch any errors here to maintain the Either contract
+    try {
+      await _audioService.preloadSounds();
+    } catch (e) {
+      // Audio preload failure is non-fatal - we continue without audio
+      // The user will still be able to use the timer, just without sounds
+    }
 
     // Create a new session from the workout
     final session = TimerSession.fromWorkout(workout);

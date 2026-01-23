@@ -34,6 +34,7 @@ class TimerNotifier extends _$TimerNotifier {
   int _lastCountdownSecond = -1;
   bool _playedGo = false;
   int _lastRound = 0;
+  bool _isInitialized = false;
 
   @override
   TimerNotifierState build() {
@@ -60,10 +61,20 @@ class TimerNotifier extends _$TimerNotifier {
     _tickTimer = tickTimer;
     _timerEngine = timerEngine;
     _audioService = audioService;
+    _isInitialized = true;
+  }
+
+  void _assertInitialized() {
+    if (!_isInitialized) {
+      throw StateError(
+        'TimerNotifier.initialize() must be called before use',
+      );
+    }
   }
 
   /// Start a timer session for the given workout.
   Future<void> start(Workout workout) async {
+    _assertInitialized();
     _resetAudioState();
 
     final result = await _startTimer(workout);
@@ -79,6 +90,7 @@ class TimerNotifier extends _$TimerNotifier {
 
   /// Pause the current timer session.
   void pause() {
+    _assertInitialized();
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
 
@@ -98,6 +110,7 @@ class TimerNotifier extends _$TimerNotifier {
 
   /// Resume the paused timer session.
   void resume() {
+    _assertInitialized();
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
 
@@ -117,6 +130,7 @@ class TimerNotifier extends _$TimerNotifier {
 
   /// Stop the timer and mark as completed.
   void stop() {
+    _assertInitialized();
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
 
