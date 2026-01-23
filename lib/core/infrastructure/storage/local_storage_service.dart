@@ -55,8 +55,9 @@ class FileLocalStorageService implements LocalStorageService {
     if (_baseDirectory != null) return _baseDirectory!;
     final appDir = await getApplicationDocumentsDirectory();
     _baseDirectory = Directory('${appDir.path}/wod_timer');
-    if (!_baseDirectory!.existsSync()) {
-      _baseDirectory!.createSync(recursive: true);
+    final exists = await _baseDirectory!.exists();
+    if (!exists) {
+      await _baseDirectory!.create(recursive: true);
     }
     return _baseDirectory!;
   }
@@ -72,7 +73,8 @@ class FileLocalStorageService implements LocalStorageService {
   ) async {
     try {
       final file = await _getFile(key);
-      if (!file.existsSync()) {
+      final exists = await file.exists();
+      if (!exists) {
         return right(null);
       }
       final contents = await file.readAsString();
@@ -113,7 +115,8 @@ class FileLocalStorageService implements LocalStorageService {
   ) async {
     try {
       final file = await _getFile(key);
-      if (!file.existsSync()) {
+      final exists = await file.exists();
+      if (!exists) {
         return right(<Map<String, dynamic>>[]);
       }
       final contents = await file.readAsString();
@@ -157,7 +160,8 @@ class FileLocalStorageService implements LocalStorageService {
   Future<Either<StorageFailure, Unit>> delete(String key) async {
     try {
       final file = await _getFile(key);
-      if (file.existsSync()) {
+      final exists = await file.exists();
+      if (exists) {
         await file.delete();
       }
 
@@ -176,7 +180,8 @@ class FileLocalStorageService implements LocalStorageService {
   Future<Either<StorageFailure, bool>> exists(String key) async {
     try {
       final file = await _getFile(key);
-      return right(file.existsSync());
+      final exists = await file.exists();
+      return right(exists);
     } on Exception catch (e) {
       return left(StorageFailure.unexpected(message: e.toString()));
     }

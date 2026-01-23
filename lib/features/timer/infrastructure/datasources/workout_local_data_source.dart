@@ -56,36 +56,36 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   @override
   Future<Either<StorageFailure, Unit>> save(WorkoutDto workout) async {
     final result = await getAll();
-    return result.fold(
-      left,
-      (workouts) async {
-        // Remove existing workout with same ID if present
-        final updated = workouts.where((w) => w.id != workout.id).toList()
-          ..add(workout)
-          // Sort by creation date (newest first)
-          ..sort(
-          (a, b) => DateTime.parse(b.createdAt).compareTo(
-            DateTime.parse(a.createdAt),
-          ),
-        );
+    if (result.isLeft()) {
+      return result.map((_) => unit);
+    }
 
-        final jsonList = updated.map((w) => w.toJson()).toList();
-        return _storageService.writeJsonList(_storageKey, jsonList);
-      },
-    );
+    final workouts = result.getRight().toNullable()!;
+    // Remove existing workout with same ID if present
+    final updated = workouts.where((w) => w.id != workout.id).toList()
+      ..add(workout)
+      // Sort by creation date (newest first)
+      ..sort(
+        (a, b) => DateTime.parse(b.createdAt).compareTo(
+          DateTime.parse(a.createdAt),
+        ),
+      );
+
+    final jsonList = updated.map((w) => w.toJson()).toList();
+    return _storageService.writeJsonList(_storageKey, jsonList);
   }
 
   @override
   Future<Either<StorageFailure, Unit>> delete(String id) async {
     final result = await getAll();
-    return result.fold(
-      left,
-      (workouts) async {
-        final updated = workouts.where((w) => w.id != id).toList();
-        final jsonList = updated.map((w) => w.toJson()).toList();
-        return _storageService.writeJsonList(_storageKey, jsonList);
-      },
-    );
+    if (result.isLeft()) {
+      return result.map((_) => unit);
+    }
+
+    final workouts = result.getRight().toNullable()!;
+    final updated = workouts.where((w) => w.id != id).toList();
+    final jsonList = updated.map((w) => w.toJson()).toList();
+    return _storageService.writeJsonList(_storageKey, jsonList);
   }
 
   @override
