@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/router/placeholder_pages.dart';
+import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
 
 part 'app_router.g.dart';
 
@@ -33,10 +35,7 @@ GoRouter appRouter(Ref ref) {
               subtitle: 'The selected timer type is not valid.',
             );
           }
-          return PlaceholderPage(
-            title: '${timerType.toUpperCase()} Setup',
-            subtitle: 'Configure your workout parameters',
-          );
+          return _buildSetupPage(timerType);
         },
         routes: [
           GoRoute(
@@ -44,10 +43,7 @@ GoRouter appRouter(Ref ref) {
             name: 'timerActive',
             builder: (context, state) {
               final timerType = state.pathParameters['timerType'] ?? 'amrap';
-              return PlaceholderPage(
-                title: '${timerType.toUpperCase()} Timer',
-                subtitle: 'Active workout timer',
-              );
+              return TimerActivePage(timerType: timerType);
             },
           ),
         ],
@@ -74,4 +70,22 @@ GoRouter appRouter(Ref ref) {
       subtitle: 'The requested page could not be found.',
     ),
   );
+}
+
+Widget _buildSetupPage(String timerType) {
+  switch (timerType) {
+    case TimerTypes.amrap:
+      return const AmrapSetupPage();
+    case TimerTypes.forTime:
+      return const ForTimeSetupPage();
+    case TimerTypes.emom:
+      return const EmomSetupPage();
+    case TimerTypes.tabata:
+      return const TabataSetupPage();
+    default:
+      return const PlaceholderPage(
+        title: 'Invalid Timer Type',
+        subtitle: 'The selected timer type is not valid.',
+      );
+  }
 }
