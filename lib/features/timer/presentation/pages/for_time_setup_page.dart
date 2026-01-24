@@ -20,7 +20,8 @@ class ForTimeSetupPage extends ConsumerStatefulWidget {
 class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
   // Default 20 minute time cap
   Duration _timeCap = const Duration(minutes: 20);
-  bool _countUp = true; // Count up (stopwatch style) vs count down
+  // Count up (stopwatch style) vs count down - will be passed to timer in future sprint
+  bool _countUp = true;
   bool _prepEnabled = true;
   int _prepSeconds = 10;
 
@@ -29,6 +30,9 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
       : _timeCap;
 
   void _onStart() {
+    // Note: _countUp, _timeCap, _prepEnabled, _prepSeconds will be passed to
+    // the timer notifier when we wire up the setup -> active timer flow.
+    // Currently, only navigation is implemented as a placeholder.
     context.go(AppRoutes.timerActivePath(TimerTypes.forTime));
   }
 

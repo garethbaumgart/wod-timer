@@ -55,9 +55,11 @@ class _DurationPickerState extends State<DurationPicker> {
     _minutes = widget.initialDuration.inMinutes;
     _seconds = widget.initialDuration.inSeconds % 60;
 
-    // Round to nearest interval
+    // Round to nearest interval and clamp to valid range
     _minutes = (_minutes ~/ widget.minuteInterval) * widget.minuteInterval;
+    _minutes = _minutes.clamp(0, widget.maxMinutes);
     _seconds = (_seconds ~/ widget.secondInterval) * widget.secondInterval;
+    _seconds = _seconds.clamp(0, 59);
 
     _minuteController = FixedExtentScrollController(
       initialItem: _minutes ~/ widget.minuteInterval,
