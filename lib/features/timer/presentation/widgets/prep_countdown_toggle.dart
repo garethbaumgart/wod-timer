@@ -58,10 +58,15 @@ class _PrepCountdownToggleState extends State<PrepCountdownToggle> {
                 ),
               ],
             ),
-            Switch.adaptive(
-              value: widget.enabled,
-              onChanged: widget.onEnabledChanged,
-              activeColor: AppColors.primary,
+            Semantics(
+              label: widget.enabled
+                  ? 'Prep countdown enabled, ${widget.duration} seconds'
+                  : 'Prep countdown disabled',
+              child: Switch.adaptive(
+                value: widget.enabled,
+                onChanged: widget.onEnabledChanged,
+                activeColor: AppColors.primary,
+              ),
             ),
           ],
         ),
@@ -73,10 +78,13 @@ class _PrepCountdownToggleState extends State<PrepCountdownToggle> {
             runSpacing: AppSpacing.xs,
             children: _presetDurations.map((seconds) {
               final isSelected = widget.duration == seconds;
-              return ChoiceChip(
-                label: Text('${seconds}s'),
+              return Semantics(
+                label: '$seconds seconds prep countdown',
                 selected: isSelected,
-                onSelected: (_) => widget.onDurationChanged(seconds),
+                child: ChoiceChip(
+                  label: Text('${seconds}s'),
+                  selected: isSelected,
+                  onSelected: (_) => widget.onDurationChanged(seconds),
                 selectedColor: AppColors.primary,
                 labelStyle: TextStyle(
                   color: isSelected
@@ -93,6 +101,7 @@ class _PrepCountdownToggleState extends State<PrepCountdownToggle> {
                           ? AppColors.textDisabledDark
                           : AppColors.textDisabledLight),
                 ),
+              ),
               );
             }).toList(),
           ),

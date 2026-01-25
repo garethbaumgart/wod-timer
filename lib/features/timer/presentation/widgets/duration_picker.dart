@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 
 /// A wheel-based duration picker for selecting minutes and seconds.
 ///
 /// Designed for easy use during workout setup with large, easy-to-scroll values.
+/// Features improved touch targets and haptic feedback for better mobile UX.
 class DurationPicker extends StatefulWidget {
   const DurationPicker({
     required this.initialDuration,
@@ -77,6 +79,7 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   void _onMinuteChanged(int index) {
+    HapticFeedback.selectionClick();
     setState(() {
       _minutes = index * widget.minuteInterval;
     });
@@ -84,6 +87,7 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   void _onSecondChanged(int index) {
+    HapticFeedback.selectionClick();
     setState(() {
       _seconds = index * widget.secondInterval;
     });
@@ -93,6 +97,56 @@ class _DurationPickerState extends State<DurationPicker> {
   void _notifyChange() {
     final duration = Duration(minutes: _minutes, seconds: _seconds);
     widget.onChanged(duration);
+  }
+
+  void _incrementMinutes() {
+    final maxIndex = widget.maxMinutes ~/ widget.minuteInterval;
+    final currentIndex = _minutes ~/ widget.minuteInterval;
+    if (currentIndex < maxIndex) {
+      HapticFeedback.lightImpact();
+      _minuteController.animateToItem(
+        currentIndex + 1,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _decrementMinutes() {
+    final currentIndex = _minutes ~/ widget.minuteInterval;
+    if (currentIndex > 0) {
+      HapticFeedback.lightImpact();
+      _minuteController.animateToItem(
+        currentIndex - 1,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _incrementSeconds() {
+    final maxIndex = (60 ~/ widget.secondInterval) - 1;
+    final currentIndex = _seconds ~/ widget.secondInterval;
+    if (currentIndex < maxIndex) {
+      HapticFeedback.lightImpact();
+      _secondController.animateToItem(
+        currentIndex + 1,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _decrementSeconds() {
+    final currentIndex = _seconds ~/ widget.secondInterval;
+    if (currentIndex > 0) {
+      HapticFeedback.lightImpact();
+      _secondController.animateToItem(
+        currentIndex - 1,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -116,7 +170,7 @@ class _DurationPickerState extends State<DurationPicker> {
             ),
           ),
         Container(
-          height: 180,
+          height: 220,
           decoration: BoxDecoration(
             color: isDark ? AppColors.cardDark : AppColors.cardLight,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -124,22 +178,23 @@ class _DurationPickerState extends State<DurationPicker> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Minutes picker
-              SizedBox(
-                width: 80,
-                child: _buildWheelPicker(
-                  controller: _minuteController,
-                  itemCount: (widget.maxMinutes ~/ widget.minuteInterval) + 1,
-                  onSelectedItemChanged: _onMinuteChanged,
-                  itemBuilder: (index) {
-                    final value = index * widget.minuteInterval;
-                    return value.toString().padLeft(2, '0');
-                  },
-                ),
+              // Minutes picker with +/- buttons
+              _buildPickerColumn(
+                controller: _minuteController,
+                itemCount: (widget.maxMinutes ~/ widget.minuteInterval) + 1,
+                onSelectedItemChanged: _onMinuteChanged,
+                itemBuilder: (index) {
+                  final value = index * widget.minuteInterval;
+                  return value.toString().padLeft(2, '0');
+                },
+                onIncrement: _incrementMinutes,
+                onDecrement: _decrementMinutes,
+                label: 'min',
+                isDark: isDark,
               ),
               // Colon separator
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                 child: Text(
                   ':',
                   style: theme.textTheme.headlineLarge?.copyWith(
@@ -150,19 +205,20 @@ class _DurationPickerState extends State<DurationPicker> {
                   ),
                 ),
               ),
-              // Seconds picker
+              // Seconds picker with +/- buttons
               if (widget.showSeconds)
-                SizedBox(
-                  width: 80,
-                  child: _buildWheelPicker(
-                    controller: _secondController,
-                    itemCount: 60 ~/ widget.secondInterval,
-                    onSelectedItemChanged: _onSecondChanged,
-                    itemBuilder: (index) {
-                      final value = index * widget.secondInterval;
-                      return value.toString().padLeft(2, '0');
-                    },
-                  ),
+                _buildPickerColumn(
+                  controller: _secondController,
+                  itemCount: 60 ~/ widget.secondInterval,
+                  onSelectedItemChanged: _onSecondChanged,
+                  itemBuilder: (index) {
+                    final value = index * widget.secondInterval;
+                    return value.toString().padLeft(2, '0');
+                  },
+                  onIncrement: _incrementSeconds,
+                  onDecrement: _decrementSeconds,
+                  label: 'sec',
+                  isDark: isDark,
                 ),
             ],
           ),
@@ -182,6 +238,95 @@ class _DurationPickerState extends State<DurationPicker> {
     );
   }
 
+  Widget _buildPickerColumn({
+    required FixedExtentScrollController controller,
+    required int itemCount,
+    required ValueChanged<int> onSelectedItemChanged,
+    required String Function(int) itemBuilder,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
+    required String label,
+    required bool isDark,
+  }) {
+    final theme = Theme.of(context);
+
+    return Semantics(
+      label: '$label picker',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Increment button
+          _buildStepButton(
+            icon: Icons.keyboard_arrow_up,
+            onPressed: onIncrement,
+            isDark: isDark,
+            semanticsLabel: 'Increase $label',
+          ),
+          // Wheel picker
+          SizedBox(
+            width: 100,
+            height: 120,
+            child: _buildWheelPicker(
+              controller: controller,
+              itemCount: itemCount,
+              onSelectedItemChanged: onSelectedItemChanged,
+              itemBuilder: itemBuilder,
+            ),
+          ),
+          // Decrement button
+          _buildStepButton(
+            icon: Icons.keyboard_arrow_down,
+            onPressed: onDecrement,
+            isDark: isDark,
+            semanticsLabel: 'Decrease $label',
+          ),
+          // Label
+          ExcludeSemantics(
+            child: Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool isDark,
+    required String semanticsLabel,
+  }) {
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          child: Container(
+            width: 56,
+            height: 44,
+            alignment: Alignment.center,
+            child: ExcludeSemantics(
+              child: Icon(
+                icon,
+                size: 32,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildWheelPicker({
     required FixedExtentScrollController controller,
     required int itemCount,
@@ -193,7 +338,7 @@ class _DurationPickerState extends State<DurationPicker> {
 
     return ListWheelScrollView.useDelegate(
       controller: controller,
-      itemExtent: 50,
+      itemExtent: 60, // Larger touch targets (was 50)
       physics: const FixedExtentScrollPhysics(),
       perspective: 0.005,
       diameterRatio: 1.2,
@@ -206,6 +351,7 @@ class _DurationPickerState extends State<DurationPicker> {
               itemBuilder(index),
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
+                fontSize: 36, // Larger text
                 fontFeatures: const [FontFeature.tabularFigures()],
                 color: isDark
                     ? AppColors.textPrimaryDark

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="#1a1a1a"/>
+
+  <!-- Stopwatch outer ring -->
+  <circle cx="256" cy="276" r="180" fill="none" stroke="#FF6B35" stroke-width="24"/>
+
+  <!-- Stopwatch inner circle -->
+  <circle cx="256" cy="276" r="140" fill="#252525"/>
+
+  <!-- Progress arc (showing ~75% complete) -->
+  <path d="M 256 136 A 140 140 0 1 1 116 276" fill="none" stroke="#FF6B35" stroke-width="20" stroke-linecap="round"/>
+
+  <!-- Barbell through the center -->
+  <!-- Left weight plate - GREEN (competition 10kg style) -->
+  <rect x="80" y="236" width="40" height="80" rx="8" fill="#43A047"/>
+  <rect x="60" y="246" width="24" height="60" rx="6" fill="#2E7D32"/>
+
+  <!-- Bar -->
+  <rect x="120" y="266" width="272" height="20" rx="4" fill="#E0E0E0"/>
+
+  <!-- Right weight plate - GREEN -->
+  <rect x="392" y="236" width="40" height="80" rx="8" fill="#43A047"/>
+  <rect x="428" y="246" width="24" height="60" rx="6" fill="#2E7D32"/>
+
+  <!-- Stopwatch button top -->
+  <rect x="236" y="70" width="40" height="30" rx="6" fill="#E0E0E0"/>
+  <circle cx="256" cy="70" r="16" fill="#E0E0E0"/>
+
+  <!-- Small side button -->
+  <rect x="400" y="160" width="24" height="40" rx="4" fill="#E0E0E0" transform="rotate(45, 412, 180)"/>
+</svg>

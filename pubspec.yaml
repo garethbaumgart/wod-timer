@@ -29,14 +29,25 @@ dependencies:
 dev_dependencies:
   bloc_test: ^9.1.7
   build_runner: ^2.4.15
+  flutter_launcher_icons: ^0.14.3
   flutter_test:
     sdk: flutter
   freezed: ^2.5.8
   injectable_generator: ^2.6.3
+  integration_test:
+    sdk: flutter
   json_serializable: ^6.9.4
   mocktail: ^1.0.4
   riverpod_generator: ^2.6.4
   very_good_analysis: ^7.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon_1024.png"
+  adaptive_icon_background: "#1a1a1a"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

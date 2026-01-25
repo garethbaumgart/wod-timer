@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:wod_timer/core/presentation/pages/settings_page.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/router/placeholder_pages.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
@@ -59,10 +60,7 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.settings,
         name: 'settings',
-        builder: (context, state) => const PlaceholderPage(
-          title: 'Settings',
-          subtitle: 'App preferences and configuration',
-        ),
+        builder: (context, state) => const SettingsPage(),
       ),
     ],
     errorBuilder: (context, state) => const PlaceholderPage(

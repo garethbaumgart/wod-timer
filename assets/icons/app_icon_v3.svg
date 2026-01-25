@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Clean, minimal version -->
+  <defs>
+    <linearGradient id="fireGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF6B35"/>
+      <stop offset="50%" style="stop-color:#FF8C5A"/>
+      <stop offset="100%" style="stop-color:#FFB088"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="512" height="512" rx="108" fill="#121212"/>
+
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="264" r="175" fill="none" stroke="#FF6B35" stroke-width="6" opacity="0.3"/>
+
+  <!-- Main stopwatch circle -->
+  <circle cx="256" cy="264" r="155" fill="#1E1E1E" stroke="url(#fireGrad)" stroke-width="14"/>
+
+  <!-- Inner detail ring -->
+  <circle cx="256" cy="264" r="120" fill="none" stroke="#2A2A2A" stroke-width="3"/>
+
+  <!-- Stylized barbell - thick and bold -->
+  <!-- Left weights -->
+  <rect x="55" y="214" width="55" height="100" rx="12" fill="url(#fireGrad)"/>
+  <rect x="35" y="229" width="28" height="70" rx="8" fill="#FF6B35"/>
+
+  <!-- Center bar with shine -->
+  <rect x="110" y="252" width="292" height="24" rx="8" fill="#E8E8E8"/>
+  <rect x="110" y="252" width="292" height="10" rx="5" fill="#FFF" opacity="0.4"/>
+
+  <!-- Right weights -->
+  <rect x="402" y="214" width="55" height="100" rx="12" fill="url(#fireGrad)"/>
+  <rect x="449" y="229" width="28" height="70" rx="8" fill="#FF6B35"/>
+
+  <!-- Stopwatch top button -->
+  <path d="M232 80 L232 56 Q232 44 244 44 L268 44 Q280 44 280 56 L280 80 Q280 92 268 92 L244 92 Q232 92 232 80 Z" fill="#E8E8E8"/>
+
+  <!-- Time display hint - "WOD" text -->
+  <text x="256" y="340" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="42" font-weight="900" fill="#FF6B35">WOD</text>
+</svg>

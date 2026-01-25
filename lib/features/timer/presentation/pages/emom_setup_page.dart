@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wod_timer/core/domain/value_objects/round_count.dart';
+import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 
 /// Setup page for EMOM (Every Minute On the Minute) timer.
@@ -28,8 +33,35 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
       ? _totalWorkoutDuration + Duration(seconds: _prepSeconds)
       : _totalWorkoutDuration;
 
-  void _onStart() {
-    context.go(AppRoutes.timerActivePath(TimerTypes.emom));
+  Future<void> _onStart() async {
+    // Create the timer type
+    final timerType = EmomTimer(
+      intervalDuration: TimerDuration.fromSeconds(_intervalDuration.inSeconds),
+      rounds: RoundCount.fromInt(_rounds),
+    );
+
+    // Create the workout
+    final createWorkout = ref.read(createWorkoutProvider);
+    final workoutResult = createWorkout(
+      name: 'EMOM Workout',
+      timerType: timerType,
+      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
+    );
+
+    // Start the timer
+    await workoutResult.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${failure.toString()}')),
+        );
+      },
+      (workout) async {
+        await ref.read(timerNotifierProvider.notifier).start(workout);
+        if (mounted) {
+          context.go(AppRoutes.timerActivePath(TimerTypes.emom));
+        }
+      },
+    );
   }
 
   void _onSavePreset() {
@@ -136,6 +168,10 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Audio test button
+                const Center(child: AudioTestButton()),
               ],
             ),
           ),

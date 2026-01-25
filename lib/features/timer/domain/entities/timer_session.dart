@@ -33,6 +33,12 @@ class TimerSession with _$TimerSession {
     /// Elapsed time in the current interval (for interval-based workouts).
     required TimerDuration currentIntervalElapsed,
 
+    /// Accumulated milliseconds not yet converted to seconds (for precise timing).
+    @Default(0) int elapsedMillis,
+
+    /// Accumulated interval milliseconds not yet converted to seconds.
+    @Default(0) int intervalElapsedMillis,
+
     /// The state before pausing (to restore on resume).
     TimerState? stateBeforePause,
 
@@ -128,13 +134,20 @@ class TimerSession with _$TimerSession {
       return left(const TimerFailure.timerNotActive());
     }
 
-    final deltaSeconds = delta.inMilliseconds / 1000;
-    final newElapsed = TimerDuration.fromSeconds(
-      (elapsed.seconds + deltaSeconds).round(),
-    );
-    final newIntervalElapsed = TimerDuration.fromSeconds(
-      (currentIntervalElapsed.seconds + deltaSeconds).round(),
-    );
+    // Accumulate milliseconds precisely
+    final totalElapsedMillis = elapsedMillis + delta.inMilliseconds;
+    final totalIntervalMillis = intervalElapsedMillis + delta.inMilliseconds;
+
+    // Convert to whole seconds, keeping remainder
+    final newElapsedSeconds = elapsed.seconds + (totalElapsedMillis ~/ 1000);
+    final newElapsedMillisRemainder = totalElapsedMillis % 1000;
+
+    final newIntervalSeconds =
+        currentIntervalElapsed.seconds + (totalIntervalMillis ~/ 1000);
+    final newIntervalMillisRemainder = totalIntervalMillis % 1000;
+
+    final newElapsed = TimerDuration.fromSeconds(newElapsedSeconds);
+    final newIntervalElapsed = TimerDuration.fromSeconds(newIntervalSeconds);
 
     // Handle preparation phase
     if (state == TimerState.preparing) {
@@ -143,44 +156,80 @@ class TimerSession with _$TimerSession {
         return right(copyWith(
           state: TimerState.running,
           currentIntervalElapsed: TimerDuration.zero,
+          intervalElapsedMillis: 0,
+          elapsedMillis: newElapsedMillisRemainder,
         ));
       }
-      return right(copyWith(currentIntervalElapsed: newIntervalElapsed));
+      return right(copyWith(
+        currentIntervalElapsed: newIntervalElapsed,
+        intervalElapsedMillis: newIntervalMillisRemainder,
+        elapsedMillis: newElapsedMillisRemainder,
+      ));
     }
 
     // Handle based on timer type
     return workout.timerType.when(
-      amrap: (timer) => _tickAmrap(timer, newElapsed),
-      forTime: (timer) => _tickForTime(timer, newElapsed),
-      emom: (timer) => _tickEmom(timer, newElapsed, newIntervalElapsed),
-      tabata: (timer) => _tickTabata(timer, newElapsed, newIntervalElapsed),
+      amrap: (timer) => _tickAmrap(
+        timer,
+        newElapsed,
+        newElapsedMillisRemainder,
+      ),
+      forTime: (timer) => _tickForTime(
+        timer,
+        newElapsed,
+        newElapsedMillisRemainder,
+      ),
+      emom: (timer) => _tickEmom(
+        timer,
+        newElapsed,
+        newIntervalElapsed,
+        newElapsedMillisRemainder,
+        newIntervalMillisRemainder,
+      ),
+      tabata: (timer) => _tickTabata(
+        timer,
+        newElapsed,
+        newIntervalElapsed,
+        newElapsedMillisRemainder,
+        newIntervalMillisRemainder,
+      ),
     );
   }
 
   Either<TimerFailure, TimerSession> _tickAmrap(
     AmrapTimer timer,
     TimerDuration newElapsed,
+    int newElapsedMillis,
   ) {
     if (newElapsed.seconds >= timer.duration.seconds) {
       return right(_complete());
     }
-    return right(copyWith(elapsed: newElapsed));
+    return right(copyWith(
+      elapsed: newElapsed,
+      elapsedMillis: newElapsedMillis,
+    ));
   }
 
   Either<TimerFailure, TimerSession> _tickForTime(
     ForTimeTimer timer,
     TimerDuration newElapsed,
+    int newElapsedMillis,
   ) {
     if (newElapsed.seconds >= timer.timeCap.seconds) {
       return right(_complete());
     }
-    return right(copyWith(elapsed: newElapsed));
+    return right(copyWith(
+      elapsed: newElapsed,
+      elapsedMillis: newElapsedMillis,
+    ));
   }
 
   Either<TimerFailure, TimerSession> _tickEmom(
     EmomTimer timer,
     TimerDuration newElapsed,
     TimerDuration newIntervalElapsed,
+    int newElapsedMillis,
+    int newIntervalMillis,
   ) {
     final intervalSeconds = timer.intervalDuration.seconds;
 
@@ -192,14 +241,18 @@ class TimerSession with _$TimerSession {
       }
       return right(copyWith(
         elapsed: newElapsed,
+        elapsedMillis: newElapsedMillis,
         currentIntervalElapsed: TimerDuration.zero,
+        intervalElapsedMillis: 0,
         currentRound: currentRound + 1,
       ));
     }
 
     return right(copyWith(
       elapsed: newElapsed,
+      elapsedMillis: newElapsedMillis,
       currentIntervalElapsed: newIntervalElapsed,
+      intervalElapsedMillis: newIntervalMillis,
     ));
   }
 
@@ -207,6 +260,8 @@ class TimerSession with _$TimerSession {
     TabataTimer timer,
     TimerDuration newElapsed,
     TimerDuration newIntervalElapsed,
+    int newElapsedMillis,
+    int newIntervalMillis,
   ) {
     final workSeconds = timer.workDuration.seconds;
     final restSeconds = timer.restDuration.seconds;
@@ -222,7 +277,9 @@ class TimerSession with _$TimerSession {
         return right(copyWith(
           state: TimerState.resting,
           elapsed: newElapsed,
+          elapsedMillis: newElapsedMillis,
           currentIntervalElapsed: TimerDuration.zero,
+          intervalElapsedMillis: 0,
         ));
       } else {
         // Rest done, check if workout is complete
@@ -233,7 +290,9 @@ class TimerSession with _$TimerSession {
         return right(copyWith(
           state: TimerState.running,
           elapsed: newElapsed,
+          elapsedMillis: newElapsedMillis,
           currentIntervalElapsed: TimerDuration.zero,
+          intervalElapsedMillis: 0,
           currentRound: currentRound + 1,
         ));
       }
@@ -241,7 +300,9 @@ class TimerSession with _$TimerSession {
 
     return right(copyWith(
       elapsed: newElapsed,
+      elapsedMillis: newElapsedMillis,
       currentIntervalElapsed: newIntervalElapsed,
+      intervalElapsedMillis: newIntervalMillis,
     ));
   }
 
