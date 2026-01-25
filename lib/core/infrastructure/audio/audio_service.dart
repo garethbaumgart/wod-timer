@@ -87,8 +87,9 @@ class AudioService implements IAudioService {
       await player.setVolume(_volume);
       await player.play(AssetSource(assetPath));
       return right(unit);
-    } on AudioPlayerException catch (e) {
-      return left(AudioFailure.playbackError(message: e.cause?.toString()));
+    } on AudioPlayerException {
+      // Audio is non-critical - timer should continue even if audio fails
+      return right(unit);
     } catch (e) {
       // Catch all errors including FlutterError for missing assets
       // Return success anyway - audio is non-critical, timer should continue
