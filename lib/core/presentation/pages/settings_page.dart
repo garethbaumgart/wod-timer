@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
@@ -7,6 +6,7 @@ import 'package:wod_timer/core/application/providers/package_info_provider.dart'
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
 /// Settings page for configuring app preferences.
 class SettingsPage extends ConsumerWidget {
@@ -39,7 +39,7 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.brightness_high,
             value: settings.keepScreenOn,
             onChanged: (value) {
-              HapticFeedback.selectionClick();
+              ref.read(hapticServiceProvider).selectionClick();
               ref
                   .read(appSettingsNotifierProvider.notifier)
                   .setKeepScreenOn(enabled: value);
@@ -58,7 +58,7 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.volume_up,
             value: settings.soundEnabled,
             onChanged: (value) {
-              HapticFeedback.selectionClick();
+              ref.read(hapticServiceProvider).selectionClick();
               ref
                   .read(appSettingsNotifierProvider.notifier)
                   .setSoundEnabled(enabled: value);
@@ -72,7 +72,7 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.vibration,
             value: settings.hapticEnabled,
             onChanged: (value) {
-              HapticFeedback.selectionClick();
+              ref.read(hapticServiceProvider).selectionClick();
               ref
                   .read(appSettingsNotifierProvider.notifier)
                   .setHapticEnabled(enabled: value);
@@ -162,7 +162,7 @@ class SettingsPage extends ConsumerWidget {
     WidgetRef ref,
     AppSettings settings,
   ) {
-    HapticFeedback.selectionClick();
+    ref.read(hapticServiceProvider).selectionClick();
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -186,7 +186,7 @@ class SettingsPage extends ConsumerWidget {
                     ? Icon(Icons.check, color: AppColors.primary)
                     : null,
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  ref.read(hapticServiceProvider).selectionClick();
                   ref
                       .read(appSettingsNotifierProvider.notifier)
                       .setOrientationLock(mode);

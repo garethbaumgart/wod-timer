@@ -8,6 +8,7 @@ import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 
 /// Active timer display page.
@@ -140,12 +141,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
 
               // Swipe up (negative velocity) to pause
               if (details.primaryVelocity! < -300 && timerState.canPause) {
-                HapticFeedback.mediumImpact();
+                ref.read(hapticServiceProvider).mediumImpact();
                 _onPauseResume();
               }
               // Swipe down (positive velocity) to resume when paused
               else if (details.primaryVelocity! > 300 && timerState.canResume) {
-                HapticFeedback.mediumImpact();
+                ref.read(hapticServiceProvider).mediumImpact();
                 _onPauseResume();
               }
             },

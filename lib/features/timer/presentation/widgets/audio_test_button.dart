@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
@@ -22,7 +21,7 @@ class _AudioTestButtonState extends ConsumerState<AudioTestButton> {
     if (_isPlaying) return;
 
     setState(() => _isPlaying = true);
-    HapticFeedback.lightImpact();
+    ref.read(hapticServiceProvider).lightImpact();
 
     final audioService = ref.read(audioServiceProvider);
 

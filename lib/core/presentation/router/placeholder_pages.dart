@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/features/timer/application/providers/recent_workouts_provider.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
@@ -110,7 +110,7 @@ class PlaceholderHomePage extends ConsumerWidget {
             children: [
               // Recent workouts section
               if (recentWorkouts.isNotEmpty) ...[
-                _buildRecentWorkoutsSection(context, recentWorkouts),
+                _buildRecentWorkoutsSection(context, ref, recentWorkouts),
                 const SizedBox(height: AppSpacing.xl),
               ],
 
@@ -133,28 +133,40 @@ class PlaceholderHomePage extends ConsumerWidget {
                     subtitle: 'As Many Rounds\nAs Possible',
                     icon: Icons.loop,
                     color: AppColors.primary,
-                    onTap: () => onTimerSelected('amrap'),
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('amrap');
+                    },
                   ),
                   _TimerTypeCard(
                     title: 'FOR TIME',
                     subtitle: 'Complete Work\nAs Fast As Possible',
                     icon: Icons.timer,
                     color: AppColors.secondary,
-                    onTap: () => onTimerSelected('fortime'),
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('fortime');
+                    },
                   ),
                   _TimerTypeCard(
                     title: 'EMOM',
                     subtitle: 'Every Minute\nOn the Minute',
                     icon: Icons.av_timer,
                     color: AppColors.success,
-                    onTap: () => onTimerSelected('emom'),
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('emom');
+                    },
                   ),
                   _TimerTypeCard(
                     title: 'TABATA',
                     subtitle: '20s Work\n10s Rest',
                     icon: Icons.fitness_center,
                     color: AppColors.warning,
-                    onTap: () => onTimerSelected('tabata'),
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('tabata');
+                    },
                   ),
                 ],
               ),
@@ -167,6 +179,7 @@ class PlaceholderHomePage extends ConsumerWidget {
 
   Widget _buildRecentWorkoutsSection(
     BuildContext context,
+    WidgetRef ref,
     List<RecentWorkout> recents,
   ) {
     final theme = Theme.of(context);
@@ -200,7 +213,7 @@ class PlaceholderHomePage extends ConsumerWidget {
           (recent) => _RecentWorkoutTile(
             recent: recent,
             onTap: () {
-              HapticFeedback.lightImpact();
+              ref.read(hapticServiceProvider).lightImpact();
               onTimerSelected(recent.timerType);
             },
           ),
@@ -281,10 +294,7 @@ class _TimerTypeCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
+          onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(

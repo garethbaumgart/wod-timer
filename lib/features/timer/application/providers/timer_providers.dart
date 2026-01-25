@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/infrastructure/audio/audio_service.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
-import 'package:wod_timer/core/infrastructure/haptic/haptic_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/features/timer/application/usecases/create_workout.dart';
 import 'package:wod_timer/features/timer/application/usecases/pause_timer.dart';
@@ -11,6 +10,7 @@ import 'package:wod_timer/features/timer/application/usecases/stop_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/tick_timer.dart';
 import 'package:wod_timer/features/timer/infrastructure/services/i_timer_engine.dart';
 import 'package:wod_timer/features/timer/infrastructure/services/timer_engine.dart';
+import 'package:wod_timer/injection.dart';
 
 part 'timer_providers.g.dart';
 
@@ -23,9 +23,12 @@ IAudioService audioService(AudioServiceRef ref) {
 }
 
 /// Provider for the haptic feedback service.
-@riverpod
+///
+/// Uses the singleton from get_it to ensure the enabled state is shared
+/// across the app when toggled from settings.
+@Riverpod(keepAlive: true)
 IHapticService hapticService(HapticServiceRef ref) {
-  return HapticService();
+  return getIt<IHapticService>();
 }
 
 /// Provider for the timer engine.

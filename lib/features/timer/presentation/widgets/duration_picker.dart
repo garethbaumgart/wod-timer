@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 
@@ -17,6 +17,7 @@ class DurationPicker extends StatefulWidget {
     this.secondInterval = 5,
     this.showSeconds = true,
     this.label,
+    this.hapticService,
   });
 
   /// Initial duration to display.
@@ -39,6 +40,10 @@ class DurationPicker extends StatefulWidget {
 
   /// Optional label displayed above the picker.
   final String? label;
+
+  /// Optional haptic service for feedback. If provided, haptic feedback
+  /// will respect the app's haptic settings.
+  final IHapticService? hapticService;
 
   @override
   State<DurationPicker> createState() => _DurationPickerState();
@@ -79,7 +84,7 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   void _onMinuteChanged(int index) {
-    HapticFeedback.selectionClick();
+    widget.hapticService?.selectionClick();
     setState(() {
       _minutes = index * widget.minuteInterval;
     });
@@ -87,7 +92,7 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   void _onSecondChanged(int index) {
-    HapticFeedback.selectionClick();
+    widget.hapticService?.selectionClick();
     setState(() {
       _seconds = index * widget.secondInterval;
     });
@@ -103,7 +108,7 @@ class _DurationPickerState extends State<DurationPicker> {
     final maxIndex = widget.maxMinutes ~/ widget.minuteInterval;
     final currentIndex = _minutes ~/ widget.minuteInterval;
     if (currentIndex < maxIndex) {
-      HapticFeedback.lightImpact();
+      widget.hapticService?.lightImpact();
       _minuteController.animateToItem(
         currentIndex + 1,
         duration: const Duration(milliseconds: 200),
@@ -115,7 +120,7 @@ class _DurationPickerState extends State<DurationPicker> {
   void _decrementMinutes() {
     final currentIndex = _minutes ~/ widget.minuteInterval;
     if (currentIndex > 0) {
-      HapticFeedback.lightImpact();
+      widget.hapticService?.lightImpact();
       _minuteController.animateToItem(
         currentIndex - 1,
         duration: const Duration(milliseconds: 200),
@@ -128,7 +133,7 @@ class _DurationPickerState extends State<DurationPicker> {
     final maxIndex = (60 ~/ widget.secondInterval) - 1;
     final currentIndex = _seconds ~/ widget.secondInterval;
     if (currentIndex < maxIndex) {
-      HapticFeedback.lightImpact();
+      widget.hapticService?.lightImpact();
       _secondController.animateToItem(
         currentIndex + 1,
         duration: const Duration(milliseconds: 200),
@@ -140,7 +145,7 @@ class _DurationPickerState extends State<DurationPicker> {
   void _decrementSeconds() {
     final currentIndex = _seconds ~/ widget.secondInterval;
     if (currentIndex > 0) {
-      HapticFeedback.lightImpact();
+      widget.hapticService?.lightImpact();
       _secondController.animateToItem(
         currentIndex - 1,
         duration: const Duration(milliseconds: 200),
