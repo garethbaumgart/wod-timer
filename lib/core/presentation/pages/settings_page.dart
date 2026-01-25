@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/application/providers/package_info_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
@@ -83,13 +84,7 @@ class SettingsPage extends ConsumerWidget {
 
           // About Section
           _buildSectionHeader(context, 'About', isDark),
-          _buildInfoTile(
-            context: context,
-            title: 'Version',
-            subtitle: '1.0.0',
-            icon: Icons.info_outline,
-            isDark: isDark,
-          ),
+          _buildVersionTile(context, ref, isDark),
         ],
       ),
     );
@@ -256,34 +251,51 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoTile({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool isDark,
-  }) {
+  Widget _buildVersionTile(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
+    final packageInfoAsync = ref.watch(packageInfoProvider);
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: Icon(icon, color: AppColors.primary),
+          child: const Icon(Icons.info_outline, color: AppColors.primary),
         ),
         title: Text(
-          title,
+          'Version',
           style: theme.textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : AppColors.textSecondaryLight,
+        subtitle: packageInfoAsync.when(
+          data: (info) => Text(
+            '${info.version} (${info.buildNumber})',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+          loading: () => Text(
+            'Loading...',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+          error: (_, __) => Text(
+            'Unknown',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
           ),
         ),
       ),

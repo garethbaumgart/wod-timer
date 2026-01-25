@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
+import 'package:wod_timer/injection.dart';
 
 part 'app_settings_provider.g.dart';
 
@@ -84,6 +86,9 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
 
       // Apply orientation lock
       _applyOrientationLock(state.orientationLock);
+
+      // Sync haptic setting with service
+      _syncHapticService(hapticEnabled);
     } catch (e) {
       // Use defaults on error
     }
@@ -130,9 +135,18 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
     await _saveSettings();
   }
 
+  void _syncHapticService(bool enabled) {
+    try {
+      getIt<IHapticService>().setEnabled(enabled: enabled);
+    } catch (_) {
+      // Ignore if service not available (e.g., in tests)
+    }
+  }
+
   /// Toggle haptic feedback.
   Future<void> setHapticEnabled({required bool enabled}) async {
     state = state.copyWith(hapticEnabled: enabled);
+    _syncHapticService(enabled);
     await _saveSettings();
   }
 
