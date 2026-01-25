@@ -227,6 +227,8 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
                 const SizedBox(height: AppSpacing.lg),
+                const Center(child: AudioTestButton()),
+                const SizedBox(height: AppSpacing.lg),
                 _buildStartButtonCompact(),
               ],
             ),

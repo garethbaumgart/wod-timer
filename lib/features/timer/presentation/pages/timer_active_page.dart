@@ -185,7 +185,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         ? ', Round ${session.currentRound} of ${session.totalRounds}'
         : '';
 
-    return '$phase, $minutes minutes $secs seconds remaining$roundInfo. Double tap to pause or resume. Swipe up to pause, swipe down to resume.';
+    // Only show control hints when pause/resume is available
+    final controlsHint = (state.canPause || state.canResume)
+        ? '. Double tap to pause or resume. Swipe up to pause, swipe down to resume.'
+        : '';
+
+    return '$phase, $minutes minutes $secs seconds remaining$roundInfo$controlsHint';
   }
 
   Widget _buildNotConfiguredState() {

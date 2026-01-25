@@ -89,8 +89,13 @@ class RecentWorkouts extends _$RecentWorkouts {
       lastUsed: DateTime.now(),
     );
 
-    // Remove existing entry with same timer type
-    final updated = state.where((r) => r.timerType != timerType).toList();
+    // Remove existing entry with same configuration (type + name + description)
+    final updated = state
+        .where((r) =>
+            !(r.timerType == timerType &&
+                r.name == name &&
+                r.description == description))
+        .toList();
 
     // Add new entry at the front
     updated.insert(0, newRecent);

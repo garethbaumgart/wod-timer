@@ -174,6 +174,7 @@ class TimerNotifier extends _$TimerNotifier {
           state = TimerNotifierState.completed(session: currentSession);
           _stopTicking();
           _audioService.playComplete();
+          _hapticService.success(); // Haptic success for natural completion
         } else {
           state = TimerNotifierState.error(
             failure: failure,
@@ -190,6 +191,7 @@ class TimerNotifier extends _$TimerNotifier {
           state = TimerNotifierState.completed(session: session);
           _stopTicking();
           _audioService.playComplete();
+          _hapticService.success(); // Haptic success for natural completion
         } else {
           state = _stateFromSession(session);
         }
