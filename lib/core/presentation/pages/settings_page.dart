@@ -5,145 +5,219 @@ import 'package:wod_timer/core/application/providers/app_settings_provider.dart'
 import 'package:wod_timer/core/application/providers/package_info_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
-import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
-/// Settings page for configuring app preferences.
+/// Settings page with Signal-inspired minimal design.
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
+  static const _labelColor = Color(0xFF777777);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(appSettingsNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AppRoutes.home),
+      backgroundColor: AppColors.backgroundDark,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.go(AppRoutes.home),
+                    child: Text(
+                      '\u2039',
+                      style: AppTypography.sectionHeader.copyWith(
+                        color: AppColors.textPrimaryDark,
+                        fontSize: 28,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Settings',
+                    style: AppTypography.sectionHeader.copyWith(
+                      color: AppColors.textPrimaryDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Settings rows
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildDivider(),
+                  _buildTapRow(
+                    label: 'Orientation Lock',
+                    value: _getOrientationShortLabel(settings.orientationLock),
+                    onTap: () => _showOrientationPicker(context, ref, settings),
+                  ),
+                  _buildDivider(),
+                  _buildSwitchRow(
+                    label: 'Keep Screen On',
+                    value: settings.keepScreenOn,
+                    onChanged: (value) {
+                      ref.read(hapticServiceProvider).selectionClick();
+                      ref
+                          .read(appSettingsNotifierProvider.notifier)
+                          .setKeepScreenOn(enabled: value);
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildSwitchRow(
+                    label: 'Sound Effects',
+                    value: settings.soundEnabled,
+                    onChanged: (value) {
+                      ref.read(hapticServiceProvider).selectionClick();
+                      ref
+                          .read(appSettingsNotifierProvider.notifier)
+                          .setSoundEnabled(enabled: value);
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildSwitchRow(
+                    label: 'Haptic Feedback',
+                    value: settings.hapticEnabled,
+                    onChanged: (value) {
+                      ref.read(hapticServiceProvider).selectionClick();
+                      ref
+                          .read(appSettingsNotifierProvider.notifier)
+                          .setHapticEnabled(enabled: value);
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildVersionRow(ref),
+                  _buildDivider(),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      color: AppColors.divider,
+    );
+  }
+
+  Widget _buildTapRow({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: AppTypography.bodySmall.copyWith(
+                color: _labelColor,
+              ),
+            ),
+            Text(
+              '$value >',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondaryDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchRow({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Display Section
-          _buildSectionHeader(context, 'Display', isDark),
-          _buildOrientationLockTile(context, ref, settings, isDark),
-          _buildSwitchTile(
-            context: context,
-            title: 'Keep Screen On',
-            subtitle: 'Prevent screen from sleeping during workouts',
-            icon: Icons.brightness_high,
-            value: settings.keepScreenOn,
-            onChanged: (value) {
-              ref.read(hapticServiceProvider).selectionClick();
-              ref
-                  .read(appSettingsNotifierProvider.notifier)
-                  .setKeepScreenOn(enabled: value);
-            },
-            isDark: isDark,
+          Text(
+            label,
+            style: AppTypography.bodySmall.copyWith(
+              color: _labelColor,
+            ),
           ),
-
-          const SizedBox(height: AppSpacing.xl),
-
-          // Audio & Haptic Section
-          _buildSectionHeader(context, 'Feedback', isDark),
-          _buildSwitchTile(
-            context: context,
-            title: 'Sound Effects',
-            subtitle: 'Play audio cues for countdown and phase changes',
-            icon: Icons.volume_up,
-            value: settings.soundEnabled,
-            onChanged: (value) {
-              ref.read(hapticServiceProvider).selectionClick();
-              ref
-                  .read(appSettingsNotifierProvider.notifier)
-                  .setSoundEnabled(enabled: value);
-            },
-            isDark: isDark,
+          SizedBox(
+            height: 28,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AppColors.primary,
+              activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
+              inactiveThumbColor: const Color(0xFF555555),
+              inactiveTrackColor: AppColors.border,
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            ),
           ),
-          _buildSwitchTile(
-            context: context,
-            title: 'Haptic Feedback',
-            subtitle: 'Vibrate on timer events and interactions',
-            icon: Icons.vibration,
-            value: settings.hapticEnabled,
-            onChanged: (value) {
-              ref.read(hapticServiceProvider).selectionClick();
-              ref
-                  .read(appSettingsNotifierProvider.notifier)
-                  .setHapticEnabled(enabled: value);
-            },
-            isDark: isDark,
-          ),
-
-          const SizedBox(height: AppSpacing.xl),
-
-          // About Section
-          _buildSectionHeader(context, 'About', isDark),
-          _buildVersionTile(context, ref, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
+  Widget _buildVersionRow(WidgetRef ref) {
+    final packageInfoAsync = ref.watch(packageInfoProvider);
+
+    final versionText = packageInfoAsync.when(
+      data: (info) => '${info.version} (${info.buildNumber})',
+      loading: () => 'Loading...',
+      error: (_, __) => 'Unknown',
+    );
+
     return Padding(
-      padding: const EdgeInsets.only(
-        left: AppSpacing.sm,
-        bottom: AppSpacing.sm,
-        top: AppSpacing.sm,
-      ),
-      child: Text(
-        title.toUpperCase(),
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Version',
+            style: AppTypography.bodySmall.copyWith(
+              color: _labelColor,
             ),
+          ),
+          Text(
+            versionText,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondaryDark,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildOrientationLockTile(
-    BuildContext context,
-    WidgetRef ref,
-    AppSettings settings,
-    bool isDark,
-  ) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: const Icon(
-            Icons.screen_rotation,
-            color: AppColors.primary,
-          ),
-        ),
-        title: Text(
-          'Orientation Lock',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          _getOrientationLabel(settings.orientationLock),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : AppColors.textSecondaryLight,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _showOrientationPicker(context, ref, settings),
-      ),
-    );
+  String _getOrientationShortLabel(OrientationLockMode mode) {
+    switch (mode) {
+      case OrientationLockMode.auto:
+        return 'Auto';
+      case OrientationLockMode.portrait:
+        return 'Portrait';
+      case OrientationLockMode.landscape:
+        return 'Landscape';
+    }
   }
 
   String _getOrientationLabel(OrientationLockMode mode) {
@@ -157,50 +231,6 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
-  void _showOrientationPicker(
-    BuildContext context,
-    WidgetRef ref,
-    AppSettings settings,
-  ) {
-    ref.read(hapticServiceProvider).selectionClick();
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text(
-                'Orientation Lock',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-            ...OrientationLockMode.values.map(
-              (mode) => ListTile(
-                leading: Icon(_getOrientationIcon(mode)),
-                title: Text(_getOrientationLabel(mode)),
-                trailing: settings.orientationLock == mode
-                    ? Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  ref.read(hapticServiceProvider).selectionClick();
-                  ref
-                      .read(appSettingsNotifierProvider.notifier)
-                      .setOrientationLock(mode);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-        ),
-      ),
-    );
-  }
-
   IconData _getOrientationIcon(OrientationLockMode mode) {
     switch (mode) {
       case OrientationLockMode.auto:
@@ -212,91 +242,54 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
-  Widget _buildSwitchTile({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required bool isDark,
-  }) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: SwitchListTile(
-        secondary: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: Icon(icon, color: AppColors.primary),
-        ),
-        title: Text(
-          title,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : AppColors.textSecondaryLight,
-          ),
-        ),
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppColors.primary,
-      ),
-    );
-  }
-
-  Widget _buildVersionTile(
+  void _showOrientationPicker(
     BuildContext context,
     WidgetRef ref,
-    bool isDark,
+    AppSettings settings,
   ) {
-    final theme = Theme.of(context);
-    final packageInfoAsync = ref.watch(packageInfoProvider);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: const Icon(Icons.info_outline, color: AppColors.primary),
-        ),
-        title: Text(
-          'Version',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: packageInfoAsync.when(
-          data: (info) => Text(
-            '${info.version} (${info.buildNumber})',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
+    ref.read(hapticServiceProvider).selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Orientation Lock',
+                style: AppTypography.sectionHeader.copyWith(
+                  color: AppColors.textPrimaryDark,
+                ),
+              ),
             ),
-          ),
-          loading: () => Text(
-            'Loading...',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
+            ...OrientationLockMode.values.map(
+              (mode) => ListTile(
+                leading: Icon(
+                  _getOrientationIcon(mode),
+                  color: AppColors.textPrimaryDark,
+                ),
+                title: Text(
+                  _getOrientationLabel(mode),
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textPrimaryDark,
+                  ),
+                ),
+                trailing: settings.orientationLock == mode
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  ref.read(hapticServiceProvider).selectionClick();
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setOrientationLock(mode);
+                  Navigator.pop(context);
+                },
+              ),
             ),
-          ),
-          error: (_, __) => Text(
-            'Unknown',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
-            ),
-          ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );

@@ -6,12 +6,13 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 
-/// Active timer display page.
+/// Active timer display page - Signal design.
 ///
 /// Shows the running timer with large display for gym visibility.
 /// Supports pause/resume and stop controls.
@@ -58,8 +59,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
   }
 
   void _onStop() {
-    final timerNotifier = ref.read(timerNotifierProvider.notifier);
-    timerNotifier.stop();
+    ref.read(timerNotifierProvider.notifier).stop();
   }
 
   Future<void> _onReset() async {
@@ -84,14 +84,22 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Exit Workout?'),
+            backgroundColor: AppColors.surfaceDark,
+            title: const Text(
+              'Exit Workout?',
+              style: TextStyle(color: Colors.white),
+            ),
             content: const Text(
               'Your workout is still in progress. Are you sure you want to exit? Your progress will be lost.',
+              style: TextStyle(color: Color(0xFF888888)),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('CONTINUE WORKOUT'),
+                child: const Text(
+                  'CONTINUE WORKOUT',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
@@ -125,7 +133,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     }
 
     return Scaffold(
-      backgroundColor: _getBackgroundColor(timerState),
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: Semantics(
           label: _buildTimerAccessibilityLabel(timerState),
@@ -145,7 +153,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 _onPauseResume();
               }
               // Swipe down (positive velocity) to resume when paused
-              else if (details.primaryVelocity! > 300 && timerState.canResume) {
+              else if (details.primaryVelocity! > 300 &&
+                  timerState.canResume) {
                 ref.read(hapticServiceProvider).mediumImpact();
                 _onPauseResume();
               }
@@ -194,11 +203,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
   }
 
   Widget _buildNotConfiguredState() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
     return Scaffold(
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -209,22 +215,21 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 Icon(
                   Icons.timer_off_outlined,
                   size: 80,
-                  color: textColor.withValues(alpha: 0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Timer Not Started',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: AppTypography.workoutTitle.copyWith(
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Go back to the setup page to configure and start your workout.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: textColor.withValues(alpha: 0.7),
-                      ),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -241,100 +246,27 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     );
   }
 
-  Color _getBackgroundColor(TimerNotifierState state) {
+  // -- Phase color helper (used for pill badge & glow) --
+
+  Color _getPhaseColor(TimerNotifierState state) {
     return state.maybeMap(
-      preparing: (_) => AppColors.prepare.withValues(alpha: 0.2),
-      running: (_) => AppColors.work.withValues(alpha: 0.15),
-      resting: (_) => AppColors.rest.withValues(alpha: 0.2),
-      paused: (_) => AppColors.paused.withValues(alpha: 0.2),
-      completed: (_) => AppColors.complete.withValues(alpha: 0.2),
-      orElse: () => Theme.of(context).scaffoldBackgroundColor,
+      preparing: (_) => AppColors.prepare,
+      running: (_) => AppColors.work,
+      resting: (_) => AppColors.rest,
+      paused: (_) => AppColors.paused,
+      completed: (_) => AppColors.complete,
+      orElse: () => AppColors.primary,
     );
   }
 
-  Widget _buildPortraitLayout(TimerNotifierState state) {
-    return Column(
-      children: [
-        // Top bar with timer type and back button
-        _buildTopBar(state),
-
-        // Main timer display
-        Expanded(
-          flex: 3,
-          child: _buildTimerDisplay(state),
-        ),
-
-        // Progress indicator
-        _buildProgressBar(state),
-
-        // Round/Phase indicator
-        Expanded(
-          flex: 1,
-          child: _buildStatusIndicator(state),
-        ),
-
-        // Control buttons
-        _buildControls(state),
-      ],
-    );
-  }
-
-  Widget _buildLandscapeLayout(TimerNotifierState state) {
-    return Row(
-      children: [
-        // Left side - Timer display
-        Expanded(
-          flex: 2,
-          child: Column(
-            children: [
-              _buildTopBar(state),
-              Expanded(child: _buildTimerDisplay(state)),
-              _buildProgressBar(state),
-            ],
-          ),
-        ),
-
-        // Right side - Status and controls
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(child: _buildStatusIndicator(state)),
-              _buildControlsCompact(state),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTopBar(TimerNotifierState state) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(Icons.close, color: textColor),
-            onPressed: _onReset,
-            tooltip: 'Exit',
-          ),
-          const Spacer(),
-          Text(
-            _getTimerTypeLabel(),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: textColor.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-          const Spacer(),
-          const SizedBox(width: 48), // Balance the close button
-        ],
-      ),
+  String _getPhaseLabel(TimerNotifierState state) {
+    return state.maybeMap(
+      preparing: (_) => 'GET READY',
+      running: (_) => 'WORK',
+      resting: (_) => 'REST',
+      paused: (_) => 'PAUSED',
+      completed: (_) => 'COMPLETE',
+      orElse: () => '',
     );
   }
 
@@ -353,148 +285,216 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     }
   }
 
-  Widget _buildTimerDisplay(TimerNotifierState state) {
+  // ===================================================================
+  // Portrait Layout
+  // ===================================================================
+
+  Widget _buildPortraitLayout(TimerNotifierState state) {
+    // Completed state has a special layout
+    if (state is TimerCompleted) {
+      return _buildCompletedLayout(state);
+    }
+
     final session = state.sessionOrNull;
     final timeRemaining = session?.timeRemaining.seconds ?? 0;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Phase label (Get Ready, Work, Rest, etc.)
-          _buildPhaseLabel(state),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Large time display
-          _buildTimeText(timeRemaining, state),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhaseLabel(TimerNotifierState state) {
-    final label = state.maybeMap(
-      preparing: (_) => 'GET READY',
-      running: (_) => 'WORK',
-      resting: (_) => 'REST',
-      paused: (_) => 'PAUSED',
-      completed: (_) => 'COMPLETE!',
-      orElse: () => '',
-    );
-
-    final color = _getPhaseColor(state);
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-        border: Border.all(color: color, width: 2),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-      ),
-    );
-  }
-
-  Color _getPhaseColor(TimerNotifierState state) {
-    return state.maybeMap(
-      preparing: (_) => AppColors.prepare,
-      running: (_) => AppColors.work,
-      resting: (_) => AppColors.rest,
-      paused: (_) => AppColors.paused,
-      completed: (_) => AppColors.complete,
-      orElse: () => AppColors.primary,
-    );
-  }
-
-  Widget _buildTimeText(int seconds, TimerNotifierState state) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    final timeString = '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.timerTextDark : AppColors.timerTextLight;
-
-    // Pulse animation for last 3 seconds of prep countdown
-    final isPulsing = state is TimerPreparing && seconds <= 3 && seconds > 0;
-
-    // Larger font sizes for gym visibility (readable from 3-4 meters)
-    return AnimatedDefaultTextStyle(
-      duration: const Duration(milliseconds: 200),
-      style: TextStyle(
-        fontSize: isPulsing ? 160 : 140,
-        fontWeight: FontWeight.w200,
-        fontFamily: 'monospace',
-        color: textColor,
-        letterSpacing: 4,
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          timeString,
-          semanticsLabel: '$minutes minutes $secs seconds remaining',
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressBar(TimerNotifierState state) {
-    final session = state.sessionOrNull;
-    final progress = session?.progress ?? 0.0;
-    final color = _getPhaseColor(state);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        child: LinearProgressIndicator(
-          value: progress,
-          minHeight: 8,
-          backgroundColor: color.withValues(alpha: 0.2),
-          valueColor: AlwaysStoppedAnimation<Color>(color),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusIndicator(TimerNotifierState state) {
-    final session = state.sessionOrNull;
-    if (session == null) return const SizedBox.shrink();
+    final phaseColor = _getPhaseColor(state);
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Round indicator (if applicable)
-        if (session.totalRounds != null)
-          _buildRoundIndicator(session),
+        const Spacer(flex: 2),
 
-        // Elapsed time for For Time
-        if (widget.timerType == TimerTypes.forTime)
-          _buildElapsedTime(session),
+        // Pill badge: "FOR TIME . WORK"
+        _buildPillBadge(state, phaseColor),
 
-        // Phase change preview for Tabata
-        if (widget.timerType == TimerTypes.tabata)
-          _buildPhasePreview(state, session),
+        const Spacer(),
+
+        // Giant time with radial glow behind
+        _buildTimerWithGlow(timeRemaining, state, phaseColor),
+
+        const SizedBox(height: AppSpacing.sm),
+
+        // Sub-label below time
+        _buildSubLabel(state, session),
+
+        const Spacer(flex: 2),
+
+        // Progress bar
+        _buildProgressBar(state),
+
+        const SizedBox(height: AppSpacing.xl),
+
+        // Control buttons
+        _buildControls(state),
+
+        const SizedBox(height: AppSpacing.xl),
       ],
     );
   }
 
-  Widget _buildPhasePreview(TimerNotifierState state, TimerSession session) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+  // ===================================================================
+  // Landscape Layout
+  // ===================================================================
 
+  Widget _buildLandscapeLayout(TimerNotifierState state) {
+    if (state is TimerCompleted) {
+      return _buildCompletedLayoutLandscape(state);
+    }
+
+    final session = state.sessionOrNull;
+    final timeRemaining = session?.timeRemaining.seconds ?? 0;
+    final phaseColor = _getPhaseColor(state);
+
+    return Row(
+      children: [
+        // Left side - Timer display
+        Expanded(
+          flex: 2,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPillBadge(state, phaseColor),
+              const SizedBox(height: AppSpacing.md),
+              _buildTimerWithGlow(timeRemaining, state, phaseColor),
+              const SizedBox(height: AppSpacing.sm),
+              _buildSubLabel(state, session),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: _buildProgressBar(state),
+              ),
+            ],
+          ),
+        ),
+
+        // Right side - Controls
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildControlsCompact(state),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===================================================================
+  // Pill Badge
+  // ===================================================================
+
+  Widget _buildPillBadge(TimerNotifierState state, Color phaseColor) {
+    final typeLabel = _getTimerTypeLabel();
+    final phaseLabel = _getPhaseLabel(state);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: phaseColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Text(
+        '$typeLabel  \u00B7  $phaseLabel',
+        style: AppTypography.pillBadge.copyWith(
+          color: phaseColor,
+        ),
+      ),
+    );
+  }
+
+  // ===================================================================
+  // Timer with radial glow
+  // ===================================================================
+
+  Widget _buildTimerWithGlow(
+    int seconds,
+    TimerNotifierState state,
+    Color phaseColor,
+  ) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    final timeString =
+        '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+
+    // Pulse animation for last 3 seconds of prep countdown
+    final isPulsing = state is TimerPreparing && seconds <= 3 && seconds > 0;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Radial glow behind the timer
+        Container(
+          width: 260,
+          height: 260,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                phaseColor.withValues(alpha: 0.06),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.7],
+            ),
+          ),
+        ),
+        // Giant time text
+        AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: AppTypography.timerDisplay.copyWith(
+            fontSize: isPulsing ? 104 : 96,
+            color: Colors.white,
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              timeString,
+              semanticsLabel: '$minutes minutes $secs seconds remaining',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===================================================================
+  // Sub-label below time
+  // ===================================================================
+
+  Widget _buildSubLabel(TimerNotifierState state, TimerSession? session) {
+    if (session == null) return const SizedBox.shrink();
+
+    // Show round info if available
+    if (session.totalRounds != null) {
+      return Text(
+        'Round ${session.currentRound}/${session.totalRounds}',
+        style: AppTypography.bodySmall.copyWith(
+          color: AppColors.textDisabledDark,
+        ),
+      );
+    }
+
+    // Show "Elapsed" for For Time
+    if (widget.timerType == TimerTypes.forTime) {
+      return Text(
+        'Elapsed',
+        style: AppTypography.bodySmall.copyWith(
+          color: AppColors.textDisabledDark,
+        ),
+      );
+    }
+
+    // Phase preview for Tabata (last 5 seconds)
+    if (widget.timerType == TimerTypes.tabata) {
+      return _buildPhasePreview(state, session);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPhasePreview(TimerNotifierState state, TimerSession session) {
     final timeRemaining = session.timeRemaining.seconds;
 
     // Show preview when less than 5 seconds remain in current phase
@@ -518,109 +518,76 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md),
-      child: AnimatedOpacity(
-        opacity: timeRemaining <= 3 ? 1.0 : 0.6,
-        duration: const Duration(milliseconds: 200),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.arrow_forward,
-              size: 16,
-              color: textColor.withValues(alpha: 0.6),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              '$nextPhase in ${timeRemaining}s',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: nextColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ],
+    return AnimatedOpacity(
+      opacity: timeRemaining <= 3 ? 1.0 : 0.6,
+      duration: const Duration(milliseconds: 200),
+      child: Text(
+        '$nextPhase in ${timeRemaining}s',
+        style: AppTypography.bodySmall.copyWith(
+          color: nextColor,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  Widget _buildRoundIndicator(TimerSession session) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+  // ===================================================================
+  // Progress Bar
+  // ===================================================================
 
-    return Column(
-      children: [
-        Text(
-          'ROUND',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: textColor.withValues(alpha: 0.6),
-                letterSpacing: 2,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        RichText(
-          text: TextSpan(
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
+  Widget _buildProgressBar(TimerNotifierState state) {
+    final session = state.sessionOrNull;
+    final progress = session?.progress ?? 0.0;
+    final phaseColor = _getPhaseColor(state);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: SizedBox(
+        height: 3,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final fillWidth = constraints.maxWidth * progress;
+            return Stack(
+              children: [
+                // Track
+                Container(
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
                 ),
-            children: [
-              TextSpan(text: '${session.currentRound}'),
-              TextSpan(
-                text: ' / ${session.totalRounds}',
-                style: TextStyle(
-                  color: textColor.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.normal,
+                // Fill with glow
+                Container(
+                  height: 3,
+                  width: fillWidth,
+                  decoration: BoxDecoration(
+                    color: phaseColor,
+                    borderRadius: BorderRadius.circular(1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: phaseColor.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildElapsedTime(TimerSession session) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
-    final elapsed = session.elapsed.seconds;
-    final minutes = elapsed ~/ 60;
-    final secs = elapsed % 60;
-    final elapsedString =
-        '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-
-    return Column(
-      children: [
-        Text(
-          'ELAPSED',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: textColor.withValues(alpha: 0.6),
-                letterSpacing: 2,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          elapsedString,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w500,
-              ),
-        ),
-      ],
-    );
-  }
+  // ===================================================================
+  // Control Buttons (Portrait)
+  // ===================================================================
 
   Widget _buildControls(TimerNotifierState state) {
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: state.maybeMap(
-        completed: (_) => _buildCompletedControls(),
-        orElse: () => _buildActiveControls(state),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: _buildActiveControls(state),
     );
   }
 
@@ -631,190 +598,323 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         // Stop button
-        _buildControlButton(
+        _buildCircleButton(
           icon: Icons.stop,
           label: 'Stop',
-          color: AppColors.error,
+          borderColor: const Color(0xFF331111),
+          iconColor: AppColors.error,
           onPressed: state.canStop ? _onStop : null,
-          size: 64,
+          size: 42,
         ),
 
-        // Pause/Resume button
-        _buildControlButton(
+        // Pause/Resume button (large center)
+        _buildCircleButton(
           icon: isPaused ? Icons.play_arrow : Icons.pause,
           label: isPaused ? 'Resume' : 'Pause',
-          color: isPaused ? AppColors.success : AppColors.warning,
+          borderColor: AppColors.primary,
+          iconColor: AppColors.primary,
           onPressed:
               state.canPause || state.canResume ? _onPauseResume : null,
-          size: 80,
-          isPrimary: true,
+          size: 52,
         ),
 
-        // Complete button (for For Time)
+        // Complete button (for For Time) or placeholder
         if (widget.timerType == TimerTypes.forTime)
-          _buildControlButton(
+          _buildCircleButton(
             icon: Icons.flag,
             label: 'Done',
-            color: AppColors.complete,
+            borderColor: const Color(0xFF222222),
+            iconColor: const Color(0xFF888888),
             onPressed: () {
               ref.read(timerNotifierProvider.notifier).stop();
             },
-            size: 64,
+            size: 42,
           )
         else
-          const SizedBox(width: 64),
+          const SizedBox(width: 42),
       ],
     );
   }
 
-  Widget _buildCompletedControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildControlButton(
-          icon: Icons.replay,
-          label: 'Repeat',
-          color: AppColors.secondary,
-          onPressed: _onReset,
-          size: 64,
-        ),
-        _buildControlButton(
-          icon: Icons.check,
-          label: 'Done',
-          color: AppColors.success,
-          onPressed: _onComplete,
-          size: 80,
-          isPrimary: true,
-        ),
-        const SizedBox(width: 64),
-      ],
-    );
-  }
+  // ===================================================================
+  // Control Buttons (Landscape / Compact)
+  // ===================================================================
 
   Widget _buildControlsCompact(TimerNotifierState state) {
-    return state.maybeMap(
-      completed: (_) => _buildCompletedControlsCompact(),
-      orElse: () => _buildActiveControlsCompact(state),
-    );
-  }
-
-  Widget _buildActiveControlsCompact(TimerNotifierState state) {
     final isPaused = state is TimerPaused;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildControlButton(
+        _buildCircleButton(
           icon: Icons.stop,
           label: 'Stop',
-          color: AppColors.error,
+          borderColor: const Color(0xFF331111),
+          iconColor: AppColors.error,
           onPressed: state.canStop ? _onStop : null,
-          size: 48,
+          size: 42,
         ),
         const SizedBox(width: AppSpacing.lg),
-        _buildControlButton(
+        _buildCircleButton(
           icon: isPaused ? Icons.play_arrow : Icons.pause,
           label: isPaused ? 'Resume' : 'Pause',
-          color: isPaused ? AppColors.success : AppColors.warning,
+          borderColor: AppColors.primary,
+          iconColor: AppColors.primary,
           onPressed:
               state.canPause || state.canResume ? _onPauseResume : null,
-          size: 56,
-          isPrimary: true,
+          size: 52,
         ),
         if (widget.timerType == TimerTypes.forTime) ...[
           const SizedBox(width: AppSpacing.lg),
-          _buildControlButton(
+          _buildCircleButton(
             icon: Icons.flag,
             label: 'Done',
-            color: AppColors.complete,
+            borderColor: const Color(0xFF222222),
+            iconColor: const Color(0xFF888888),
             onPressed: () {
               ref.read(timerNotifierProvider.notifier).stop();
             },
-            size: 48,
+            size: 42,
           ),
         ],
       ],
     );
   }
 
-  Widget _buildCompletedControlsCompact() {
-    return Row(
+  // ===================================================================
+  // Circle Button (border-only style)
+  // ===================================================================
+
+  Widget _buildCircleButton({
+    required IconData icon,
+    required String label,
+    required Color borderColor,
+    required Color iconColor,
+    required VoidCallback? onPressed,
+    required double size,
+  }) {
+    final isDisabled = onPressed == null;
+
+    return Semantics(
+      button: true,
+      enabled: !isDisabled,
+      label: '$label button${isDisabled ? ', disabled' : ''}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(size / 2),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDisabled
+                    ? const Color(0xFF222222)
+                    : borderColor,
+                width: 1.5,
+              ),
+            ),
+            child: ExcludeSemantics(
+              child: Icon(
+                icon,
+                color: isDisabled ? const Color(0xFF444444) : iconColor,
+                size: size * 0.45,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===================================================================
+  // Completed State Layout
+  // ===================================================================
+
+  Widget _buildCompletedLayout(TimerNotifierState state) {
+    final session = state.sessionOrNull;
+    final elapsed = session?.elapsed.seconds ?? 0;
+    final minutes = elapsed ~/ 60;
+    final secs = elapsed % 60;
+    final elapsedString =
+        '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildControlButton(
-          icon: Icons.replay,
-          label: 'Repeat',
-          color: AppColors.secondary,
-          onPressed: _onReset,
-          size: 48,
+        const Spacer(flex: 2),
+
+        // Checkmark icon
+        const Icon(
+          Icons.check,
+          size: 40,
+          color: AppColors.primary,
         ),
-        const SizedBox(width: AppSpacing.lg),
-        _buildControlButton(
-          icon: Icons.check,
-          label: 'Done',
-          color: AppColors.success,
-          onPressed: _onComplete,
-          size: 56,
-          isPrimary: true,
+        const SizedBox(height: AppSpacing.md),
+
+        // "Finished!" title
+        Text(
+          'Finished!',
+          style: AppTypography.workoutTitle.copyWith(
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Stat text
+        Text(
+          'Total: $elapsedString',
+          style: AppTypography.bodyMedium.copyWith(
+            fontSize: 13,
+            color: const Color(0xFF444444),
+          ),
+        ),
+
+        if (session?.totalRounds != null) ...[
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            'Rounds: ${session!.currentRound}/${session.totalRounds}',
+            style: AppTypography.bodyMedium.copyWith(
+              fontSize: 13,
+              color: const Color(0xFF444444),
+            ),
+          ),
+        ],
+
+        const Spacer(flex: 2),
+
+        // Progress bar (full)
+        _buildProgressBar(state),
+        const SizedBox(height: AppSpacing.xl),
+
+        // Again / Done buttons
+        _buildCompletedButtons(),
+
+        const SizedBox(height: AppSpacing.xl),
+      ],
+    );
+  }
+
+  Widget _buildCompletedLayoutLandscape(TimerNotifierState state) {
+    final session = state.sessionOrNull;
+    final elapsed = session?.elapsed.seconds ?? 0;
+    final minutes = elapsed ~/ 60;
+    final secs = elapsed % 60;
+    final elapsedString =
+        '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.check,
+                size: 40,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Finished!',
+                style: AppTypography.workoutTitle.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Total: $elapsedString',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontSize: 13,
+                  color: const Color(0xFF444444),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildCompletedButtons(),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback? onPressed,
-    required double size,
-    bool isPrimary = false,
-  }) {
-    return Semantics(
-      button: true,
-      enabled: onPressed != null,
-      label: '$label button${onPressed == null ? ', disabled' : ''}',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildCompletedButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+      child: Row(
         children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(size / 2),
-              child: Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: onPressed != null
-                      ? (isPrimary ? color : color.withValues(alpha: 0.2))
-                      : Colors.grey.withValues(alpha: 0.2),
-                  border: isPrimary
-                      ? null
-                      : Border.all(
-                          color: onPressed != null ? color : Colors.grey,
-                          width: 2,
-                        ),
-                ),
-                child: ExcludeSemantics(
-                  child: Icon(
-                    icon,
-                    color: onPressed != null
-                        ? (isPrimary ? Colors.white : color)
-                        : Colors.grey,
-                    size: size * 0.5,
+          // Again button (bordered)
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: 'Again button',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _onReset,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusSm),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusSm),
+                      border: Border.all(
+                        color: AppColors.border,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Again',
+                      style: AppTypography.buttonMedium.copyWith(
+                        color: const Color(0xFF666666),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          ExcludeSemantics(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: onPressed != null ? color : Colors.grey,
+
+          const SizedBox(width: AppSpacing.md),
+
+          // Done button (filled green)
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: 'Done button',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _onComplete,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusSm),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusSm),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Done',
+                      style: AppTypography.buttonMedium.copyWith(
+                        color: Colors.black,
+                      ),
+                    ),
                   ),
+                ),
+              ),
             ),
           ),
         ],
