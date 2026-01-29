@@ -14,46 +14,58 @@ import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 @LazySingleton(as: IAudioService)
 class AudioService implements IAudioService {
   AudioService() {
-    _initPlayers();
+    unawaited(_initPlayers());
   }
 
   final Map<String, AudioPlayer> _players = {};
-  bool _initialized = false;
+  final List<StreamSubscription<PlayerState>> _subscriptions = [];
+  Completer<void>? _initCompleter;
 
   double _volume = 1;
   bool _isMuted = false;
 
   Future<void> _initPlayers() async {
-    if (_initialized) return;
-    _initialized = true;
-
-    // Configure audio session to duck other audio instead of stopping it
-    final session = await audio_session.AudioSession.instance;
-    await session.configure(
-      audio_session.AudioSessionConfiguration(
-        avAudioSessionCategory:
-            audio_session.AVAudioSessionCategory.playback,
-        avAudioSessionCategoryOptions:
-            audio_session.AVAudioSessionCategoryOptions.duckOthers |
-                audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
-      ),
-    );
-
-    // Create a pool of players for concurrent playback
-    for (var i = 0; i < 3; i++) {
-      final player = AudioPlayer();
-      await player.setPlayerMode(PlayerMode.lowLatency);
-      _players['pool_$i'] = player;
+    if (_initCompleter != null) {
+      return _initCompleter!.future;
     }
+    _initCompleter = Completer<void>();
 
-    // Listen for playback completion or errors to deactivate session.
-    // Use a single listener to avoid double-decrementing _activePlayers.
-    for (final player in _players.values) {
-      player.onPlayerStateChanged.listen((state) async {
-        if (state == PlayerState.completed || state == PlayerState.stopped) {
-          await _deactivateSession();
-        }
-      });
+    try {
+      // Configure audio session to duck other audio instead of stopping it
+      final session = await audio_session.AudioSession.instance;
+      await session.configure(
+        audio_session.AudioSessionConfiguration(
+          avAudioSessionCategory:
+              audio_session.AVAudioSessionCategory.playback,
+          avAudioSessionCategoryOptions:
+              audio_session.AVAudioSessionCategoryOptions.duckOthers |
+                  audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
+        ),
+      );
+
+      // Create a pool of players for concurrent playback
+      for (var i = 0; i < 3; i++) {
+        final player = AudioPlayer();
+        await player.setPlayerMode(PlayerMode.lowLatency);
+        _players['pool_$i'] = player;
+      }
+
+      // Listen for playback completion or errors to deactivate session.
+      // Use a single listener to avoid double-decrementing _activePlayers.
+      for (final player in _players.values) {
+        final sub = player.onPlayerStateChanged.listen((state) async {
+          if (state == PlayerState.completed ||
+              state == PlayerState.stopped) {
+            await _deactivateSession();
+          }
+        });
+        _subscriptions.add(sub);
+      }
+
+      _initCompleter!.complete();
+    } on Exception catch (e) {
+      _initCompleter!.completeError(e);
+      _initCompleter = null; // Allow retry on failure
     }
   }
 
@@ -167,6 +179,10 @@ class AudioService implements IAudioService {
 
   @override
   Future<void> dispose() async {
+    for (final sub in _subscriptions) {
+      await sub.cancel();
+    }
+    _subscriptions.clear();
     for (final player in _players.values) {
       await player.dispose();
     }

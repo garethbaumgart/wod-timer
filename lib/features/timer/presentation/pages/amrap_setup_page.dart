@@ -43,17 +43,17 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
     );
 
     // Start the timer
-    await workoutResult.fold(
-      (failure) {
+    await workoutResult.fold<Future<void>>(
+      (failure) async {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${failure.toString()}')),
         );
       },
       (workout) async {
         await ref.read(timerNotifierProvider.notifier).start(workout);
-        if (mounted) {
-          context.go(AppRoutes.timerActivePath(TimerTypes.amrap));
-        }
+        if (!mounted) return;
+        context.go(AppRoutes.timerActivePath(TimerTypes.amrap));
       },
     );
   }

@@ -62,8 +62,8 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
       prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
     );
 
-    await workoutResult.fold(
-      (failure) {
+    await workoutResult.fold<Future<void>>(
+      (failure) async {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${failure.toString()}')),

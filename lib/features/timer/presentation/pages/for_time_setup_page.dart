@@ -48,17 +48,17 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     );
 
     // Start the timer
-    await workoutResult.fold(
-      (failure) {
+    await workoutResult.fold<Future<void>>(
+      (failure) async {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${failure.toString()}')),
         );
       },
       (workout) async {
         await ref.read(timerNotifierProvider.notifier).start(workout);
-        if (mounted) {
-          context.go(AppRoutes.timerActivePath(TimerTypes.forTime));
-        }
+        if (!mounted) return;
+        context.go(AppRoutes.timerActivePath(TimerTypes.forTime));
       },
     );
   }
