@@ -3,15 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wod_timer/main.dart';
 
 void main() {
-  testWidgets('App renders correctly with home page',
-      (WidgetTester tester) async {
+  testWidgets('App renders correctly with home page', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: WodTimerApp()),
     );
     await tester.pumpAndSettle();
 
-    // Check that the Signal design home page renders with all four
-    // timer type strip items
+    // Check that the home page renders with timer type selection
+    expect(find.text('WOD Timer'), findsOneWidget);
+    expect(find.text('Select Timer Type'), findsOneWidget);
     expect(find.text('AMRAP'), findsOneWidget);
     expect(find.text('FOR TIME'), findsOneWidget);
     expect(find.text('EMOM'), findsOneWidget);

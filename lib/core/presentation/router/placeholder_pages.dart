@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
-import 'package:wod_timer/core/presentation/theme/app_typography.dart';
-
+import 'package:wod_timer/features/timer/application/providers/recent_workouts_provider.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
@@ -24,6 +23,8 @@ class PlaceholderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -42,17 +43,15 @@ class PlaceholderPage extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 title,
-                style: AppTypography.workoutTitle.copyWith(
-                  color: AppColors.textPrimaryDark,
-                ),
+                style: theme.textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   subtitle!,
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.textSecondaryDark,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -60,7 +59,7 @@ class PlaceholderPage extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               Text(
                 'Coming Soon',
-                style: AppTypography.labelLarge.copyWith(
+                style: theme.textTheme.labelLarge?.copyWith(
                   color: AppColors.primary,
                 ),
               ),
@@ -72,7 +71,7 @@ class PlaceholderPage extends StatelessWidget {
   }
 }
 
-/// Signal design home page with hero title and colored sidebar strips.
+/// Placeholder home page with timer type selection and recent workouts.
 class PlaceholderHomePage extends ConsumerWidget {
   const PlaceholderHomePage({
     required this.onTimerSelected,
@@ -84,106 +83,90 @@ class PlaceholderHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final recentWorkouts = ref.watch(recentWorkoutsProvider);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      appBar: AppBar(
+        title: const Text('WOD Timer'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_outline),
+            onPressed: () {}, // Will navigate to presets
+            tooltip: 'Presets',
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.go(AppRoutes.settings),
+            tooltip: 'Settings',
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Hero title "WOD."
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'WOD',
-                      style: AppTypography.heroTitle.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    TextSpan(
-                      text: '.',
-                      style: AppTypography.heroTitle.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
+              // Recent workouts section
+              if (recentWorkouts.isNotEmpty) ...[
+                _buildRecentWorkoutsSection(context, ref, recentWorkouts),
+                const SizedBox(height: AppSpacing.xl),
+              ],
 
-              // Timer type strip list
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _SignalStripItem(
-                      name: 'AMRAP',
-                      description: 'Max rounds in time',
-                      accentColor: AppColors.amrapAccent,
-                      isSelected: true,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('amrap');
-                      },
-                    ),
-                    const SizedBox(height: 3),
-                    _SignalStripItem(
-                      name: 'FOR TIME',
-                      description: 'Race the clock',
-                      accentColor: AppColors.forTimeAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('fortime');
-                      },
-                    ),
-                    const SizedBox(height: 3),
-                    _SignalStripItem(
-                      name: 'EMOM',
-                      description: 'Every minute on the minute',
-                      accentColor: AppColors.emomAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('emom');
-                      },
-                    ),
-                    const SizedBox(height: 3),
-                    _SignalStripItem(
-                      name: 'TABATA',
-                      description: 'Work / Rest intervals',
-                      accentColor: AppColors.tabataAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('tabata');
-                      },
-                    ),
-                  ],
-                ),
+              // Timer type selection
+              Text(
+                'Select Timer Type',
+                style: theme.textTheme.headlineSmall,
+                textAlign: TextAlign.center,
               ),
-
-              // Bottom icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: AppSpacing.lg),
+              GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.md,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.settings_outlined,
-                      color: AppColors.textDisabledDark,
-                      size: 22,
-                    ),
-                    onPressed: () => context.go(AppRoutes.settings),
-                    tooltip: 'Settings',
+                  _TimerTypeCard(
+                    title: 'AMRAP',
+                    subtitle: 'As Many Rounds\nAs Possible',
+                    icon: Icons.loop,
+                    color: AppColors.primary,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('amrap');
+                    },
                   ),
-                  const SizedBox(width: 20),
-                  IconButton(
-                    icon: Icon(
-                      Icons.bookmark_outline,
-                      color: AppColors.textDisabledDark,
-                      size: 22,
-                    ),
-                    onPressed: () {},
-                    tooltip: 'Presets',
+                  _TimerTypeCard(
+                    title: 'FOR TIME',
+                    subtitle: 'Complete Work\nAs Fast As Possible',
+                    icon: Icons.timer,
+                    color: AppColors.secondary,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('fortime');
+                    },
+                  ),
+                  _TimerTypeCard(
+                    title: 'EMOM',
+                    subtitle: 'Every Minute\nOn the Minute',
+                    icon: Icons.av_timer,
+                    color: AppColors.success,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('emom');
+                    },
+                  ),
+                  _TimerTypeCard(
+                    title: 'TABATA',
+                    subtitle: '20s Work\n10s Rest',
+                    icon: Icons.fitness_center,
+                    color: AppColors.warning,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('tabata');
+                    },
                   ),
                 ],
               ),
@@ -193,83 +176,154 @@ class PlaceholderHomePage extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildRecentWorkoutsSection(
+    BuildContext context,
+    WidgetRef ref,
+    List<RecentWorkout> recents,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.history,
+              size: 20,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Recent',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ...recents.map(
+          (recent) => _RecentWorkoutTile(
+            recent: recent,
+            onTap: () {
+              ref.read(hapticServiceProvider).lightImpact();
+              onTimerSelected(recent.timerType);
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-/// A strip item with colored sidebar line for the Signal design.
-class _SignalStripItem extends StatelessWidget {
-  const _SignalStripItem({
-    required this.name,
-    required this.description,
-    required this.accentColor,
+class _RecentWorkoutTile extends StatelessWidget {
+  const _RecentWorkoutTile({
+    required this.recent,
     required this.onTap,
-    this.isSelected = false,
   });
 
-  final String name;
-  final String description;
-  final Color accentColor;
+  final RecentWorkout recent;
   final VoidCallback onTap;
-  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          child: Icon(
+            recent.icon,
+            color: AppColors.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          recent.name,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          recent.description,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
+          ),
+        ),
+        trailing: const Icon(Icons.play_arrow),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _TimerTypeCard extends StatelessWidget {
+  const _TimerTypeCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Semantics(
       button: true,
-      label: '$name timer. $description. Double tap to select.',
-      child: Material(
-        color: Colors.transparent,
+      label: '$title timer. ${subtitle.replaceAll('\n', ' ')}. Double tap to select.',
+      child: Card(
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? accentColor.withValues(alpha: 0.15)
-                    : Colors.transparent,
+              border: Border(
+                top: BorderSide(color: color, width: 4),
               ),
-              color: isSelected
-                  ? accentColor.withValues(alpha: 0.03)
-                  : Colors.transparent,
             ),
-            child: Row(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Colored sidebar line
-                Container(
-                  width: 3,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    borderRadius: BorderRadius.circular(2),
+                ExcludeSemantics(child: Icon(icon, size: 40, color: color)),
+                const SizedBox(height: AppSpacing.sm),
+                ExcludeSemantics(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(width: 12),
-                // Text content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ExcludeSemantics(
-                        child: Text(
-                          name,
-                          style: AppTypography.stripName.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      ExcludeSemantics(
-                        child: Text(
-                          description,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.textSecondaryDark,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: AppSpacing.xxs),
+                ExcludeSemantics(
+                  child: Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],

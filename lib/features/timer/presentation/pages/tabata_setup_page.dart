@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
-import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
@@ -28,14 +27,18 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
   Duration _workDuration = const Duration(seconds: 20);
   Duration _restDuration = const Duration(seconds: 10);
   int _rounds = 8;
+  bool _prepEnabled = true;
+  int _prepSeconds = 10;
+
   Duration get _totalWorkoutDuration {
     final workSeconds = _workDuration.inSeconds * _rounds;
     final restSeconds = _restDuration.inSeconds * _rounds;
     return Duration(seconds: workSeconds + restSeconds);
   }
 
-  Duration get _totalDuration =>
-      _totalWorkoutDuration + const Duration(seconds: 10);
+  Duration get _totalDuration => _prepEnabled
+      ? _totalWorkoutDuration + Duration(seconds: _prepSeconds)
+      : _totalWorkoutDuration;
 
   void _applyClassicTabata() {
     setState(() {
@@ -56,7 +59,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     final workoutResult = createWorkout(
       name: 'Tabata Workout',
       timerType: timerType,
-      prepCountdownSeconds: 10,
+      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
     );
 
     await workoutResult.fold<Future<void>>(
@@ -83,72 +86,49 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      appBar: AppBar(
+        title: const Text('Tabata'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go(AppRoutes.home),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_border),
+            onPressed: _onSavePreset,
+            tooltip: 'Save as Preset',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: OrientationBuilder(
           builder: (context, orientation) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             if (orientation == Orientation.landscape) {
-              return _buildLandscapeLayout();
+              return _buildLandscapeLayout(isDark);
             }
-            return _buildPortraitLayout();
+            return _buildPortraitLayout(isDark);
           },
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => context.go(AppRoutes.home),
-            child: const Text(
-              '\u2039',
-              style: TextStyle(
-                fontSize: 32,
-                color: AppColors.textPrimaryDark,
-                height: 1,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Tabata',
-            style: AppTypography.sectionHeader.copyWith(
-              color: AppColors.textPrimaryDark,
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: _onSavePreset,
-            child: const Icon(
-              Icons.bookmark_border,
-              color: AppColors.textSecondaryDark,
-              size: 22,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPortraitLayout() {
+  Widget _buildPortraitLayout(bool isDark) {
     return Column(
       children: [
-        _buildHeader(),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 12),
+                _buildDescription(),
+                const SizedBox(height: AppSpacing.md),
 
                 // Classic Tabata preset button
                 _buildClassicTabataButton(),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Work/Rest duration pickers side by side
                 Row(
@@ -161,7 +141,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                         onChanged: (d) => setState(() => _workDuration = d),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: _buildCompactDurationPicker(
                         label: 'Rest',
@@ -172,7 +152,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Rounds picker
                 RoundPicker(
@@ -186,9 +166,24 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                   minRounds: 1,
                   maxRounds: 20,
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppSpacing.xl),
 
-                const SizedBox(height: 4),
+                // Prep countdown toggle
+                PrepCountdownToggle(
+                  enabled: _prepEnabled,
+                  duration: _prepSeconds,
+                  onEnabledChanged: (enabled) {
+                    setState(() {
+                      _prepEnabled = enabled;
+                    });
+                  },
+                  onDurationChanged: (seconds) {
+                    setState(() {
+                      _prepSeconds = seconds;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Summary card
                 WorkoutSummaryCard(
@@ -197,8 +192,13 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                   rounds: _rounds,
                   workDuration: _workDuration,
                   restDuration: _restDuration,
+                  prepCountdown:
+                      _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Audio test button
+                const Center(child: AudioTestButton()),
               ],
             ),
           ),
@@ -208,78 +208,89 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     );
   }
 
-  Widget _buildLandscapeLayout() {
+  Widget _buildLandscapeLayout(bool isDark) {
     return Row(
       children: [
         Expanded(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildClassicTabataButton(),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildCompactDurationPicker(
-                              label: 'Work',
-                              duration: _workDuration,
-                              color: AppColors.work,
-                              onChanged: (d) =>
-                                  setState(() => _workDuration = d),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildCompactDurationPicker(
-                              label: 'Rest',
-                              duration: _restDuration,
-                              color: AppColors.rest,
-                              onChanged: (d) =>
-                                  setState(() => _restDuration = d),
-                            ),
-                          ),
-                        ],
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildDescription(),
+                const SizedBox(height: AppSpacing.sm),
+                _buildClassicTabataButton(),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCompactDurationPicker(
+                        label: 'Work',
+                        duration: _workDuration,
+                        color: AppColors.work,
+                        onChanged: (d) => setState(() => _workDuration = d),
                       ),
-                      const SizedBox(height: 16),
-                      RoundPicker(
-                        initialRounds: _rounds,
-                        onChanged: (rounds) {
-                          setState(() {
-                            _rounds = rounds;
-                          });
-                        },
-                        label: 'Rounds',
-                        minRounds: 1,
-                        maxRounds: 20,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _buildCompactDurationPicker(
+                        label: 'Rest',
+                        duration: _restDuration,
+                        color: AppColors.rest,
+                        onChanged: (d) => setState(() => _restDuration = d),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                RoundPicker(
+                  initialRounds: _rounds,
+                  onChanged: (rounds) {
+                    setState(() {
+                      _rounds = rounds;
+                    });
+                  },
+                  label: 'Rounds',
+                  minRounds: 1,
+                  maxRounds: 20,
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                PrepCountdownToggle(
+                  enabled: _prepEnabled,
+                  duration: _prepSeconds,
+                  onEnabledChanged: (enabled) {
+                    setState(() {
+                      _prepEnabled = enabled;
+                    });
+                  },
+                  onDurationChanged: (seconds) {
+                    setState(() {
+                      _prepSeconds = seconds;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 WorkoutSummaryCard(
                   timerType: 'Tabata',
                   totalDuration: _totalDuration,
                   rounds: _rounds,
                   workDuration: _workDuration,
                   restDuration: _restDuration,
+                  prepCountdown:
+                      _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
+                const Center(child: AudioTestButton()),
+                const SizedBox(height: AppSpacing.lg),
                 _buildStartButtonCompact(),
               ],
             ),
@@ -289,40 +300,26 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     );
   }
 
-  Widget _buildClassicTabataButton() {
-    return Center(
-      child: GestureDetector(
-        onTap: _applyClassicTabata,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: AppColors.border,
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.flash_on,
-                size: 14,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'CLASSIC TABATA (20/10 x 8)',
-                style: AppTypography.bodySmall.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
+  Widget _buildDescription() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Text(
+      'High-intensity intervals alternating between work and rest periods.',
+      style: theme.textTheme.bodyLarge?.copyWith(
+        color: isDark
+            ? AppColors.textSecondaryDark
+            : AppColors.textSecondaryLight,
       ),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  Widget _buildClassicTabataButton() {
+    return OutlinedButton.icon(
+      onPressed: _applyClassicTabata,
+      icon: const Icon(Icons.flash_on),
+      label: const Text('Classic Tabata (20/10 x 8)'),
     );
   }
 
@@ -332,71 +329,73 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     required Color color,
     required ValueChanged<Duration> onChanged,
   }) {
-    return Column(
-      children: [
-        // Label with color dot
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label.toUpperCase(),
-              style: AppTypography.labelSmall.copyWith(
-                color: color,
-                letterSpacing: 1.5,
-                fontSize: 10,
-              ),
-            ),
-          ],
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark : AppColors.cardLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+          width: 2,
         ),
-        const SizedBox(height: 8),
-        // Big seconds display
-        Text(
-          '${duration.inSeconds}s',
-          style: AppTypography.timerDisplaySmall.copyWith(
-            color: AppColors.textPrimaryDark,
-          ),
-        ),
-        const SizedBox(height: 12),
-        // +/- buttons
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildSmallButton(
-              icon: Icons.remove,
-              onPressed: duration.inSeconds > 5
-                  ? () => onChanged(duration - const Duration(seconds: 5))
-                  : null,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '5s',
-                style: GoogleFonts.outfit(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                  color: const Color(0xFF444444),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
                 ),
               ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '${duration.inSeconds}s',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
             ),
-            _buildSmallButton(
-              icon: Icons.add,
-              onPressed: duration.inSeconds < 120
-                  ? () => onChanged(duration + const Duration(seconds: 5))
-                  : null,
-            ),
-          ],
-        ),
-      ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSmallButton(
+                icon: Icons.remove,
+                onPressed: duration.inSeconds > 5
+                    ? () => onChanged(duration - const Duration(seconds: 5))
+                    : null,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _buildSmallButton(
+                icon: Icons.add,
+                onPressed: duration.inSeconds < 120
+                    ? () => onChanged(duration + const Duration(seconds: 5))
+                    : null,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -404,26 +403,30 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     required IconData icon,
     required VoidCallback? onPressed,
   }) {
-    final isEnabled = onPressed != null;
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.border,
-            width: 1,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: onPressed != null
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : Colors.transparent,
           ),
-        ),
-        child: Center(
           child: Icon(
             icon,
-            size: 16,
-            color: isEnabled
-                ? const Color(0xFF666666)
-                : AppColors.textDisabledDark,
+            color: onPressed != null
+                ? AppColors.primary
+                : (isDark
+                    ? AppColors.textDisabledDark
+                    : AppColors.textDisabledLight),
+            size: 20,
           ),
         ),
       ),
@@ -432,27 +435,14 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
 
   Widget _buildStartButton() {
     final isValid = _workDuration.inSeconds > 0 && _rounds > 0;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: GestureDetector(
-        onTap: isValid ? _onStart : null,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isValid
-                ? AppColors.primary
-                : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Center(
-            child: Text(
-              'START WORKOUT',
-              style: AppTypography.buttonLarge.copyWith(
-                color: Colors.black,
-              ),
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      child: ElevatedButton.icon(
+        onPressed: isValid ? _onStart : null,
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('START WORKOUT'),
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(double.infinity, AppSpacing.largeButtonHeight),
         ),
       ),
     );
@@ -460,26 +450,10 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
 
   Widget _buildStartButtonCompact() {
     final isValid = _workDuration.inSeconds > 0 && _rounds > 0;
-    return GestureDetector(
-      onTap: isValid ? _onStart : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: isValid
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Center(
-          child: Text(
-            'START',
-            style: AppTypography.buttonLarge.copyWith(
-              color: Colors.black,
-            ),
-          ),
-        ),
-      ),
+    return ElevatedButton.icon(
+      onPressed: isValid ? _onStart : null,
+      icon: const Icon(Icons.play_arrow),
+      label: const Text('START'),
     );
   }
 }
