@@ -397,6 +397,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
               onPressed: duration.inSeconds > 5
                   ? () => onChanged(duration - const Duration(seconds: 5))
                   : null,
+              semanticLabel: 'Decrease by 5 seconds',
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -415,6 +416,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
               onPressed: duration.inSeconds < 120
                   ? () => onChanged(duration + const Duration(seconds: 5))
                   : null,
+              semanticLabel: 'Increase by 5 seconds',
             ),
           ],
         ),
@@ -425,13 +427,18 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
   Widget _buildSmallButton({
     required IconData icon,
     required VoidCallback? onPressed,
+    String? semanticLabel,
   }) {
     final isEnabled = onPressed != null;
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 36,
-        height: 36,
+    return Semantics(
+      button: true,
+      enabled: isEnabled,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          width: 36,
+          height: 36,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
@@ -448,6 +455,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                 : AppColors.textDisabledDark,
           ),
         ),
+      ),
       ),
     );
   }
