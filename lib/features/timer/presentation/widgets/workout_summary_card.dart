@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
-import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 
-/// A card that displays a summary of the configured workout.
+/// A Signal-design summary box showing workout configuration.
+///
+/// Uses a green-tinted transparent background with green border,
+/// displaying label/value pairs in the Signal design language.
 class WorkoutSummaryCard extends StatelessWidget {
   const WorkoutSummaryCard({
     required this.timerType,
@@ -12,7 +15,6 @@ class WorkoutSummaryCard extends StatelessWidget {
     this.workDuration,
     this.restDuration,
     this.intervalDuration,
-    this.prepCountdown,
   });
 
   /// The type of timer (e.g., "AMRAP", "For Time", "EMOM", "Tabata").
@@ -33,114 +35,94 @@ class WorkoutSummaryCard extends StatelessWidget {
   /// Interval duration (for EMOM).
   final Duration? intervalDuration;
 
-  /// Prep countdown duration.
-  final Duration? prepCountdown;
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Semantics(
       label: _buildAccessibilityLabel(),
       container: true,
       child: Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : AppColors.cardLight,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-          width: 1,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF00FF88).withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF00FF88).withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Summary label
+            Text(
+              'SUMMARY',
+              style: AppTypography.summaryLabel.copyWith(
+                color: AppColors.textDisabledDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Summary items in a wrap
+            Wrap(
+              spacing: 20,
+              runSpacing: 10,
+              children: [
+                _buildSummaryItem(
+                  label: 'TYPE',
+                  value: timerType.toUpperCase(),
+                ),
+                _buildSummaryItem(
+                  label: 'TOTAL',
+                  value: _formatDuration(totalDuration),
+                ),
+                if (rounds != null)
+                  _buildSummaryItem(
+                    label: 'ROUNDS',
+                    value: rounds.toString(),
+                  ),
+                if (workDuration != null)
+                  _buildSummaryItem(
+                    label: 'WORK',
+                    value: _formatDurationShort(workDuration!),
+                  ),
+                if (restDuration != null)
+                  _buildSummaryItem(
+                    label: 'REST',
+                    value: _formatDurationShort(restDuration!),
+                  ),
+                if (intervalDuration != null)
+                  _buildSummaryItem(
+                    label: 'INTERVAL',
+                    value: _formatDurationShort(intervalDuration!),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
-                ),
-                child: Text(
-                  timerType.toUpperCase(),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-              ),
-              const SizedBox(width: AppSpacing.xxs),
-              Text(
-                _formatDuration(totalDuration),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+    );
+  }
+
+  Widget _buildSummaryItem({
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.summaryLabel.copyWith(
+            color: AppColors.textDisabledDark,
           ),
-          const SizedBox(height: AppSpacing.md),
-          // Details
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.sm,
-            children: [
-              if (rounds != null)
-                _buildDetailItem(
-                  context,
-                  icon: Icons.repeat,
-                  label: 'Rounds',
-                  value: rounds.toString(),
-                ),
-              if (workDuration != null)
-                _buildDetailItem(
-                  context,
-                  icon: Icons.fitness_center,
-                  label: 'Work',
-                  value: _formatDurationShort(workDuration!),
-                ),
-              if (restDuration != null)
-                _buildDetailItem(
-                  context,
-                  icon: Icons.pause_circle_outline,
-                  label: 'Rest',
-                  value: _formatDurationShort(restDuration!),
-                ),
-              if (intervalDuration != null)
-                _buildDetailItem(
-                  context,
-                  icon: Icons.timer,
-                  label: 'Interval',
-                  value: _formatDurationShort(intervalDuration!),
-                ),
-              if (prepCountdown != null && prepCountdown!.inSeconds > 0)
-                _buildDetailItem(
-                  context,
-                  icon: Icons.hourglass_top,
-                  label: 'Prep',
-                  value: '${prepCountdown!.inSeconds}s',
-                ),
-            ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: AppTypography.summaryValue.copyWith(
+            color: AppColors.primary,
           ),
-        ],
-      ),
-      ),
+        ),
+      ],
     );
   }
 
@@ -160,52 +142,7 @@ class WorkoutSummaryCard extends StatelessWidget {
     if (intervalDuration != null) {
       parts.add('Interval: ${_formatDurationShort(intervalDuration!)}');
     }
-    if (prepCountdown != null && prepCountdown!.inSeconds > 0) {
-      parts.add('Prep countdown: ${prepCountdown!.inSeconds} seconds');
-    }
-
     return parts.join(', ');
-  }
-
-  Widget _buildDetailItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: isDark
-              ? AppColors.textSecondaryDark
-              : AppColors.textSecondaryLight,
-        ),
-        const SizedBox(width: AppSpacing.xxs),
-        Text(
-          '$label: ',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : AppColors.textSecondaryLight,
-          ),
-        ),
-        Text(
-          value,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isDark
-                ? AppColors.textPrimaryDark
-                : AppColors.textPrimaryLight,
-          ),
-        ),
-      ],
-    );
   }
 
   String _formatDuration(Duration duration) {

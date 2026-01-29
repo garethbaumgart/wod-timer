@@ -5,7 +5,7 @@ import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
-import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
@@ -23,15 +23,11 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
   // Default 1 minute intervals for 10 rounds
   Duration _intervalDuration = const Duration(minutes: 1);
   int _rounds = 10;
-  bool _prepEnabled = true;
-  int _prepSeconds = 10;
-
   Duration get _totalWorkoutDuration =>
       Duration(seconds: _intervalDuration.inSeconds * _rounds);
 
-  Duration get _totalDuration => _prepEnabled
-      ? _totalWorkoutDuration + Duration(seconds: _prepSeconds)
-      : _totalWorkoutDuration;
+  Duration get _totalDuration =>
+      _totalWorkoutDuration + const Duration(seconds: 10);
 
   Future<void> _onStart() async {
     // Create the timer type
@@ -45,7 +41,7 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
     final workoutResult = createWorkout(
       name: 'EMOM Workout',
       timerType: timerType,
-      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
+      prepCountdownSeconds: 10,
     );
 
     // Start the timer
@@ -73,45 +69,68 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('EMOM'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AppRoutes.home),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bookmark_border),
-            onPressed: _onSavePreset,
-            tooltip: 'Save as Preset',
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: OrientationBuilder(
           builder: (context, orientation) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
             if (orientation == Orientation.landscape) {
-              return _buildLandscapeLayout(isDark);
+              return _buildLandscapeLayout();
             }
-            return _buildPortraitLayout(isDark);
+            return _buildPortraitLayout();
           },
         ),
       ),
     );
   }
 
-  Widget _buildPortraitLayout(bool isDark) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => context.go(AppRoutes.home),
+            child: const Text(
+              '\u2039',
+              style: TextStyle(
+                fontSize: 32,
+                color: AppColors.textPrimaryDark,
+                height: 1,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'EMOM',
+            style: AppTypography.sectionHeader.copyWith(
+              color: AppColors.textPrimaryDark,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: _onSavePreset,
+            child: const Icon(
+              Icons.bookmark_border,
+              color: AppColors.textSecondaryDark,
+              size: 22,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortraitLayout() {
     return Column(
       children: [
+        _buildHeader(),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildDescription(),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 32),
 
                 // Interval duration picker
                 DurationPicker(
@@ -126,7 +145,7 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
                   minuteInterval: 1,
                   secondInterval: 15,
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 32),
 
                 // Rounds picker
                 RoundPicker(
@@ -140,24 +159,7 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
                   minRounds: 1,
                   maxRounds: 30,
                 ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Prep countdown toggle
-                PrepCountdownToggle(
-                  enabled: _prepEnabled,
-                  duration: _prepSeconds,
-                  onEnabledChanged: (enabled) {
-                    setState(() {
-                      _prepEnabled = enabled;
-                    });
-                  },
-                  onDurationChanged: (seconds) {
-                    setState(() {
-                      _prepSeconds = seconds;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 28),
 
                 // Summary card
                 WorkoutSummaryCard(
@@ -165,13 +167,8 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
                   totalDuration: _totalDuration,
                   rounds: _rounds,
                   intervalDuration: _intervalDuration,
-                  prepCountdown:
-                      _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Audio test button
-                const Center(child: AudioTestButton()),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -181,77 +178,64 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
     );
   }
 
-  Widget _buildLandscapeLayout(bool isDark) {
+  Widget _buildLandscapeLayout() {
     return Row(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildDescription(),
-                const SizedBox(height: AppSpacing.lg),
-                DurationPicker(
-                  initialDuration: _intervalDuration,
-                  onChanged: (duration) {
-                    setState(() {
-                      _intervalDuration = duration;
-                    });
-                  },
-                  label: 'Interval Duration',
-                  maxMinutes: 10,
-                  minuteInterval: 1,
-                  secondInterval: 15,
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      DurationPicker(
+                        initialDuration: _intervalDuration,
+                        onChanged: (duration) {
+                          setState(() {
+                            _intervalDuration = duration;
+                          });
+                        },
+                        label: 'Interval Duration',
+                        maxMinutes: 10,
+                        minuteInterval: 1,
+                        secondInterval: 15,
+                      ),
+                      const SizedBox(height: 16),
+                      RoundPicker(
+                        initialRounds: _rounds,
+                        onChanged: (rounds) {
+                          setState(() {
+                            _rounds = rounds;
+                          });
+                        },
+                        label: 'Number of Rounds',
+                        minRounds: 1,
+                        maxRounds: 30,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                RoundPicker(
-                  initialRounds: _rounds,
-                  onChanged: (rounds) {
-                    setState(() {
-                      _rounds = rounds;
-                    });
-                  },
-                  label: 'Number of Rounds',
-                  minRounds: 1,
-                  maxRounds: 30,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                PrepCountdownToggle(
-                  enabled: _prepEnabled,
-                  duration: _prepSeconds,
-                  onEnabledChanged: (enabled) {
-                    setState(() {
-                      _prepEnabled = enabled;
-                    });
-                  },
-                  onDurationChanged: (seconds) {
-                    setState(() {
-                      _prepSeconds = seconds;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
                 WorkoutSummaryCard(
                   timerType: 'EMOM',
                   totalDuration: _totalDuration,
                   rounds: _rounds,
                   intervalDuration: _intervalDuration,
-                  prepCountdown:
-                      _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                const Center(child: AudioTestButton()),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 16),
                 _buildStartButtonCompact(),
               ],
             ),
@@ -261,31 +245,29 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
     );
   }
 
-  Widget _buildDescription() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Text(
-      'Start each round on the minute. Any time remaining in the interval is rest.',
-      style: theme.textTheme.bodyLarge?.copyWith(
-        color: isDark
-            ? AppColors.textSecondaryDark
-            : AppColors.textSecondaryLight,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-
   Widget _buildStartButton() {
     final isValid = _intervalDuration.inSeconds > 0 && _rounds > 0;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
-      child: ElevatedButton.icon(
-        onPressed: isValid ? _onStart : null,
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('START WORKOUT'),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, AppSpacing.largeButtonHeight),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: GestureDetector(
+        onTap: isValid ? _onStart : null,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isValid
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Center(
+            child: Text(
+              'START WORKOUT',
+              style: AppTypography.buttonLarge.copyWith(
+                color: Colors.black,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -293,10 +275,26 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
 
   Widget _buildStartButtonCompact() {
     final isValid = _intervalDuration.inSeconds > 0 && _rounds > 0;
-    return ElevatedButton.icon(
-      onPressed: isValid ? _onStart : null,
-      icon: const Icon(Icons.play_arrow),
-      label: const Text('START'),
+    return GestureDetector(
+      onTap: isValid ? _onStart : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isValid
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: Text(
+            'START',
+            style: AppTypography.buttonLarge.copyWith(
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
