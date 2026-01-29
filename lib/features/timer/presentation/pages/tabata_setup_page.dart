@@ -64,15 +64,15 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
 
     await workoutResult.fold(
       (failure) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${failure.toString()}')),
         );
       },
       (workout) async {
         await ref.read(timerNotifierProvider.notifier).start(workout);
-        if (mounted) {
-          context.go(AppRoutes.timerActivePath(TimerTypes.tabata));
-        }
+        if (!mounted) return;
+        context.go(AppRoutes.timerActivePath(TimerTypes.tabata));
       },
     );
   }

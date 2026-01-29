@@ -46,13 +46,11 @@ class AudioService implements IAudioService {
       _players['pool_$i'] = player;
     }
 
-    // Listen for playback completion and errors to deactivate session
+    // Listen for playback completion or errors to deactivate session.
+    // Use a single listener to avoid double-decrementing _activePlayers.
     for (final player in _players.values) {
-      player.onPlayerComplete.listen((_) async {
-        await _deactivateSession();
-      });
       player.onPlayerStateChanged.listen((state) async {
-        if (state == PlayerState.stopped) {
+        if (state == PlayerState.completed || state == PlayerState.stopped) {
           await _deactivateSession();
         }
       });
