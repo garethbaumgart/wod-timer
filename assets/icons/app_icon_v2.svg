@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background with gradient feel -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a"/>
+      <stop offset="100%" style="stop-color:#2d2d2d"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF8C5A"/>
+      <stop offset="100%" style="stop-color:#FF6B35"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad)"/>
+
+  <!-- Stopwatch body -->
+  <circle cx="256" cy="270" r="170" fill="#252525" stroke="url(#orangeGrad)" stroke-width="16"/>
+
+  <!-- Inner ring -->
+  <circle cx="256" cy="270" r="130" fill="none" stroke="#333" stroke-width="4"/>
+
+  <!-- Clock marks -->
+  <g fill="#666">
+    <rect x="252" y="116" width="8" height="24" rx="2"/>
+    <rect x="252" y="400" width="8" height="24" rx="2"/>
+    <rect x="102" y="266" width="24" height="8" rx="2"/>
+    <rect x="386" y="266" width="24" height="8" rx="2"/>
+  </g>
+
+  <!-- Barbell - simplified, bold -->
+  <!-- Left plate stack -->
+  <rect x="70" y="220" width="50" height="100" rx="10" fill="url(#orangeGrad)"/>
+  <rect x="50" y="235" width="25" height="70" rx="8" fill="#FF6B35"/>
+
+  <!-- Bar -->
+  <rect x="120" y="258" width="272" height="24" rx="6" fill="#F5F5F5"/>
+  <rect x="120" y="264" width="272" height="6" fill="#DDD"/>
+
+  <!-- Right plate stack -->
+  <rect x="392" y="220" width="50" height="100" rx="10" fill="url(#orangeGrad)"/>
+  <rect x="437" y="235" width="25" height="70" rx="8" fill="#FF6B35"/>
+
+  <!-- Stopwatch crown -->
+  <rect x="232" y="68" width="48" height="36" rx="8" fill="#F5F5F5"/>
+  <rect x="244" y="56" width="24" height="20" rx="6" fill="#DDD"/>
+
+  <!-- Side button -->
+  <ellipse cx="410" cy="150" rx="12" ry="20" fill="#F5F5F5" transform="rotate(45, 410, 150)"/>
+</svg>

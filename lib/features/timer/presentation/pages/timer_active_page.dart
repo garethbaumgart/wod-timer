@@ -8,6 +8,7 @@ import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 
 /// Active timer display page.
@@ -61,15 +62,56 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     timerNotifier.stop();
   }
 
-  void _onReset() {
-    final timerNotifier = ref.read(timerNotifierProvider.notifier);
-    timerNotifier.reset();
-    context.go(AppRoutes.timerSetupPath(widget.timerType));
+  Future<void> _onReset() async {
+    final state = ref.read(timerNotifierProvider);
+
+    // Show confirmation dialog if timer is actively running
+    if (state.canPause || state.canResume) {
+      final shouldExit = await _showExitConfirmation();
+      if (!shouldExit) return;
+    }
+
+    // Only reset if timer is not in initial state (was properly started)
+    if (state is! TimerInitial) {
+      ref.read(timerNotifierProvider.notifier).reset();
+    }
+    if (mounted) {
+      context.go(AppRoutes.timerSetupPath(widget.timerType));
+    }
+  }
+
+  Future<bool> _showExitConfirmation() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Workout?'),
+            content: const Text(
+              'Your workout is still in progress. Are you sure you want to exit? Your progress will be lost.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('CONTINUE WORKOUT'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                ),
+                child: const Text('EXIT'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _onComplete() {
-    final timerNotifier = ref.read(timerNotifierProvider.notifier);
-    timerNotifier.reset();
+    final state = ref.read(timerNotifierProvider);
+    // Only reset if timer is not in initial state (was properly started)
+    if (state is! TimerInitial) {
+      ref.read(timerNotifierProvider.notifier).reset();
+    }
     context.go(AppRoutes.home);
   }
 
@@ -77,21 +119,122 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
   Widget build(BuildContext context) {
     final timerState = ref.watch(timerNotifierProvider);
 
+    // Show placeholder when timer is not configured yet
+    if (timerState is TimerInitial) {
+      return _buildNotConfiguredState();
+    }
+
     return Scaffold(
       backgroundColor: _getBackgroundColor(timerState),
       body: SafeArea(
-        child: GestureDetector(
-          // Tap anywhere to toggle pause (optional UX enhancement)
-          onDoubleTap: timerState.canPause || timerState.canResume
-              ? _onPauseResume
-              : null,
-          child: OrientationBuilder(
-            builder: (context, orientation) {
-              if (orientation == Orientation.landscape) {
-                return _buildLandscapeLayout(timerState);
+        child: Semantics(
+          label: _buildTimerAccessibilityLabel(timerState),
+          liveRegion: true,
+          child: GestureDetector(
+            // Tap anywhere to toggle pause (optional UX enhancement)
+            onDoubleTap: timerState.canPause || timerState.canResume
+                ? _onPauseResume
+                : null,
+            // Swipe up to pause
+            onVerticalDragEnd: (details) {
+              if (details.primaryVelocity == null) return;
+
+              // Swipe up (negative velocity) to pause
+              if (details.primaryVelocity! < -300 && timerState.canPause) {
+                ref.read(hapticServiceProvider).mediumImpact();
+                _onPauseResume();
               }
-              return _buildPortraitLayout(timerState);
+              // Swipe down (positive velocity) to resume when paused
+              else if (details.primaryVelocity! > 300 && timerState.canResume) {
+                ref.read(hapticServiceProvider).mediumImpact();
+                _onPauseResume();
+              }
             },
+            child: OrientationBuilder(
+              builder: (context, orientation) {
+                if (orientation == Orientation.landscape) {
+                  return _buildLandscapeLayout(timerState);
+                }
+                return _buildPortraitLayout(timerState);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _buildTimerAccessibilityLabel(TimerNotifierState state) {
+    final session = state.sessionOrNull;
+    if (session == null) return 'Timer not started';
+
+    final timeRemaining = session.timeRemaining.seconds;
+    final minutes = timeRemaining ~/ 60;
+    final secs = timeRemaining % 60;
+
+    final phase = state.maybeMap(
+      preparing: (_) => 'Get Ready',
+      running: (_) => 'Work',
+      resting: (_) => 'Rest',
+      paused: (_) => 'Paused',
+      completed: (_) => 'Complete',
+      orElse: () => '',
+    );
+
+    final roundInfo = session.totalRounds != null
+        ? ', Round ${session.currentRound} of ${session.totalRounds}'
+        : '';
+
+    // Only show control hints when pause/resume is available
+    final controlsHint = (state.canPause || state.canResume)
+        ? '. Double tap to pause or resume. Swipe up to pause, swipe down to resume.'
+        : '';
+
+    return '$phase, $minutes minutes $secs seconds remaining$roundInfo$controlsHint';
+  }
+
+  Widget _buildNotConfiguredState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.timer_off_outlined,
+                  size: 80,
+                  color: textColor.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Timer Not Started',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Go back to the setup page to configure and start your workout.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: textColor.withValues(alpha: 0.7),
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                ElevatedButton.icon(
+                  onPressed: _onReset,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go to Setup'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -286,16 +429,23 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     // Pulse animation for last 3 seconds of prep countdown
     final isPulsing = state is TimerPreparing && seconds <= 3 && seconds > 0;
 
+    // Larger font sizes for gym visibility (readable from 3-4 meters)
     return AnimatedDefaultTextStyle(
       duration: const Duration(milliseconds: 200),
       style: TextStyle(
-        fontSize: isPulsing ? 120 : 100,
+        fontSize: isPulsing ? 160 : 140,
         fontWeight: FontWeight.w200,
         fontFamily: 'monospace',
         color: textColor,
         letterSpacing: 4,
       ),
-      child: Text(timeString),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          timeString,
+          semanticsLabel: '$minutes minutes $secs seconds remaining',
+        ),
+      ),
     );
   }
 
@@ -332,7 +482,66 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         // Elapsed time for For Time
         if (widget.timerType == TimerTypes.forTime)
           _buildElapsedTime(session),
+
+        // Phase change preview for Tabata
+        if (widget.timerType == TimerTypes.tabata)
+          _buildPhasePreview(state, session),
       ],
+    );
+  }
+
+  Widget _buildPhasePreview(TimerNotifierState state, TimerSession session) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
+    final timeRemaining = session.timeRemaining.seconds;
+
+    // Show preview when less than 5 seconds remain in current phase
+    if (timeRemaining > 5) return const SizedBox.shrink();
+
+    String nextPhase;
+    Color nextColor;
+
+    if (state is TimerRunning) {
+      nextPhase = 'REST';
+      nextColor = AppColors.rest;
+    } else if (state is TimerResting) {
+      if (session.currentRound >= (session.totalRounds ?? 0)) {
+        nextPhase = 'COMPLETE';
+        nextColor = AppColors.complete;
+      } else {
+        nextPhase = 'WORK';
+        nextColor = AppColors.work;
+      }
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: AnimatedOpacity(
+        opacity: timeRemaining <= 3 ? 1.0 : 0.6,
+        duration: const Duration(milliseconds: 200),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.arrow_forward,
+              size: 16,
+              color: textColor.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              '$nextPhase in ${timeRemaining}s',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: nextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -560,47 +769,56 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     required double size,
     bool isPrimary = false,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(size / 2),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: onPressed != null
-                    ? (isPrimary ? color : color.withValues(alpha: 0.2))
-                    : Colors.grey.withValues(alpha: 0.2),
-                border: isPrimary
-                    ? null
-                    : Border.all(
-                        color: onPressed != null ? color : Colors.grey,
-                        width: 2,
-                      ),
-              ),
-              child: Icon(
-                icon,
-                color: onPressed != null
-                    ? (isPrimary ? Colors.white : color)
-                    : Colors.grey,
-                size: size * 0.5,
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: '$label button${onPressed == null ? ', disabled' : ''}',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(size / 2),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: onPressed != null
+                      ? (isPrimary ? color : color.withValues(alpha: 0.2))
+                      : Colors.grey.withValues(alpha: 0.2),
+                  border: isPrimary
+                      ? null
+                      : Border.all(
+                          color: onPressed != null ? color : Colors.grey,
+                          width: 2,
+                        ),
+                ),
+                child: ExcludeSemantics(
+                  child: Icon(
+                    icon,
+                    color: onPressed != null
+                        ? (isPrimary ? Colors.white : color)
+                        : Colors.grey,
+                    size: size * 0.5,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: onPressed != null ? color : Colors.grey,
-              ),
-        ),
-      ],
+          const SizedBox(height: AppSpacing.xs),
+          ExcludeSemantics(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: onPressed != null ? color : Colors.grey,
+                  ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

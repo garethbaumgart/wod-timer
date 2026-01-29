@@ -7,6 +7,7 @@ environment:
   sdk: ^3.8.1
 
 dependencies:
+  audio_session: ^0.2.2
   audioplayers: ^6.1.0
   cupertino_icons: ^1.0.8
   equatable: ^2.0.7
@@ -20,6 +21,7 @@ dependencies:
   injectable: ^2.5.0
   json_annotation: ^4.9.0
   meta: ^1.16.0
+  package_info_plus: ^8.3.0
   path_provider: ^2.1.5
   riverpod_annotation: ^2.6.1
   shared_preferences: ^2.3.5
@@ -29,14 +31,25 @@ dependencies:
 dev_dependencies:
   bloc_test: ^9.1.7
   build_runner: ^2.4.15
+  flutter_launcher_icons: ^0.14.3
   flutter_test:
     sdk: flutter
   freezed: ^2.5.8
   injectable_generator: ^2.6.3
+  integration_test:
+    sdk: flutter
   json_serializable: ^6.9.4
   mocktail: ^1.0.4
   riverpod_generator: ^2.6.4
   very_good_analysis: ^7.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon_1024.png"
+  adaptive_icon_background: "#1a1a1a"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

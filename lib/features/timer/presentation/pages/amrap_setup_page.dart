@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 
 /// Setup page for AMRAP (As Many Rounds As Possible) timer.
@@ -24,13 +28,37 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
       ? _duration + Duration(seconds: _prepSeconds)
       : _duration;
 
-  void _onStart() {
-    // Navigate to active timer
-    context.go(AppRoutes.timerActivePath(TimerTypes.amrap));
+  Future<void> _onStart() async {
+    // Create the timer type
+    final timerType = AmrapTimer(
+      duration: TimerDuration.fromSeconds(_duration.inSeconds),
+    );
+
+    // Create the workout
+    final createWorkout = ref.read(createWorkoutProvider);
+    final workoutResult = createWorkout(
+      name: 'AMRAP Workout',
+      timerType: timerType,
+      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
+    );
+
+    // Start the timer
+    await workoutResult.fold<Future<void>>(
+      (failure) async {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${failure.toString()}')),
+        );
+      },
+      (workout) async {
+        await ref.read(timerNotifierProvider.notifier).start(workout);
+        if (!mounted) return;
+        context.go(AppRoutes.timerActivePath(TimerTypes.amrap));
+      },
+    );
   }
 
   void _onSavePreset() {
-    // TODO: Implement save preset dialog
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Save preset coming soon!')),
     );
@@ -91,9 +119,6 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
                     });
                   },
                   label: 'Workout Duration',
-                  maxMinutes: 60,
-                  minuteInterval: 1,
-                  secondInterval: 15,
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -121,6 +146,10 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Audio test button
+                const Center(child: AudioTestButton()),
               ],
             ),
           ),
@@ -151,9 +180,6 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
                     });
                   },
                   label: 'Workout Duration',
-                  maxMinutes: 60,
-                  minuteInterval: 1,
-                  secondInterval: 15,
                 ),
               ],
             ),
@@ -187,6 +213,8 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                const Center(child: AudioTestButton()),
                 const SizedBox(height: AppSpacing.lg),
                 _buildStartButtonCompact(),
               ],

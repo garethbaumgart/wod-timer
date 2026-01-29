@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 
 /// Setup page for For Time timer.
@@ -29,11 +33,34 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
       ? _timeCap + Duration(seconds: _prepSeconds)
       : _timeCap;
 
-  void _onStart() {
-    // Note: _countUp, _timeCap, _prepEnabled, _prepSeconds will be passed to
-    // the timer notifier when we wire up the setup -> active timer flow.
-    // Currently, only navigation is implemented as a placeholder.
-    context.go(AppRoutes.timerActivePath(TimerTypes.forTime));
+  Future<void> _onStart() async {
+    // Create the timer type
+    final timerType = ForTimeTimer(
+      timeCap: TimerDuration.fromSeconds(_timeCap.inSeconds),
+    );
+
+    // Create the workout
+    final createWorkout = ref.read(createWorkoutProvider);
+    final workoutResult = createWorkout(
+      name: 'For Time Workout',
+      timerType: timerType,
+      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
+    );
+
+    // Start the timer
+    await workoutResult.fold<Future<void>>(
+      (failure) async {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${failure.toString()}')),
+        );
+      },
+      (workout) async {
+        await ref.read(timerNotifierProvider.notifier).start(workout);
+        if (!mounted) return;
+        context.go(AppRoutes.timerActivePath(TimerTypes.forTime));
+      },
+    );
   }
 
   void _onSavePreset() {
@@ -130,6 +157,10 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Audio test button
+                const Center(child: AudioTestButton()),
               ],
             ),
           ),
@@ -195,6 +226,8 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                const Center(child: AudioTestButton()),
                 const SizedBox(height: AppSpacing.lg),
                 _buildStartButtonCompact(),
               ],

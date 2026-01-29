@@ -41,7 +41,10 @@ class WorkoutSummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
+    return Semantics(
+      label: _buildAccessibilityLabel(),
+      container: true,
+      child: Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: isDark ? AppColors.cardDark : AppColors.cardLight,
@@ -137,7 +140,31 @@ class WorkoutSummaryCard extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
+  }
+
+  String _buildAccessibilityLabel() {
+    final parts = <String>['$timerType workout'];
+    parts.add('Total duration: ${_formatDuration(totalDuration)}');
+
+    if (rounds != null) {
+      parts.add('$rounds rounds');
+    }
+    if (workDuration != null) {
+      parts.add('Work: ${_formatDurationShort(workDuration!)}');
+    }
+    if (restDuration != null) {
+      parts.add('Rest: ${_formatDurationShort(restDuration!)}');
+    }
+    if (intervalDuration != null) {
+      parts.add('Interval: ${_formatDurationShort(intervalDuration!)}');
+    }
+    if (prepCountdown != null && prepCountdown!.inSeconds > 0) {
+      parts.add('Prep countdown: ${prepCountdown!.inSeconds} seconds');
+    }
+
+    return parts.join(', ');
   }
 
   Widget _buildDetailItem(

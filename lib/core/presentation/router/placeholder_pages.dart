@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/features/timer/application/providers/recent_workouts_provider.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
@@ -66,8 +71,8 @@ class PlaceholderPage extends StatelessWidget {
   }
 }
 
-/// Placeholder home page with timer type selection.
-class PlaceholderHomePage extends StatelessWidget {
+/// Placeholder home page with timer type selection and recent workouts.
+class PlaceholderHomePage extends ConsumerWidget {
   const PlaceholderHomePage({
     required this.onTimerSelected,
     super.key,
@@ -77,8 +82,9 @@ class PlaceholderHomePage extends StatelessWidget {
   final void Function(String timerType) onTimerSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final recentWorkouts = ref.watch(recentWorkoutsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -91,64 +97,173 @@ class PlaceholderHomePage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {}, // Will navigate to settings
+            onPressed: () => context.go(AppRoutes.settings),
             tooltip: 'Settings',
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: AppSpacing.lg),
+              // Recent workouts section
+              if (recentWorkouts.isNotEmpty) ...[
+                _buildRecentWorkoutsSection(context, ref, recentWorkouts),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+
+              // Timer type selection
               Text(
                 'Select Timer Type',
                 style: theme.textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: AppSpacing.md,
-                  crossAxisSpacing: AppSpacing.md,
-                  children: [
-                    _TimerTypeCard(
-                      title: 'AMRAP',
-                      subtitle: 'As Many Rounds\nAs Possible',
-                      icon: Icons.loop,
-                      color: AppColors.primary,
-                      onTap: () => onTimerSelected('amrap'),
-                    ),
-                    _TimerTypeCard(
-                      title: 'FOR TIME',
-                      subtitle: 'Complete Work\nAs Fast As Possible',
-                      icon: Icons.timer,
-                      color: AppColors.secondary,
-                      onTap: () => onTimerSelected('fortime'),
-                    ),
-                    _TimerTypeCard(
-                      title: 'EMOM',
-                      subtitle: 'Every Minute\nOn the Minute',
-                      icon: Icons.av_timer,
-                      color: AppColors.success,
-                      onTap: () => onTimerSelected('emom'),
-                    ),
-                    _TimerTypeCard(
-                      title: 'TABATA',
-                      subtitle: '20s Work\n10s Rest',
-                      icon: Icons.fitness_center,
-                      color: AppColors.warning,
-                      onTap: () => onTimerSelected('tabata'),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: AppSpacing.lg),
+              GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.md,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _TimerTypeCard(
+                    title: 'AMRAP',
+                    subtitle: 'As Many Rounds\nAs Possible',
+                    icon: Icons.loop,
+                    color: AppColors.primary,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('amrap');
+                    },
+                  ),
+                  _TimerTypeCard(
+                    title: 'FOR TIME',
+                    subtitle: 'Complete Work\nAs Fast As Possible',
+                    icon: Icons.timer,
+                    color: AppColors.secondary,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('fortime');
+                    },
+                  ),
+                  _TimerTypeCard(
+                    title: 'EMOM',
+                    subtitle: 'Every Minute\nOn the Minute',
+                    icon: Icons.av_timer,
+                    color: AppColors.success,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('emom');
+                    },
+                  ),
+                  _TimerTypeCard(
+                    title: 'TABATA',
+                    subtitle: '20s Work\n10s Rest',
+                    icon: Icons.fitness_center,
+                    color: AppColors.warning,
+                    onTap: () {
+                      ref.read(hapticServiceProvider).lightImpact();
+                      onTimerSelected('tabata');
+                    },
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentWorkoutsSection(
+    BuildContext context,
+    WidgetRef ref,
+    List<RecentWorkout> recents,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.history,
+              size: 20,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Recent',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ...recents.map(
+          (recent) => _RecentWorkoutTile(
+            recent: recent,
+            onTap: () {
+              ref.read(hapticServiceProvider).lightImpact();
+              onTimerSelected(recent.timerType);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentWorkoutTile extends StatelessWidget {
+  const _RecentWorkoutTile({
+    required this.recent,
+    required this.onTap,
+  });
+
+  final RecentWorkout recent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          child: Icon(
+            recent.icon,
+            color: AppColors.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          recent.name,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          recent.description,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
+          ),
+        ),
+        trailing: const Icon(Icons.play_arrow),
+        onTap: onTap,
       ),
     );
   }
@@ -173,38 +288,46 @@ class _TimerTypeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: color, width: 4),
+    return Semantics(
+      button: true,
+      label: '$title timer. ${subtitle.replaceAll('\n', ' ')}. Double tap to select.',
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: color, width: 4),
+              ),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ExcludeSemantics(child: Icon(icon, size: 40, color: color)),
+                const SizedBox(height: AppSpacing.sm),
+                ExcludeSemantics(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                const SizedBox(height: AppSpacing.xxs),
+                ExcludeSemantics(
+                  child: Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

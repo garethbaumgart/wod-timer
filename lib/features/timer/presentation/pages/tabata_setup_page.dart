@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wod_timer/core/domain/value_objects/round_count.dart';
+import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 
 /// Setup page for Tabata timer.
@@ -43,8 +48,33 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     });
   }
 
-  void _onStart() {
-    context.go(AppRoutes.timerActivePath(TimerTypes.tabata));
+  Future<void> _onStart() async {
+    final timerType = TabataTimer(
+      workDuration: TimerDuration.fromSeconds(_workDuration.inSeconds),
+      restDuration: TimerDuration.fromSeconds(_restDuration.inSeconds),
+      rounds: RoundCount.fromInt(_rounds),
+    );
+
+    final createWorkout = ref.read(createWorkoutProvider);
+    final workoutResult = createWorkout(
+      name: 'Tabata Workout',
+      timerType: timerType,
+      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
+    );
+
+    await workoutResult.fold<Future<void>>(
+      (failure) async {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${failure.toString()}')),
+        );
+      },
+      (workout) async {
+        await ref.read(timerNotifierProvider.notifier).start(workout);
+        if (!mounted) return;
+        context.go(AppRoutes.timerActivePath(TimerTypes.tabata));
+      },
+    );
   }
 
   void _onSavePreset() {
@@ -165,6 +195,10 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Audio test button
+                const Center(child: AudioTestButton()),
               ],
             ),
           ),
@@ -254,6 +288,8 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                   prepCountdown:
                       _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                const Center(child: AudioTestButton()),
                 const SizedBox(height: AppSpacing.lg),
                 _buildStartButtonCompact(),
               ],
