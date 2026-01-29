@@ -29,14 +29,25 @@ class SettingsPage extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => context.go(AppRoutes.home),
-                    child: Text(
-                      '\u2039',
-                      style: AppTypography.sectionHeader.copyWith(
-                        color: AppColors.textPrimaryDark,
-                        fontSize: 28,
-                        height: 1,
+                  Semantics(
+                    button: true,
+                    label: 'Go back',
+                    child: GestureDetector(
+                      onTap: () => context.go(AppRoutes.home),
+                      behavior: HitTestBehavior.opaque,
+                      child: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Center(
+                          child: Text(
+                            '\u2039',
+                            style: AppTypography.sectionHeader.copyWith(
+                              color: AppColors.textPrimaryDark,
+                              fontSize: 28,
+                              height: 1,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

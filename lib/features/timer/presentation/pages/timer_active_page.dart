@@ -604,7 +604,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           borderColor: const Color(0xFF331111),
           iconColor: AppColors.error,
           onPressed: state.canStop ? _onStop : null,
-          size: 42,
+          size: 52,
         ),
 
         // Pause/Resume button (large center)
@@ -615,7 +615,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           iconColor: AppColors.primary,
           onPressed:
               state.canPause || state.canResume ? _onPauseResume : null,
-          size: 52,
+          size: 60,
         ),
 
         // Complete button (for For Time) or placeholder
@@ -628,10 +628,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
             onPressed: () {
               ref.read(timerNotifierProvider.notifier).stop();
             },
-            size: 42,
+            size: 52,
           )
         else
-          const SizedBox(width: 42),
+          const SizedBox(width: 52),
       ],
     );
   }
@@ -652,7 +652,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           borderColor: const Color(0xFF331111),
           iconColor: AppColors.error,
           onPressed: state.canStop ? _onStop : null,
-          size: 42,
+          size: 52,
         ),
         const SizedBox(width: AppSpacing.lg),
         _buildCircleButton(
@@ -662,7 +662,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           iconColor: AppColors.primary,
           onPressed:
               state.canPause || state.canResume ? _onPauseResume : null,
-          size: 52,
+          size: 60,
         ),
         if (widget.timerType == TimerTypes.forTime) ...[
           const SizedBox(width: AppSpacing.lg),
@@ -674,7 +674,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
             onPressed: () {
               ref.read(timerNotifierProvider.notifier).stop();
             },
-            size: 42,
+            size: 52,
           ),
         ],
       ],

@@ -182,7 +182,13 @@ class PlaceholderHomePage extends ConsumerWidget {
                       color: AppColors.textDisabledDark,
                       size: 22,
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Presets coming soon!'),
+                        ),
+                      );
+                    },
                     tooltip: 'Presets',
                   ),
                 ],

@@ -117,6 +117,9 @@ class _DurationPickerState extends State<DurationPicker> {
 
   String _formatValue() {
     final m = _minutes.toString().padLeft(2, '0');
+    if (!widget.showSeconds) {
+      return '$m:00';
+    }
     final s = _seconds.toString().padLeft(2, '0');
     return '$m:$s';
   }

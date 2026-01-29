@@ -81,18 +81,29 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.go(AppRoutes.home),
-            child: const Text(
-              '\u2039',
-              style: TextStyle(
-                fontSize: 32,
-                color: AppColors.textPrimaryDark,
-                height: 1,
+          Semantics(
+            button: true,
+            label: 'Go back',
+            child: GestureDetector(
+              onTap: () => context.go(AppRoutes.home),
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Text(
+                    '\u2039',
+                    style: TextStyle(
+                      fontSize: 32,
+                      color: AppColors.textPrimaryDark,
+                      height: 1,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 4),
           Text(
             'AMRAP',
             style: AppTypography.sectionHeader.copyWith(
@@ -100,12 +111,23 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
             ),
           ),
           const Spacer(),
-          GestureDetector(
-            onTap: _onSavePreset,
-            child: const Icon(
-              Icons.bookmark_border,
-              color: AppColors.textSecondaryDark,
-              size: 22,
+          Semantics(
+            button: true,
+            label: 'Save preset',
+            child: GestureDetector(
+              onTap: _onSavePreset,
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Icon(
+                    Icons.bookmark_border,
+                    color: AppColors.textSecondaryDark,
+                    size: 22,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -206,11 +228,16 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
   }
 
   Widget _buildStartButton() {
+    final isEnabled = _duration.inSeconds > 0;
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: GestureDetector(
-        onTap: _duration.inSeconds > 0 ? _onStart : null,
-        child: Container(
+      child: Semantics(
+        button: true,
+        enabled: isEnabled,
+        label: 'Start workout',
+        child: GestureDetector(
+          onTap: isEnabled ? _onStart : null,
+          child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
@@ -228,6 +255,7 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

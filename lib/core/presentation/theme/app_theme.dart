@@ -166,6 +166,10 @@ abstract class AppTheme {
         ),
       );
 
-  /// Light theme (kept for compatibility, app defaults to dark).
+  /// Light theme.
+  ///
+  /// The app is designed for dark mode only. This getter exists for
+  /// compatibility and returns the dark theme.
+  @Deprecated('Use AppTheme.dark. Light theme is not supported.')
   static ThemeData get light => dark;
 }
