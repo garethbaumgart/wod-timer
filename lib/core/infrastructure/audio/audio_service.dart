@@ -46,10 +46,15 @@ class AudioService implements IAudioService {
       _players['pool_$i'] = player;
     }
 
-    // Listen for playback completion to deactivate session and restore audio
+    // Listen for playback completion and errors to deactivate session
     for (final player in _players.values) {
       player.onPlayerComplete.listen((_) async {
         await _deactivateSession();
+      });
+      player.onPlayerStateChanged.listen((state) async {
+        if (state == PlayerState.stopped) {
+          await _deactivateSession();
+        }
       });
     }
   }
@@ -145,6 +150,7 @@ class AudioService implements IAudioService {
 
   Future<void> _playAsync(String assetPath) async {
     try {
+      await _initPlayers();
       await _activateSession();
       final player = _nextPlayer;
       await player.setVolume(_volume);
