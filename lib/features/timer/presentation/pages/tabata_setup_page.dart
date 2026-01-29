@@ -7,6 +7,7 @@ import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/repeating_icon_button.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
@@ -374,7 +375,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
               style: AppTypography.labelSmall.copyWith(
                 color: color,
                 letterSpacing: 1.5,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
           ],
@@ -392,71 +393,35 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildSmallButton(
+            RepeatingIconButton(
               icon: Icons.remove,
               onPressed: duration.inSeconds > 5
                   ? () => onChanged(duration - const Duration(seconds: 5))
                   : null,
-              semanticLabel: 'Decrease by 5 seconds',
+              semanticsLabel: 'Decrease by 5 seconds',
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 '5s',
                 style: GoogleFonts.outfit(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
                   color: const Color(0xFF444444),
                 ),
               ),
             ),
-            _buildSmallButton(
+            RepeatingIconButton(
               icon: Icons.add,
               onPressed: duration.inSeconds < 120
                   ? () => onChanged(duration + const Duration(seconds: 5))
                   : null,
-              semanticLabel: 'Increase by 5 seconds',
+              semanticsLabel: 'Increase by 5 seconds',
             ),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildSmallButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-    String? semanticLabel,
-  }) {
-    final isEnabled = onPressed != null;
-    return Semantics(
-      button: true,
-      enabled: isEnabled,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: 36,
-          height: 36,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.border,
-            width: 1,
-          ),
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            size: 16,
-            color: isEnabled
-                ? const Color(0xFF666666)
-                : AppColors.textDisabledDark,
-          ),
-        ),
-      ),
-      ),
     );
   }
 

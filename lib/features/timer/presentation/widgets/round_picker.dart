@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/repeating_icon_button.dart';
 
 /// A Signal-design picker for selecting number of rounds.
 ///
@@ -76,7 +77,7 @@ class _RoundPickerState extends State<RoundPicker> {
               style: AppTypography.labelSmall.copyWith(
                 color: const Color(0xFF444444),
                 letterSpacing: 1.5,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
           ),
@@ -84,7 +85,7 @@ class _RoundPickerState extends State<RoundPicker> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildAdjustButton(
+            RepeatingIconButton(
               icon: Icons.remove,
               onPressed: _rounds > widget.minRounds ? _decrement : null,
               semanticsLabel: 'Decrease rounds',
@@ -102,7 +103,7 @@ class _RoundPickerState extends State<RoundPicker> {
                 ),
               ),
             ),
-            _buildAdjustButton(
+            RepeatingIconButton(
               icon: Icons.add,
               onPressed: _rounds < widget.maxRounds ? _increment : null,
               semanticsLabel: 'Increase rounds',
@@ -116,45 +117,10 @@ class _RoundPickerState extends State<RoundPicker> {
           style: AppTypography.labelSmall.copyWith(
             color: const Color(0xFF444444),
             letterSpacing: 1.5,
-            fontSize: 10,
+            fontSize: 12,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAdjustButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-    required String semanticsLabel,
-  }) {
-    final isEnabled = onPressed != null;
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border,
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 18,
-              color: isEnabled
-                  ? const Color(0xFF666666)
-                  : AppColors.textDisabledDark,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

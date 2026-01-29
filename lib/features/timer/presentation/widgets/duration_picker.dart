@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/repeating_icon_button.dart';
 
 /// A Signal-design duration picker with big centered value and +/- buttons.
 ///
@@ -138,7 +139,7 @@ class _DurationPickerState extends State<DurationPicker> {
               style: AppTypography.labelSmall.copyWith(
                 color: const Color(0xFF444444),
                 letterSpacing: 1.5,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
           ),
@@ -155,7 +156,7 @@ class _DurationPickerState extends State<DurationPicker> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Minutes controls
-            _buildAdjustButton(
+            RepeatingIconButton(
               icon: Icons.remove,
               onPressed: _minutes > 0 ? _decrementMinutes : null,
               semanticsLabel: 'Decrease minutes',
@@ -165,14 +166,14 @@ class _DurationPickerState extends State<DurationPicker> {
               child: Text(
                 'MIN',
                 style: GoogleFonts.outfit(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
                   color: const Color(0xFF444444),
                 ),
               ),
             ),
-            _buildAdjustButton(
+            RepeatingIconButton(
               icon: Icons.add,
               onPressed:
                   _minutes < widget.maxMinutes ? _incrementMinutes : null,
@@ -181,7 +182,7 @@ class _DurationPickerState extends State<DurationPicker> {
             const SizedBox(width: 24),
             // Seconds controls
             if (widget.showSeconds) ...[
-              _buildAdjustButton(
+              RepeatingIconButton(
                 icon: Icons.remove,
                 onPressed: _seconds > 0 ? _decrementSeconds : null,
                 semanticsLabel: 'Decrease seconds',
@@ -191,14 +192,14 @@ class _DurationPickerState extends State<DurationPicker> {
                 child: Text(
                   'SEC',
                   style: GoogleFonts.outfit(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1,
                     color: const Color(0xFF444444),
                   ),
                 ),
               ),
-              _buildAdjustButton(
+              RepeatingIconButton(
                 icon: Icons.add,
                 onPressed: _seconds + widget.secondInterval < 60
                     ? _incrementSeconds
@@ -209,41 +210,6 @@ class _DurationPickerState extends State<DurationPicker> {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildAdjustButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-    required String semanticsLabel,
-  }) {
-    final isEnabled = onPressed != null;
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border,
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 18,
-              color: isEnabled
-                  ? const Color(0xFF666666)
-                  : AppColors.textDisabledDark,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

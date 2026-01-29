@@ -128,7 +128,7 @@ class PlaceholderHomePage extends ConsumerWidget {
                         onTimerSelected('amrap');
                       },
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 8),
                     _SignalStripItem(
                       name: 'FOR TIME',
                       description: 'Race the clock',
@@ -138,7 +138,7 @@ class PlaceholderHomePage extends ConsumerWidget {
                         onTimerSelected('fortime');
                       },
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 8),
                     _SignalStripItem(
                       name: 'EMOM',
                       description: 'Every minute on the minute',
@@ -148,7 +148,7 @@ class PlaceholderHomePage extends ConsumerWidget {
                         onTimerSelected('emom');
                       },
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 8),
                     _SignalStripItem(
                       name: 'TABATA',
                       description: 'Work / Rest intervals',
@@ -170,17 +170,17 @@ class PlaceholderHomePage extends ConsumerWidget {
                     icon: Icon(
                       Icons.settings_outlined,
                       color: AppColors.textDisabledDark,
-                      size: 22,
+                      size: 26,
                     ),
                     onPressed: () => context.go(AppRoutes.settings),
                     tooltip: 'Settings',
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 32),
                   IconButton(
                     icon: Icon(
                       Icons.bookmark_outline,
                       color: AppColors.textDisabledDark,
-                      size: 22,
+                      size: 26,
                     ),
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -271,7 +271,7 @@ class _SignalStripItem extends StatelessWidget {
                           description,
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.textSecondaryDark,
-                            fontSize: 11,
+                            fontSize: 13,
                           ),
                         ),
                       ),

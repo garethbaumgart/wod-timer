@@ -129,7 +129,7 @@ abstract class AppTypography {
 
   // Summary labels
   static TextStyle get summaryLabel => GoogleFonts.outfit(
-        fontSize: 9,
+        fontSize: 11,
         fontWeight: FontWeight.w500,
         letterSpacing: 1,
       );

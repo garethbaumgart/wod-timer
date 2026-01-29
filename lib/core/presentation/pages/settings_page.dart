@@ -140,13 +140,13 @@ class SettingsPage extends ConsumerWidget {
           children: [
             Text(
               label,
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.bodyMedium.copyWith(
                 color: _labelColor,
               ),
             ),
             Text(
               '$value >',
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondaryDark,
               ),
             ),
@@ -162,13 +162,13 @@ class SettingsPage extends ConsumerWidget {
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: AppTypography.bodySmall.copyWith(
+            style: AppTypography.bodyMedium.copyWith(
               color: _labelColor,
             ),
           ),
@@ -205,13 +205,13 @@ class SettingsPage extends ConsumerWidget {
         children: [
           Text(
             'Version',
-            style: AppTypography.bodySmall.copyWith(
+            style: AppTypography.bodyMedium.copyWith(
               color: _labelColor,
             ),
           ),
           Text(
             versionText,
-            style: AppTypography.bodySmall.copyWith(
+            style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondaryDark,
             ),
           ),
