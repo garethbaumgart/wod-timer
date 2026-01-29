@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
-import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
@@ -26,12 +26,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
   Duration _timeCap = const Duration(minutes: 20);
   // Count up (stopwatch style) vs count down - will be passed to timer in future sprint
   bool _countUp = true;
-  bool _prepEnabled = true;
-  int _prepSeconds = 10;
-
-  Duration get _totalDuration => _prepEnabled
-      ? _timeCap + Duration(seconds: _prepSeconds)
-      : _timeCap;
+  Duration get _totalDuration => _timeCap + const Duration(seconds: 10);
 
   Future<void> _onStart() async {
     // Create the timer type
@@ -44,7 +39,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     final workoutResult = createWorkout(
       name: 'For Time Workout',
       timerType: timerType,
-      prepCountdownSeconds: _prepEnabled ? _prepSeconds : 0,
+      prepCountdownSeconds: 10,
     );
 
     // Start the timer
@@ -71,48 +66,91 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('For Time'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AppRoutes.home),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bookmark_border),
-            onPressed: _onSavePreset,
-            tooltip: 'Save as Preset',
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: OrientationBuilder(
           builder: (context, orientation) {
             if (orientation == Orientation.landscape) {
-              return _buildLandscapeLayout(isDark);
+              return _buildLandscapeLayout();
             }
-            return _buildPortraitLayout(isDark);
+            return _buildPortraitLayout();
           },
         ),
       ),
     );
   }
 
-  Widget _buildPortraitLayout(bool isDark) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Semantics(
+            button: true,
+            label: 'Go back',
+            child: GestureDetector(
+              onTap: () => context.go(AppRoutes.home),
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Text(
+                    '\u2039',
+                    style: TextStyle(
+                      fontSize: 32,
+                      color: AppColors.textPrimaryDark,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'For Time',
+            style: AppTypography.sectionHeader.copyWith(
+              color: AppColors.textPrimaryDark,
+            ),
+          ),
+          const Spacer(),
+          Semantics(
+            button: true,
+            label: 'Save preset',
+            child: GestureDetector(
+              onTap: _onSavePreset,
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Icon(
+                    Icons.bookmark_border,
+                    color: AppColors.textSecondaryDark,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortraitLayout() {
     return Column(
       children: [
+        _buildHeader(),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildDescription(),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 32),
 
                 // Time cap picker
                 DurationPicker(
@@ -127,40 +165,18 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
                   minuteInterval: 1,
                   secondInterval: 30,
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 28),
 
-                // Count direction toggle
+                // Count direction segmented control
                 _buildCountDirectionToggle(),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Prep countdown toggle
-                PrepCountdownToggle(
-                  enabled: _prepEnabled,
-                  duration: _prepSeconds,
-                  onEnabledChanged: (enabled) {
-                    setState(() {
-                      _prepEnabled = enabled;
-                    });
-                  },
-                  onDurationChanged: (seconds) {
-                    setState(() {
-                      _prepSeconds = seconds;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 24),
 
                 // Summary card
                 WorkoutSummaryCard(
                   timerType: 'For Time',
                   totalDuration: _totalDuration,
-                  prepCountdown:
-                      _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Audio test button
-                const Center(child: AudioTestButton()),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -170,65 +186,52 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     );
   }
 
-  Widget _buildLandscapeLayout(bool isDark) {
+  Widget _buildLandscapeLayout() {
     return Row(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildDescription(),
-                const SizedBox(height: AppSpacing.lg),
-                DurationPicker(
-                  initialDuration: _timeCap,
-                  onChanged: (duration) {
-                    setState(() {
-                      _timeCap = duration;
-                    });
-                  },
-                  label: 'Time Cap',
-                  maxMinutes: 60,
-                  minuteInterval: 1,
-                  secondInterval: 30,
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      DurationPicker(
+                        initialDuration: _timeCap,
+                        onChanged: (duration) {
+                          setState(() {
+                            _timeCap = duration;
+                          });
+                        },
+                        label: 'Time Cap',
+                        maxMinutes: 60,
+                        minuteInterval: 1,
+                        secondInterval: 30,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildCountDirectionToggle(),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildCountDirectionToggle(),
-                const SizedBox(height: AppSpacing.lg),
-                PrepCountdownToggle(
-                  enabled: _prepEnabled,
-                  duration: _prepSeconds,
-                  onEnabledChanged: (enabled) {
-                    setState(() {
-                      _prepEnabled = enabled;
-                    });
-                  },
-                  onDurationChanged: (seconds) {
-                    setState(() {
-                      _prepSeconds = seconds;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
                 WorkoutSummaryCard(
                   timerType: 'For Time',
                   totalDuration: _totalDuration,
-                  prepCountdown:
-                      _prepEnabled ? Duration(seconds: _prepSeconds) : null,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                const Center(child: AudioTestButton()),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 16),
                 _buildStartButtonCompact(),
               ],
             ),
@@ -238,95 +241,112 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     );
   }
 
-  Widget _buildDescription() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Text(
-      'Complete the workout as fast as possible. Press finish when done, or the timer stops at the time cap.',
-      style: theme.textTheme.bodyLarge?.copyWith(
-        color: isDark
-            ? AppColors.textSecondaryDark
-            : AppColors.textSecondaryLight,
-      ),
-      textAlign: TextAlign.center,
+  Widget _buildCountDirectionToggle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildSegmentButton(
+          label: 'COUNT UP',
+          isSelected: _countUp,
+          onTap: () => setState(() => _countUp = true),
+        ),
+        const SizedBox(width: 8),
+        _buildSegmentButton(
+          label: 'COUNT DOWN',
+          isSelected: !_countUp,
+          onTap: () => setState(() => _countUp = false),
+        ),
+      ],
     );
   }
 
-  Widget _buildCountDirectionToggle() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : AppColors.cardLight,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+  Widget _buildSegmentButton({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? AppColors.primary : const Color(0xFF666666),
+          ),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Timer Display',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(
-                value: true,
-                label: Text('Count Up'),
-                icon: Icon(Icons.arrow_upward),
-              ),
-              ButtonSegment(
-                value: false,
-                label: Text('Count Down'),
-                icon: Icon(Icons.arrow_downward),
-              ),
-            ],
-            selected: {_countUp},
-            onSelectionChanged: (selection) {
-              setState(() {
-                _countUp = selection.first;
-              });
-            },
-            style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.primary;
-                }
-                return Colors.transparent;
-              }),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildStartButton() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
-      child: ElevatedButton.icon(
-        onPressed: _timeCap.inSeconds > 0 ? _onStart : null,
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('START WORKOUT'),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, AppSpacing.largeButtonHeight),
+    final isEnabled = _timeCap.inSeconds > 0;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Semantics(
+        button: true,
+        enabled: isEnabled,
+        label: 'Start workout',
+        child: GestureDetector(
+          onTap: isEnabled ? _onStart : null,
+          child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: _timeCap.inSeconds > 0
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Center(
+            child: Text(
+              'START WORKOUT',
+              style: AppTypography.buttonLarge.copyWith(
+                color: Colors.black,
+              ),
+            ),
+          ),
         ),
+      ),
       ),
     );
   }
 
   Widget _buildStartButtonCompact() {
-    return ElevatedButton.icon(
-      onPressed: _timeCap.inSeconds > 0 ? _onStart : null,
-      icon: const Icon(Icons.play_arrow),
-      label: const Text('START'),
+    return GestureDetector(
+      onTap: _timeCap.inSeconds > 0 ? _onStart : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: _timeCap.inSeconds > 0
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: Text(
+            'START',
+            style: AppTypography.buttonLarge.copyWith(
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

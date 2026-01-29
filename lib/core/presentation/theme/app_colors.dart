@@ -1,44 +1,51 @@
 import 'package:flutter/material.dart';
 
-/// App color palette optimized for high contrast gym visibility.
+/// Signal design color palette - deep ink background with neon green accent
+/// and colored sidebar lines per timer type.
 abstract class AppColors {
-  // Primary colors - energetic orange for WOD theme
-  static const Color primary = Color(0xFFFF6B35);
-  static const Color primaryLight = Color(0xFFFF8F5C);
-  static const Color primaryDark = Color(0xFFE55A25);
+  // Primary accent - neon green
+  static const Color primary = Color(0xFF00FF88);
+  static const Color primaryLight = Color(0xFF66FFB2);
+  static const Color primaryDark = Color(0xFF00CC6E);
 
-  // Secondary colors - cool blue for contrast
-  static const Color secondary = Color(0xFF4ECDC4);
-  static const Color secondaryLight = Color(0xFF7EE8E0);
-  static const Color secondaryDark = Color(0xFF3CB5AD);
+  // Secondary - light blue (For Time accent)
+  static const Color secondary = Color(0xFF00AAFF);
+  static const Color secondaryLight = Color(0xFF66CCFF);
+  static const Color secondaryDark = Color(0xFF0088CC);
+
+  // Timer type accent colors
+  static const Color amrapAccent = Color(0xFF00FF88); // Green
+  static const Color forTimeAccent = Color(0xFF00AAFF); // Blue
+  static const Color emomAccent = Color(0xFFFF0088); // Pink/Magenta
+  static const Color tabataAccent = Color(0xFFFFAA00); // Orange
 
   // Semantic colors
-  static const Color success = Color(0xFF4CAF50);
-  static const Color warning = Color(0xFFFFC107);
-  static const Color error = Color(0xFFEF5350);
-  static const Color info = Color(0xFF2196F3);
+  static const Color success = Color(0xFF00FF88);
+  static const Color warning = Color(0xFFFFAA00);
+  static const Color error = Color(0xFFFF4444);
+  static const Color info = Color(0xFF00AAFF);
 
   // Timer state colors
-  static const Color work = primary;
-  static const Color rest = Color(0xFF4ECDC4);
-  static const Color prepare = Color(0xFFFFC107);
-  static const Color complete = success;
-  static const Color paused = Color(0xFF9E9E9E);
+  static const Color work = Color(0xFF00FF88);
+  static const Color rest = Color(0xFF00AAFF);
+  static const Color prepare = Color(0xFFFFAA00);
+  static const Color complete = Color(0xFF00FF88);
+  static const Color paused = Color(0xFF666666);
 
-  // Dark theme backgrounds
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color surfaceDark = Color(0xFF1E1E1E);
-  static const Color cardDark = Color(0xFF2D2D2D);
+  // Dark theme backgrounds (Signal: deep ink #050510)
+  static const Color backgroundDark = Color(0xFF050510);
+  static const Color surfaceDark = Color(0xFF0A0A1A);
+  static const Color cardDark = Color(0xFF0E0E1E);
 
-  // Light theme backgrounds
+  // Light theme backgrounds (kept for compatibility)
   static const Color backgroundLight = Color(0xFFF5F5F5);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color cardLight = Color(0xFFFFFFFF);
 
   // Text colors - dark theme
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0xFFB3B3B3);
-  static const Color textDisabledDark = Color(0xFF666666);
+  static const Color textSecondaryDark = Color(0xFF666666);
+  static const Color textDisabledDark = Color(0xFF333333);
 
   // Text colors - light theme
   static const Color textPrimaryLight = Color(0xFF212121);
@@ -48,4 +55,8 @@ abstract class AppColors {
   // Timer display colors (high contrast for visibility)
   static const Color timerTextDark = Color(0xFFFFFFFF);
   static const Color timerTextLight = Color(0xFF212121);
+
+  // Border/divider colors
+  static const Color border = Color(0xFF1A1A1A);
+  static const Color divider = Color(0xFF0E0E0E);
 }

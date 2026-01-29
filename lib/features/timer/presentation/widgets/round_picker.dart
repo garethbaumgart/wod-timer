@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
-import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
+import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 
-/// A picker for selecting number of rounds.
+/// A Signal-design picker for selecting number of rounds.
 ///
-/// Supports both wheel picker and increment/decrement buttons.
+/// Shows a big centered value with +/- adjustment buttons matching
+/// the Signal design language.
 class RoundPicker extends StatefulWidget {
   const RoundPicker({
     required this.initialRounds,
@@ -63,112 +64,94 @@ class _RoundPickerState extends State<RoundPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Hero label
         if (widget.label != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.only(bottom: 12),
             child: Text(
-              widget.label!,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
+              widget.label!.toUpperCase(),
+              style: AppTypography.labelSmall.copyWith(
+                color: const Color(0xFF444444),
+                letterSpacing: 1.5,
+                fontSize: 10,
               ),
             ),
           ),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.cardDark : AppColors.cardLight,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Decrement button
-              _buildButton(
-                icon: Icons.remove,
-                onPressed: _rounds > widget.minRounds ? _decrement : null,
-                isDark: isDark,
-              ),
-              // Rounds display
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: SizedBox(
-                  width: 60,
-                  child: Text(
-                    _rounds.toString(),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      color: isDark
-                          ? AppColors.textPrimaryDark
-                          : AppColors.textPrimaryLight,
-                    ),
+        // Big value display with +/- buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildAdjustButton(
+              icon: Icons.remove,
+              onPressed: _rounds > widget.minRounds ? _decrement : null,
+              semanticsLabel: 'Decrease rounds',
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: SizedBox(
+                width: 80,
+                child: Text(
+                  _rounds.toString(),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.timerDisplayMedium.copyWith(
+                    color: AppColors.textPrimaryDark,
                   ),
                 ),
               ),
-              // Increment button
-              _buildButton(
-                icon: Icons.add,
-                onPressed: _rounds < widget.maxRounds ? _increment : null,
-                isDark: isDark,
-              ),
-            ],
-          ),
-        ),
-        // Label showing "rounds"
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.xs),
-          child: Text(
-            _rounds == 1 ? 'round' : 'rounds',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
             ),
+            _buildAdjustButton(
+              icon: Icons.add,
+              onPressed: _rounds < widget.maxRounds ? _increment : null,
+              semanticsLabel: 'Increase rounds',
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // "rounds" label
+        Text(
+          _rounds == 1 ? 'ROUND' : 'ROUNDS',
+          style: AppTypography.labelSmall.copyWith(
+            color: const Color(0xFF444444),
+            letterSpacing: 1.5,
+            fontSize: 10,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildButton({
+  Widget _buildAdjustButton({
     required IconData icon,
     required VoidCallback? onPressed,
-    required bool isDark,
+    required String semanticsLabel,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    final isEnabled = onPressed != null;
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: GestureDetector(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
         child: Container(
-          width: AppSpacing.iconButtonSize,
-          height: AppSpacing.iconButtonSize,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: onPressed != null
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.border,
+              width: 1,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: onPressed != null
-                ? AppColors.primary
-                : (isDark
-                    ? AppColors.textDisabledDark
-                    : AppColors.textDisabledLight),
-            size: 28,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 18,
+              color: isEnabled
+                  ? const Color(0xFF666666)
+                  : AppColors.textDisabledDark,
+            ),
           ),
         ),
       ),
