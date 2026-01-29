@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
@@ -5,38 +8,93 @@ import 'package:wod_timer/core/domain/failures/audio_failure.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 
 /// Implementation of [IAudioService] using audioplayers package.
+///
+/// Configures audio session to duck (lower volume of) other audio
+/// during cue playback, then restore it afterwards.
 @LazySingleton(as: IAudioService)
 class AudioService implements IAudioService {
   AudioService() {
-    _beepPlayer = AudioPlayer()..setPlayerMode(PlayerMode.lowLatency);
-    _voicePlayer = AudioPlayer()..setPlayerMode(PlayerMode.lowLatency);
-    _effectPlayer = AudioPlayer()..setPlayerMode(PlayerMode.lowLatency);
+    _initPlayers();
   }
 
-  late final AudioPlayer _beepPlayer;
-  late final AudioPlayer _voicePlayer;
-  late final AudioPlayer _effectPlayer;
+  final Map<String, AudioPlayer> _players = {};
+  bool _initialized = false;
 
   double _volume = 1;
   bool _isMuted = false;
 
+  Future<void> _initPlayers() async {
+    if (_initialized) return;
+    _initialized = true;
+
+    // Configure audio session to duck other audio instead of stopping it
+    final session = await audio_session.AudioSession.instance;
+    await session.configure(
+      audio_session.AudioSessionConfiguration(
+        avAudioSessionCategory:
+            audio_session.AVAudioSessionCategory.playback,
+        avAudioSessionCategoryOptions:
+            audio_session.AVAudioSessionCategoryOptions.duckOthers |
+                audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
+      ),
+    );
+
+    // Create a pool of players for concurrent playback
+    for (var i = 0; i < 3; i++) {
+      final player = AudioPlayer();
+      await player.setPlayerMode(PlayerMode.lowLatency);
+      _players['pool_$i'] = player;
+    }
+
+    // Listen for playback completion to deactivate session and restore audio
+    for (final player in _players.values) {
+      player.onPlayerComplete.listen((_) async {
+        await _deactivateSession();
+      });
+    }
+  }
+
+  int _currentPlayerIndex = 0;
+  int _activePlayers = 0;
+
+  AudioPlayer get _nextPlayer {
+    final player = _players['pool_$_currentPlayerIndex']!;
+    _currentPlayerIndex = (_currentPlayerIndex + 1) % 3;
+    return player;
+  }
+
+  Future<void> _activateSession() async {
+    _activePlayers++;
+    final session = await audio_session.AudioSession.instance;
+    await session.setActive(true);
+  }
+
+  Future<void> _deactivateSession() async {
+    _activePlayers--;
+    if (_activePlayers <= 0) {
+      _activePlayers = 0;
+      final session = await audio_session.AudioSession.instance;
+      await session.setActive(false);
+    }
+  }
+
   /// Asset paths for sounds.
-  static const _beepSound = 'audio/beep.mp3';
-  static const _countdown3Sound = 'audio/countdown_3.mp3';
-  static const _countdown2Sound = 'audio/countdown_2.mp3';
-  static const _countdown1Sound = 'audio/countdown_1.mp3';
-  static const _goSound = 'audio/go.mp3';
-  static const _restSound = 'audio/rest.mp3';
-  static const _completeSound = 'audio/complete.mp3';
-  static const _halfwaySound = 'audio/halfway.mp3';
-  static const _intervalSound = 'audio/interval.mp3';
+  static const _beepSound = 'audio/beep.m4a';
+  static const _countdown3Sound = 'audio/countdown_3.m4a';
+  static const _countdown2Sound = 'audio/countdown_2.m4a';
+  static const _countdown1Sound = 'audio/countdown_1.m4a';
+  static const _goSound = 'audio/go.m4a';
+  static const _restSound = 'audio/rest.m4a';
+  static const _completeSound = 'audio/complete.m4a';
+  static const _halfwaySound = 'audio/halfway.m4a';
+  static const _intervalSound = 'audio/interval.m4a';
 
   @override
   bool get isMuted => _isMuted;
 
   @override
   Future<Either<AudioFailure, Unit>> playBeep() async {
-    return _play(_beepPlayer, _beepSound);
+    return _play(_beepSound);
   }
 
   @override
@@ -47,73 +105,68 @@ class AudioService implements IAudioService {
       1 => _countdown1Sound,
       _ => _beepSound,
     };
-    return _play(_voicePlayer, soundPath);
+    return _play(soundPath);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playGo() async {
-    return _play(_voicePlayer, _goSound);
+    return _play(_goSound);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playRest() async {
-    return _play(_voicePlayer, _restSound);
+    return _play(_restSound);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playComplete() async {
-    return _play(_effectPlayer, _completeSound);
+    return _play(_completeSound);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playHalfway() async {
-    return _play(_voicePlayer, _halfwaySound);
+    return _play(_halfwaySound);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playIntervalStart() async {
-    return _play(_beepPlayer, _intervalSound);
+    return _play(_intervalSound);
   }
 
-  Future<Either<AudioFailure, Unit>> _play(
-    AudioPlayer player,
-    String assetPath,
-  ) async {
+  Future<Either<AudioFailure, Unit>> _play(String assetPath) async {
     if (_isMuted) {
       return right(unit);
     }
 
+    // Fire and forget - don't await playback to avoid blocking UI
+    unawaited(_playAsync(assetPath));
+    return right(unit);
+  }
+
+  Future<void> _playAsync(String assetPath) async {
     try {
+      await _activateSession();
+      final player = _nextPlayer;
       await player.setVolume(_volume);
-      await player.play(AssetSource(assetPath));
-      return right(unit);
-    } on AudioPlayerException {
-      // Audio is non-critical - timer should continue even if audio fails
-      return right(unit);
-    } catch (e) {
-      // Catch all errors including FlutterError for missing assets
-      // Return success anyway - audio is non-critical, timer should continue
-      return right(unit);
+      // Not awaiting - fire and forget for responsiveness
+      unawaited(player.play(AssetSource(assetPath)));
+    } on Exception {
+      // Audio is non-critical - ignore errors
+      await _deactivateSession();
     }
   }
 
   @override
   Future<void> preloadSounds() async {
-    // Preload sounds by setting the source without playing
-    try {
-      await _beepPlayer.setSource(AssetSource(_beepSound));
-      await _voicePlayer.setSource(AssetSource(_countdown3Sound));
-      await _effectPlayer.setSource(AssetSource(_completeSound));
-    } on Exception catch (_) {
-      // Ignore preload errors - sounds will load on first play
-    }
+    await _initPlayers();
   }
 
   @override
   Future<void> dispose() async {
-    await _beepPlayer.dispose();
-    await _voicePlayer.dispose();
-    await _effectPlayer.dispose();
+    for (final player in _players.values) {
+      await player.dispose();
+    }
+    _players.clear();
   }
 
   @override
