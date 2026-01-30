@@ -38,6 +38,7 @@ class TimerNotifier extends _$TimerNotifier {
   bool _playedGo = false;
   int _lastRound = 0;
   bool _isInitialized = false;
+  Workout? _lastWorkout;
 
   @override
   TimerNotifierState build() {
@@ -58,6 +59,7 @@ class TimerNotifier extends _$TimerNotifier {
 
   /// Start a timer session for the given workout.
   Future<void> start(Workout workout) async {
+    _lastWorkout = workout;
     _resetAudioState();
 
     final result = await _startTimer(workout);
@@ -137,6 +139,17 @@ class TimerNotifier extends _$TimerNotifier {
     _stopTicking();
     _resetAudioState();
     state = const TimerNotifierState.initial();
+  }
+
+  /// Restart the timer with the same workout configuration.
+  ///
+  /// Resets and re-starts the timer using the last workout, keeping
+  /// the user on the active timer screen. Does nothing if no workout
+  /// has been started yet.
+  Future<void> restart() async {
+    if (_lastWorkout == null) return;
+    _stopTicking();
+    await start(_lastWorkout!);
   }
 
   void _startTicking() {

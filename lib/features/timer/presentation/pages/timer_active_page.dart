@@ -114,6 +114,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         false;
   }
 
+  Future<void> _onRestart() async {
+    await ref.read(timerNotifierProvider.notifier).restart();
+  }
+
   void _onComplete() {
     final state = ref.read(timerNotifierProvider);
     // Only reset if timer is not in initial state (was properly started)
@@ -860,7 +864,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: _onReset,
+                  onTap: _onRestart,
                   borderRadius:
                       BorderRadius.circular(AppSpacing.radiusSm),
                   child: Container(
