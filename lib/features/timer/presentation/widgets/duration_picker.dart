@@ -137,7 +137,7 @@ class _DurationPickerState extends State<DurationPicker> {
             child: Text(
               widget.label!.toUpperCase(),
               style: AppTypography.labelSmall.copyWith(
-                color: const Color(0xFF444444),
+                color: AppColors.textHintDark,
                 letterSpacing: 1.5,
                 fontSize: 12,
               ),
@@ -169,7 +169,7 @@ class _DurationPickerState extends State<DurationPicker> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
-                  color: const Color(0xFF444444),
+                  color: AppColors.textHintDark,
                 ),
               ),
             ),
@@ -195,7 +195,7 @@ class _DurationPickerState extends State<DurationPicker> {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1,
-                    color: const Color(0xFF444444),
+                    color: AppColors.textHintDark,
                   ),
                 ),
               ),

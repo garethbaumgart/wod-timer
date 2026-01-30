@@ -107,23 +107,21 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                 width: 48,
                 height: 48,
                 child: Center(
-                  child: Text(
-                    '\u2039',
-                    style: TextStyle(
-                      fontSize: 32,
-                      color: AppColors.textPrimaryDark,
-                      height: 1,
-                    ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 22,
+                    color: AppColors.textPrimaryDark,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Text(
             'Tabata',
             style: AppTypography.sectionHeader.copyWith(
               color: AppColors.textPrimaryDark,
+              fontSize: 24,
             ),
           ),
         ],
@@ -291,30 +289,46 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
       child: GestureDetector(
         onTap: _applyClassicTabata,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.border,
+              color: AppColors.primary.withValues(alpha: 0.15),
               width: 1,
             ),
+            color: AppColors.primary.withValues(alpha: 0.05),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.flash_on,
-                size: 14,
+                size: 16,
                 color: AppColors.primary,
               ),
-              const SizedBox(width: 6),
-              Text(
-                'CLASSIC TABATA (20/10 x 8)',
-                style: AppTypography.bodySmall.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'CLASSIC TABATA',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    '20s work / 10s rest \u00D7 8 rounds',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textHintDark,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -382,7 +396,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
-                  color: const Color(0xFF444444),
+                  color: AppColors.textHintDark,
                 ),
               ),
             ),
@@ -411,18 +425,19 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
           onTap: isValid ? _onStart : null,
           child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
             color: isValid
                 ? AppColors.primary
                 : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: Text(
               'START WORKOUT',
               style: AppTypography.buttonLarge.copyWith(
                 color: Colors.black,
+                fontSize: 16,
               ),
             ),
           ),
@@ -438,18 +453,19 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
       onTap: isValid ? _onStart : null,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: isValid
               ? AppColors.primary
               : AppColors.primary.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
           child: Text(
             'START',
             style: AppTypography.buttonLarge.copyWith(
               color: Colors.black,
+              fontSize: 16,
             ),
           ),
         ),

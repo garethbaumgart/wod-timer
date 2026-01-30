@@ -85,23 +85,21 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
                 width: 48,
                 height: 48,
                 child: Center(
-                  child: Text(
-                    '\u2039',
-                    style: TextStyle(
-                      fontSize: 32,
-                      color: AppColors.textPrimaryDark,
-                      height: 1,
-                    ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 22,
+                    color: AppColors.textPrimaryDark,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Text(
             'AMRAP',
             style: AppTypography.sectionHeader.copyWith(
               color: AppColors.textPrimaryDark,
+              fontSize: 24,
             ),
           ),
         ],
@@ -213,18 +211,19 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
           onTap: isEnabled ? _onStart : null,
           child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
             color: _duration.inSeconds > 0
                 ? AppColors.primary
                 : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: Text(
               'START WORKOUT',
               style: AppTypography.buttonLarge.copyWith(
                 color: Colors.black,
+                fontSize: 16,
               ),
             ),
           ),
@@ -239,18 +238,19 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
       onTap: _duration.inSeconds > 0 ? _onStart : null,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: _duration.inSeconds > 0
               ? AppColors.primary
               : AppColors.primary.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
           child: Text(
             'START',
             style: AppTypography.buttonLarge.copyWith(
               color: Colors.black,
+              fontSize: 16,
             ),
           ),
         ),

@@ -39,23 +39,21 @@ class SettingsPage extends ConsumerWidget {
                         width: 48,
                         height: 48,
                         child: Center(
-                          child: Text(
-                            '\u2039',
-                            style: AppTypography.sectionHeader.copyWith(
-                              color: AppColors.textPrimaryDark,
-                              fontSize: 28,
-                              height: 1,
-                            ),
+                          child: Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 22,
+                            color: AppColors.textPrimaryDark,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Text(
                     'Settings',
                     style: AppTypography.sectionHeader.copyWith(
                       color: AppColors.textPrimaryDark,
+                      fontSize: 24,
                     ),
                   ),
                 ],
@@ -67,6 +65,8 @@ class SettingsPage extends ConsumerWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
+                  // DISPLAY section
+                  _buildSectionHeader('Display'),
                   _buildDivider(),
                   _buildTapRow(
                     label: 'Orientation Lock',
@@ -84,6 +84,8 @@ class SettingsPage extends ConsumerWidget {
                           .setKeepScreenOn(enabled: value);
                     },
                   ),
+                  // AUDIO section
+                  _buildSectionHeader('Audio'),
                   _buildDivider(),
                   _buildSwitchRow(
                     label: 'Sound Effects',
@@ -106,6 +108,8 @@ class SettingsPage extends ConsumerWidget {
                           .setHapticEnabled(enabled: value);
                     },
                   ),
+                  // ABOUT section
+                  _buildSectionHeader('About'),
                   _buildDivider(),
                   _buildVersionRow(ref),
                   _buildDivider(),
@@ -113,6 +117,20 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 8),
+      child: Text(
+        title.toUpperCase(),
+        style: AppTypography.summaryLabel.copyWith(
+          color: AppColors.textHintDark,
+          fontSize: 11,
+          letterSpacing: 1,
         ),
       ),
     );
