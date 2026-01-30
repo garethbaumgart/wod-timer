@@ -175,22 +175,6 @@ class PlaceholderHomePage extends ConsumerWidget {
                     onPressed: () => context.go(AppRoutes.settings),
                     tooltip: 'Settings',
                   ),
-                  const SizedBox(width: 32),
-                  IconButton(
-                    icon: Icon(
-                      Icons.bookmark_outline,
-                      color: AppColors.textDisabledDark,
-                      size: 26,
-                    ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Presets coming soon!'),
-                        ),
-                      );
-                    },
-                    tooltip: 'Presets',
-                  ),
                 ],
               ),
             ],

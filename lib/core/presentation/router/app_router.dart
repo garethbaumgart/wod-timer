@@ -50,14 +50,6 @@ GoRouter appRouter(Ref ref) {
         ],
       ),
       GoRoute(
-        path: AppRoutes.presets,
-        name: 'presets',
-        builder: (context, state) => const PlaceholderPage(
-          title: 'Saved Presets',
-          subtitle: 'Your saved workout configurations',
-        ),
-      ),
-      GoRoute(
         path: AppRoutes.settings,
         name: 'settings',
         builder: (context, state) => const SettingsPage(),
