@@ -135,19 +135,25 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   /// Reset the timer to initial state.
+  ///
+  /// Clears the stored workout so [restart] cannot reuse a stale
+  /// configuration after a full reset.
   void reset() {
     _stopTicking();
     _resetAudioState();
+    _lastWorkout = null;
     state = const TimerNotifierState.initial();
   }
 
   /// Restart the timer with the same workout configuration.
   ///
-  /// Resets and re-starts the timer using the last workout, keeping
-  /// the user on the active timer screen. Does nothing if no workout
-  /// has been started yet.
+  /// Only valid from the [TimerCompleted] state. Resets and re-starts
+  /// the timer using the last workout, keeping the user on the active
+  /// timer screen. Does nothing if no workout has been started yet or
+  /// the timer is not in a completed state.
   Future<void> restart() async {
     if (_lastWorkout == null) return;
+    if (state is! TimerCompleted) return;
     _stopTicking();
     await start(_lastWorkout!);
   }
