@@ -11,9 +11,6 @@ abstract class AppRoutes {
   /// Path parameter: `timerType` - the type of timer
   static const String timerActive = '/timer/:timerType/active';
 
-  /// Saved presets screen.
-  static const String presets = '/presets';
-
   /// Settings screen.
   static const String settings = '/settings';
 

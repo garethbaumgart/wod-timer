@@ -75,12 +75,6 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     );
   }
 
-  void _onSavePreset() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Save preset coming soon!')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,26 +124,6 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
             'Tabata',
             style: AppTypography.sectionHeader.copyWith(
               color: AppColors.textPrimaryDark,
-            ),
-          ),
-          const Spacer(),
-          Semantics(
-            button: true,
-            label: 'Save preset',
-            child: GestureDetector(
-              onTap: _onSavePreset,
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: Icon(
-                    Icons.bookmark_border,
-                    color: AppColors.textSecondaryDark,
-                    size: 22,
-                  ),
-                ),
-              ),
             ),
           ),
         ],
