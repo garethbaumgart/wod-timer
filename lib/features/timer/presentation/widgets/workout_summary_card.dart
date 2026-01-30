@@ -76,7 +76,7 @@ class WorkoutSummaryCard extends StatelessWidget {
                   Text(
                     'TOTAL DURATION',
                     style: AppTypography.summaryLabel.copyWith(
-                      color: const Color(0xFF555555),
+                      color: AppColors.textHintDark,
                       fontSize: 10,
                     ),
                   ),

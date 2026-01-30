@@ -56,7 +56,11 @@ abstract class AppColors {
   static const Color timerTextDark = Color(0xFFFFFFFF);
   static const Color timerTextLight = Color(0xFF212121);
 
+  // Label/hint text (brighter than disabled, dimmer than secondary)
+  static const Color textHintDark = Color(0xFF555555);
+
   // Border/divider colors
   static const Color border = Color(0xFF1A1A1A);
+  static const Color borderLight = Color(0xFF333333);
   static const Color divider = Color(0xFF0E0E0E);
 }

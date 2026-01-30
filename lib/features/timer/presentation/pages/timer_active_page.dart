@@ -475,7 +475,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
       return Text(
         'Round ${session.currentRound}/${session.totalRounds}',
         style: AppTypography.bodyMedium.copyWith(
-          color: const Color(0xFF555555),
+          color: AppColors.textHintDark,
           fontWeight: FontWeight.w500,
         ),
       );
@@ -486,7 +486,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
       return Text(
         'Elapsed',
         style: AppTypography.bodyMedium.copyWith(
-          color: const Color(0xFF555555),
+          color: AppColors.textHintDark,
           fontWeight: FontWeight.w500,
         ),
       );
@@ -800,7 +800,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                       Text(
                         'TOTAL TIME',
                         style: AppTypography.summaryLabel.copyWith(
-                          color: const Color(0xFF555555),
+                          color: AppColors.textHintDark,
                           fontSize: 10,
                         ),
                       ),
@@ -835,7 +835,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                         Text(
                           'ROUNDS',
                           style: AppTypography.summaryLabel.copyWith(
-                            color: const Color(0xFF555555),
+                            color: AppColors.textHintDark,
                             fontSize: 10,
                           ),
                         ),
@@ -903,10 +903,29 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
               Text(
                 'TOTAL TIME',
                 style: AppTypography.summaryLabel.copyWith(
-                  color: const Color(0xFF555555),
+                  color: AppColors.textHintDark,
                   fontSize: 10,
                 ),
               ),
+              if (session?.totalRounds != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '${session!.currentRound}/${session.totalRounds}',
+                  style: AppTypography.workoutTitle.copyWith(
+                    color: AppColors.primary,
+                    fontSize: 24,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'ROUNDS',
+                  style: AppTypography.summaryLabel.copyWith(
+                    color: AppColors.textHintDark,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

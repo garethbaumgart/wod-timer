@@ -75,7 +75,7 @@ class _RoundPickerState extends State<RoundPicker> {
             child: Text(
               widget.label!.toUpperCase(),
               style: AppTypography.labelSmall.copyWith(
-                color: const Color(0xFF555555),
+                color: AppColors.textHintDark,
                 letterSpacing: 1.5,
                 fontSize: 12,
               ),
@@ -115,7 +115,7 @@ class _RoundPickerState extends State<RoundPicker> {
         Text(
           _rounds == 1 ? 'ROUND' : 'ROUNDS',
           style: AppTypography.labelSmall.copyWith(
-            color: const Color(0xFF555555),
+            color: AppColors.textHintDark,
             letterSpacing: 1.5,
             fontSize: 12,
           ),

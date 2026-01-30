@@ -128,7 +128,7 @@ class SettingsPage extends ConsumerWidget {
       child: Text(
         title.toUpperCase(),
         style: AppTypography.summaryLabel.copyWith(
-          color: const Color(0xFF555555),
+          color: AppColors.textHintDark,
           fontSize: 11,
           letterSpacing: 1,
         ),

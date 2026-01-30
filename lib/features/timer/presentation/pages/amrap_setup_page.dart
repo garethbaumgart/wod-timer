@@ -250,6 +250,7 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
             'START',
             style: AppTypography.buttonLarge.copyWith(
               color: Colors.black,
+              fontSize: 16,
             ),
           ),
         ),

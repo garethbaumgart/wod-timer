@@ -291,6 +291,7 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
             'START',
             style: AppTypography.buttonLarge.copyWith(
               color: Colors.black,
+              fontSize: 16,
             ),
           ),
         ),

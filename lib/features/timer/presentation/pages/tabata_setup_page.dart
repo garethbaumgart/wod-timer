@@ -325,7 +325,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                     style: AppTypography.bodySmall.copyWith(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF555555),
+                      color: AppColors.textHintDark,
                     ),
                   ),
                 ],
@@ -396,7 +396,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
-                  color: const Color(0xFF555555),
+                  color: AppColors.textHintDark,
                 ),
               ),
             ),
@@ -465,6 +465,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
             'START',
             style: AppTypography.buttonLarge.copyWith(
               color: Colors.black,
+              fontSize: 16,
             ),
           ),
         ),

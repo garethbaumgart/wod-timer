@@ -248,7 +248,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFF333333),
+            color: isSelected ? AppColors.primary : AppColors.borderLight,
             width: 1,
           ),
           color: isSelected
@@ -319,6 +319,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
             'START',
             style: AppTypography.buttonLarge.copyWith(
               color: Colors.black,
+              fontSize: 16,
             ),
           ),
         ),
