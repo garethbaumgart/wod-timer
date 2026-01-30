@@ -53,6 +53,30 @@ void main() {
         .thenAnswer((_) async => right(unit));
     when(() => mockAudioService.playIntervalStart())
         .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playGetReady())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playTenSeconds())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playLastRound())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playKeepGoing())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playGoodJob())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playNextRound())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playFinalCountdown())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playLetsGo())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playComeOn())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playAlmostThere())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playThatsIt())
+        .thenAnswer((_) async => right(unit));
+    when(() => mockAudioService.playNoRep())
+        .thenAnswer((_) async => right(unit));
     when(() => mockAudioService.dispose()).thenAnswer((_) async {});
   });
 

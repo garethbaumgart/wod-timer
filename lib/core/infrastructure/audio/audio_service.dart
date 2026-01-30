@@ -95,14 +95,26 @@ class AudioService implements IAudioService {
 
   /// Asset paths for sounds.
   static const _beepSound = 'audio/beep.m4a';
-  static const _countdown3Sound = 'audio/countdown_3.m4a';
-  static const _countdown2Sound = 'audio/countdown_2.m4a';
-  static const _countdown1Sound = 'audio/countdown_1.m4a';
-  static const _goSound = 'audio/go.m4a';
-  static const _restSound = 'audio/rest.m4a';
-  static const _completeSound = 'audio/complete.m4a';
-  static const _halfwaySound = 'audio/halfway.m4a';
-  static const _intervalSound = 'audio/interval.m4a';
+  static const _countdown3Sound = 'audio/countdown_3.mp3';
+  static const _countdown2Sound = 'audio/countdown_2.mp3';
+  static const _countdown1Sound = 'audio/countdown_1.mp3';
+  static const _goSound = 'audio/countdown_go.mp3';
+  static const _restSound = 'audio/rest.mp3';
+  static const _completeSound = 'audio/complete.mp3';
+  static const _halfwaySound = 'audio/halfway.mp3';
+  static const _intervalSound = 'audio/interval.mp3';
+  static const _getReadySound = 'audio/get_ready.mp3';
+  static const _tenSecondsSound = 'audio/ten_seconds.mp3';
+  static const _lastRoundSound = 'audio/last_round.mp3';
+  static const _keepGoingSound = 'audio/keep_going.mp3';
+  static const _goodJobSound = 'audio/good_job.mp3';
+  static const _nextRoundSound = 'audio/next_round.mp3';
+  static const _finalCountdownSound = 'audio/final_countdown.mp3';
+  static const _letsGoSound = 'audio/lets_go.mp3';
+  static const _comeOnSound = 'audio/come_on.mp3';
+  static const _almostThereSound = 'audio/almost_there.mp3';
+  static const _thatsItSound = 'audio/thats_it.mp3';
+  static const _noRepSound = 'audio/no_rep.mp3';
 
   @override
   bool get isMuted => _isMuted;
@@ -146,6 +158,66 @@ class AudioService implements IAudioService {
   @override
   Future<Either<AudioFailure, Unit>> playIntervalStart() async {
     return _play(_intervalSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playGetReady() async {
+    return _play(_getReadySound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playTenSeconds() async {
+    return _play(_tenSecondsSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playLastRound() async {
+    return _play(_lastRoundSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playKeepGoing() async {
+    return _play(_keepGoingSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playGoodJob() async {
+    return _play(_goodJobSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playNextRound() async {
+    return _play(_nextRoundSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playFinalCountdown() async {
+    return _play(_finalCountdownSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playLetsGo() async {
+    return _play(_letsGoSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playComeOn() async {
+    return _play(_comeOnSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playAlmostThere() async {
+    return _play(_almostThereSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playThatsIt() async {
+    return _play(_thatsItSound);
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playNoRep() async {
+    return _play(_noRepSound);
   }
 
   Future<Either<AudioFailure, Unit>> _play(String assetPath) async {
