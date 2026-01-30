@@ -90,23 +90,21 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
                 width: 48,
                 height: 48,
                 child: Center(
-                  child: Text(
-                    '\u2039',
-                    style: TextStyle(
-                      fontSize: 32,
-                      color: AppColors.textPrimaryDark,
-                      height: 1,
-                    ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 22,
+                    color: AppColors.textPrimaryDark,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Text(
             'For Time',
             style: AppTypography.sectionHeader.copyWith(
               color: AppColors.textPrimaryDark,
+              fontSize: 24,
             ),
           ),
         ],
@@ -250,14 +248,17 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary : const Color(0xFF333333),
             width: 1,
           ),
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : Colors.transparent,
         ),
         child: Text(
           label,
           style: AppTypography.bodySmall.copyWith(
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: isSelected ? AppColors.primary : const Color(0xFF666666),
           ),
@@ -279,18 +280,19 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
           onTap: isEnabled ? _onStart : null,
           child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
             color: _timeCap.inSeconds > 0
                 ? AppColors.primary
                 : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: Text(
               'START WORKOUT',
               style: AppTypography.buttonLarge.copyWith(
                 color: Colors.black,
+                fontSize: 16,
               ),
             ),
           ),
@@ -305,12 +307,12 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
       onTap: _timeCap.inSeconds > 0 ? _onStart : null,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: _timeCap.inSeconds > 0
               ? AppColors.primary
               : AppColors.primary.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
           child: Text(

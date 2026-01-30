@@ -122,13 +122,12 @@ class PlaceholderHomePage extends ConsumerWidget {
                       name: 'AMRAP',
                       description: 'Max rounds in time',
                       accentColor: AppColors.amrapAccent,
-                      isSelected: true,
                       onTap: () {
                         ref.read(hapticServiceProvider).lightImpact();
                         onTimerSelected('amrap');
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     _SignalStripItem(
                       name: 'FOR TIME',
                       description: 'Race the clock',
@@ -138,7 +137,7 @@ class PlaceholderHomePage extends ConsumerWidget {
                         onTimerSelected('fortime');
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     _SignalStripItem(
                       name: 'EMOM',
                       description: 'Every minute on the minute',
@@ -148,7 +147,7 @@ class PlaceholderHomePage extends ConsumerWidget {
                         onTimerSelected('emom');
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     _SignalStripItem(
                       name: 'TABATA',
                       description: 'Work / Rest intervals',
@@ -212,7 +211,7 @@ class _SignalStripItem extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -229,13 +228,13 @@ class _SignalStripItem extends StatelessWidget {
                 // Colored sidebar line
                 Container(
                   width: 3,
-                  height: 28,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: accentColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 // Text content
                 Expanded(
                   child: Column(
@@ -246,10 +245,11 @@ class _SignalStripItem extends StatelessWidget {
                           name,
                           style: AppTypography.stripName.copyWith(
                             color: Colors.white,
+                            fontSize: 24,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       ExcludeSemantics(
                         child: Text(
                           description,
@@ -260,6 +260,17 @@ class _SignalStripItem extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                // Trailing chevron
+                ExcludeSemantics(
+                  child: Text(
+                    '\u203A',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w300,
+                      color: AppColors.textDisabledDark,
+                    ),
                   ),
                 ),
               ],

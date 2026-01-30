@@ -116,7 +116,7 @@ abstract class AppTypography {
 
   // Pill badge text
   static TextStyle get pillBadge => GoogleFonts.outfit(
-        fontSize: 10,
+        fontSize: 13,
         fontWeight: FontWeight.w700,
         letterSpacing: 2,
       );

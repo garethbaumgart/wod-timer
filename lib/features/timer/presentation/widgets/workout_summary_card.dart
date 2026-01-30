@@ -61,6 +61,34 @@ class WorkoutSummaryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            // Hero total duration row
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    _formatDuration(totalDuration),
+                    style: AppTypography.workoutTitle.copyWith(
+                      color: Colors.white,
+                      fontSize: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'TOTAL DURATION',
+                    style: AppTypography.summaryLabel.copyWith(
+                      color: const Color(0xFF555555),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 1,
+              color: const Color(0xFF00FF88).withValues(alpha: 0.06),
+            ),
+            const SizedBox(height: 12),
             // Summary items in a wrap
             Wrap(
               spacing: 20,
@@ -69,10 +97,6 @@ class WorkoutSummaryCard extends StatelessWidget {
                 _buildSummaryItem(
                   label: 'TYPE',
                   value: timerType.toUpperCase(),
-                ),
-                _buildSummaryItem(
-                  label: 'TOTAL',
-                  value: _formatDuration(totalDuration),
                 ),
                 if (rounds != null)
                   _buildSummaryItem(

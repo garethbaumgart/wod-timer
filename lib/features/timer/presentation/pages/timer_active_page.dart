@@ -393,8 +393,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
+        horizontal: 20,
+        vertical: 10,
       ),
       decoration: BoxDecoration(
         color: phaseColor.withValues(alpha: 0.08),
@@ -474,8 +474,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     if (session.totalRounds != null) {
       return Text(
         'Round ${session.currentRound}/${session.totalRounds}',
-        style: AppTypography.bodySmall.copyWith(
-          color: AppColors.textDisabledDark,
+        style: AppTypography.bodyMedium.copyWith(
+          color: const Color(0xFF555555),
+          fontWeight: FontWeight.w500,
         ),
       );
     }
@@ -484,8 +485,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     if (widget.timerType == TimerTypes.forTime) {
       return Text(
         'Elapsed',
-        style: AppTypography.bodySmall.copyWith(
-          color: AppColors.textDisabledDark,
+        style: AppTypography.bodyMedium.copyWith(
+          color: const Color(0xFF555555),
+          fontWeight: FontWeight.w500,
         ),
       );
     }
@@ -753,7 +755,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         // Checkmark icon
         const Icon(
           Icons.check,
-          size: 40,
+          size: 56,
           color: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -763,29 +765,88 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           'Finished!',
           style: AppTypography.workoutTitle.copyWith(
             color: Colors.white,
+            fontSize: 28,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: 20),
 
-        // Stat text
-        Text(
-          'Total: $elapsedString',
-          style: AppTypography.bodyMedium.copyWith(
-            fontSize: 13,
-            color: const Color(0xFF444444),
+        // Stat cards
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              // Total time card
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        elapsedString,
+                        style: AppTypography.workoutTitle.copyWith(
+                          color: Colors.white,
+                          fontSize: 24,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'TOTAL TIME',
+                        style: AppTypography.summaryLabel.copyWith(
+                          color: const Color(0xFF555555),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (session?.totalRounds != null) ...[
+                const SizedBox(width: AppSpacing.md),
+                // Rounds card
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${session!.currentRound}/${session.totalRounds}',
+                          style: AppTypography.workoutTitle.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 24,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'ROUNDS',
+                          style: AppTypography.summaryLabel.copyWith(
+                            color: const Color(0xFF555555),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-
-        if (session?.totalRounds != null) ...[
-          const SizedBox(height: AppSpacing.xxs),
-          Text(
-            'Rounds: ${session!.currentRound}/${session.totalRounds}',
-            style: AppTypography.bodyMedium.copyWith(
-              fontSize: 13,
-              color: const Color(0xFF444444),
-            ),
-          ),
-        ],
 
         const Spacer(flex: 2),
 
@@ -818,7 +879,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
             children: [
               const Icon(
                 Icons.check,
-                size: 40,
+                size: 56,
                 color: AppColors.primary,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -826,14 +887,24 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 'Finished!',
                 style: AppTypography.workoutTitle.copyWith(
                   color: Colors.white,
+                  fontSize: 28,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Total: $elapsedString',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontSize: 13,
-                  color: const Color(0xFF444444),
+                elapsedString,
+                style: AppTypography.workoutTitle.copyWith(
+                  color: Colors.white,
+                  fontSize: 24,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'TOTAL TIME',
+                style: AppTypography.summaryLabel.copyWith(
+                  color: const Color(0xFF555555),
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -868,7 +939,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                   borderRadius:
                       BorderRadius.circular(AppSpacing.radiusSm),
                   child: Container(
-                    height: 52,
+                    height: 56,
                     decoration: BoxDecoration(
                       borderRadius:
                           BorderRadius.circular(AppSpacing.radiusSm),
@@ -881,6 +952,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                       'Again',
                       style: AppTypography.buttonMedium.copyWith(
                         color: const Color(0xFF666666),
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -903,7 +975,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                   borderRadius:
                       BorderRadius.circular(AppSpacing.radiusSm),
                   child: Container(
-                    height: 52,
+                    height: 56,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius:
@@ -914,6 +986,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                       'Done',
                       style: AppTypography.buttonMedium.copyWith(
                         color: Colors.black,
+                        fontSize: 14,
                       ),
                     ),
                   ),
