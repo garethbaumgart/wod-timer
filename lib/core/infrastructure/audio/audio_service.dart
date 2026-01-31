@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:audioplayers/audioplayers.dart';
@@ -96,8 +97,19 @@ class AudioService implements IAudioService {
   /// Current voice pack directory name.
   String _voicePack = 'major';
 
+  /// Whether to randomize voice pack per cue.
+  bool _randomizePerCue = false;
+
+  final Random _random = Random();
+
   /// Asset path helper — prefixes with current voice pack directory.
-  String _voicePath(String filename) => 'audio/$_voicePack/$filename';
+  /// When [_randomizePerCue] is enabled, randomly picks a voice pack.
+  String _voicePath(String filename) {
+    final pack = _randomizePerCue
+        ? _validVoicePacks.elementAt(_random.nextInt(_validVoicePacks.length))
+        : _voicePack;
+    return 'audio/$pack/$filename';
+  }
 
   /// Beep is shared across all voice packs.
   static const _beepSound = 'audio/major/beep.m4a';
@@ -257,10 +269,15 @@ class AudioService implements IAudioService {
     _isMuted = muted;
   }
 
-  static const _validVoicePacks = {'major', 'liam'};
+  static const _validVoicePacks = {'major', 'liam', 'holly'};
 
   @override
   void setVoicePack(String voicePack) {
     _voicePack = _validVoicePacks.contains(voicePack) ? voicePack : 'major';
+  }
+
+  @override
+  void setRandomizePerCue({required bool enabled}) {
+    _randomizePerCue = enabled;
   }
 }
