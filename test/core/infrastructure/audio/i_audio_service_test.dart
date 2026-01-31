@@ -112,6 +112,160 @@ void main() {
       });
     });
 
+    group('playGetReady', () {
+      test('should return success when get ready sound plays', () async {
+        when(() => mockAudioService.playGetReady())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playGetReady();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playGetReady()).called(1);
+      });
+    });
+
+    group('playTenSeconds', () {
+      test('should return success when ten seconds sound plays', () async {
+        when(() => mockAudioService.playTenSeconds())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playTenSeconds();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playTenSeconds()).called(1);
+      });
+    });
+
+    group('playLastRound', () {
+      test('should return success when last round sound plays', () async {
+        when(() => mockAudioService.playLastRound())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playLastRound();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playLastRound()).called(1);
+      });
+    });
+
+    group('playKeepGoing', () {
+      test('should return success when keep going sound plays', () async {
+        when(() => mockAudioService.playKeepGoing())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playKeepGoing();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playKeepGoing()).called(1);
+      });
+    });
+
+    group('playGoodJob', () {
+      test('should return success when good job sound plays', () async {
+        when(() => mockAudioService.playGoodJob())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playGoodJob();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playGoodJob()).called(1);
+      });
+    });
+
+    group('playNextRound', () {
+      test('should return success when next round sound plays', () async {
+        when(() => mockAudioService.playNextRound())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playNextRound();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playNextRound()).called(1);
+      });
+    });
+
+    group('playFinalCountdown', () {
+      test('should return success when final countdown sound plays', () async {
+        when(() => mockAudioService.playFinalCountdown())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playFinalCountdown();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playFinalCountdown()).called(1);
+      });
+    });
+
+    group('playLetsGo', () {
+      test('should return success when lets go sound plays', () async {
+        when(() => mockAudioService.playLetsGo())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playLetsGo();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playLetsGo()).called(1);
+      });
+    });
+
+    group('playComeOn', () {
+      test('should return success when come on sound plays', () async {
+        when(() => mockAudioService.playComeOn())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playComeOn();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playComeOn()).called(1);
+      });
+    });
+
+    group('playAlmostThere', () {
+      test('should return success when almost there sound plays', () async {
+        when(() => mockAudioService.playAlmostThere())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playAlmostThere();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playAlmostThere()).called(1);
+      });
+    });
+
+    group('playThatsIt', () {
+      test('should return success when thats it sound plays', () async {
+        when(() => mockAudioService.playThatsIt())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playThatsIt();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playThatsIt()).called(1);
+      });
+    });
+
+    group('playNoRep', () {
+      test('should return success when no rep sound plays', () async {
+        when(() => mockAudioService.playNoRep())
+            .thenAnswer((_) async => right(unit));
+
+        final result = await mockAudioService.playNoRep();
+
+        expect(result.isRight(), true);
+        verify(() => mockAudioService.playNoRep()).called(1);
+      });
+    });
+
+    group('setVoicePack', () {
+      test('should set voice pack without error', () {
+        when(() => mockAudioService.setVoicePack(any())).thenReturn(null);
+
+        mockAudioService.setVoicePack('liam');
+
+        verify(() => mockAudioService.setVoicePack('liam')).called(1);
+      });
+    });
+
     group('mute control', () {
       test('should return muted state', () {
         when(() => mockAudioService.isMuted).thenReturn(true);

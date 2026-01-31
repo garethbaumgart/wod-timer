@@ -93,16 +93,14 @@ class AudioService implements IAudioService {
     }
   }
 
-  /// Asset paths for sounds.
-  static const _beepSound = 'audio/beep.m4a';
-  static const _countdown3Sound = 'audio/countdown_3.m4a';
-  static const _countdown2Sound = 'audio/countdown_2.m4a';
-  static const _countdown1Sound = 'audio/countdown_1.m4a';
-  static const _goSound = 'audio/go.m4a';
-  static const _restSound = 'audio/rest.m4a';
-  static const _completeSound = 'audio/complete.m4a';
-  static const _halfwaySound = 'audio/halfway.m4a';
-  static const _intervalSound = 'audio/interval.m4a';
+  /// Current voice pack directory name.
+  String _voicePack = 'major';
+
+  /// Asset path helper — prefixes with current voice pack directory.
+  String _voicePath(String filename) => 'audio/$_voicePack/$filename';
+
+  /// Beep is shared across all voice packs.
+  static const _beepSound = 'audio/major/beep.m4a';
 
   @override
   bool get isMuted => _isMuted;
@@ -115,9 +113,9 @@ class AudioService implements IAudioService {
   @override
   Future<Either<AudioFailure, Unit>> playCountdown(int number) async {
     final soundPath = switch (number) {
-      3 => _countdown3Sound,
-      2 => _countdown2Sound,
-      1 => _countdown1Sound,
+      3 => _voicePath('countdown_3.mp3'),
+      2 => _voicePath('countdown_2.mp3'),
+      1 => _voicePath('countdown_1.mp3'),
       _ => _beepSound,
     };
     return _play(soundPath);
@@ -125,27 +123,87 @@ class AudioService implements IAudioService {
 
   @override
   Future<Either<AudioFailure, Unit>> playGo() async {
-    return _play(_goSound);
+    return _play(_voicePath('countdown_go.mp3'));
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playRest() async {
-    return _play(_restSound);
+    return _play(_voicePath('rest.mp3'));
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playComplete() async {
-    return _play(_completeSound);
+    return _play(_voicePath('complete.mp3'));
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playHalfway() async {
-    return _play(_halfwaySound);
+    return _play(_voicePath('halfway.mp3'));
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playIntervalStart() async {
-    return _play(_intervalSound);
+    return _play(_voicePath('interval.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playGetReady() async {
+    return _play(_voicePath('get_ready.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playTenSeconds() async {
+    return _play(_voicePath('ten_seconds.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playLastRound() async {
+    return _play(_voicePath('last_round.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playKeepGoing() async {
+    return _play(_voicePath('keep_going.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playGoodJob() async {
+    return _play(_voicePath('good_job.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playNextRound() async {
+    return _play(_voicePath('next_round.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playFinalCountdown() async {
+    return _play(_voicePath('final_countdown.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playLetsGo() async {
+    return _play(_voicePath('lets_go.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playComeOn() async {
+    return _play(_voicePath('come_on.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playAlmostThere() async {
+    return _play(_voicePath('almost_there.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playThatsIt() async {
+    return _play(_voicePath('thats_it.mp3'));
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playNoRep() async {
+    return _play(_voicePath('no_rep.mp3'));
   }
 
   Future<Either<AudioFailure, Unit>> _play(String assetPath) async {
@@ -197,5 +255,12 @@ class AudioService implements IAudioService {
   @override
   Future<void> setMuted({required bool muted}) async {
     _isMuted = muted;
+  }
+
+  static const _validVoicePacks = {'major', 'liam'};
+
+  @override
+  void setVoicePack(String voicePack) {
+    _voicePack = _validVoicePacks.contains(voicePack) ? voicePack : 'major';
   }
 }
