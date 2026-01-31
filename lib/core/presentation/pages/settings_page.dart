@@ -98,6 +98,12 @@ class SettingsPage extends ConsumerWidget {
                     },
                   ),
                   _buildDivider(),
+                  _buildTapRow(
+                    label: 'Voice',
+                    value: _getVoiceShortLabel(settings.voice),
+                    onTap: () => _showVoicePicker(context, ref, settings),
+                  ),
+                  _buildDivider(),
                   _buildSwitchRow(
                     label: 'Haptic Feedback',
                     value: settings.hapticEnabled,
@@ -234,6 +240,92 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _getVoiceShortLabel(VoiceOption voice) {
+    switch (voice) {
+      case VoiceOption.major:
+        return 'Major';
+      case VoiceOption.liam:
+        return 'Liam';
+      case VoiceOption.random:
+        return 'Random';
+    }
+  }
+
+  String _getVoiceLabel(VoiceOption voice) {
+    switch (voice) {
+      case VoiceOption.major:
+        return 'Major (CrossFit Coach)';
+      case VoiceOption.liam:
+        return 'Liam (Old British Man)';
+      case VoiceOption.random:
+        return 'Random (surprise me)';
+    }
+  }
+
+  IconData _getVoiceIcon(VoiceOption voice) {
+    switch (voice) {
+      case VoiceOption.major:
+        return Icons.record_voice_over;
+      case VoiceOption.liam:
+        return Icons.record_voice_over_outlined;
+      case VoiceOption.random:
+        return Icons.shuffle;
+    }
+  }
+
+  void _showVoicePicker(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) {
+    ref.read(hapticServiceProvider).selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Voice',
+                style: AppTypography.sectionHeader.copyWith(
+                  color: AppColors.textPrimaryDark,
+                ),
+              ),
+            ),
+            ...VoiceOption.values.map(
+              (voice) => ListTile(
+                leading: Icon(
+                  _getVoiceIcon(voice),
+                  color: AppColors.textPrimaryDark,
+                ),
+                title: Text(
+                  _getVoiceLabel(voice),
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textPrimaryDark,
+                  ),
+                ),
+                trailing: settings.voice == voice
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  ref.read(hapticServiceProvider).selectionClick();
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setVoice(voice);
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

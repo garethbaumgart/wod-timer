@@ -6,6 +6,18 @@ import 'package:wod_timer/injection.dart';
 
 part 'app_settings_provider.g.dart';
 
+/// Voice option for audio cues.
+enum VoiceOption {
+  /// Major - CrossFit coach voice.
+  major,
+
+  /// Liam - Old British Man voice.
+  liam,
+
+  /// Random - randomly pick a voice for each workout.
+  random,
+}
+
 /// Orientation lock mode options.
 enum OrientationLockMode {
   /// Follow device orientation (no lock).
@@ -25,6 +37,7 @@ class AppSettings {
     this.hapticEnabled = true,
     this.soundEnabled = true,
     this.keepScreenOn = true,
+    this.voice = VoiceOption.major,
   });
 
   /// Orientation lock preference.
@@ -39,17 +52,22 @@ class AppSettings {
   /// Whether to keep screen on during workouts.
   final bool keepScreenOn;
 
+  /// Selected voice for audio cues.
+  final VoiceOption voice;
+
   AppSettings copyWith({
     OrientationLockMode? orientationLock,
     bool? hapticEnabled,
     bool? soundEnabled,
     bool? keepScreenOn,
+    VoiceOption? voice,
   }) {
     return AppSettings(
       orientationLock: orientationLock ?? this.orientationLock,
       hapticEnabled: hapticEnabled ?? this.hapticEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+      voice: voice ?? this.voice,
     );
   }
 }
@@ -61,6 +79,7 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   static const _keyHapticEnabled = 'app_haptic_enabled';
   static const _keySoundEnabled = 'app_sound_enabled';
   static const _keyKeepScreenOn = 'app_keep_screen_on';
+  static const _keyVoice = 'app_voice';
 
   @override
   AppSettings build() {
@@ -78,12 +97,16 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       final hapticEnabled = prefs.getBool(_keyHapticEnabled) ?? true;
       final soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
       final keepScreenOn = prefs.getBool(_keyKeepScreenOn) ?? true;
+      final voiceIndex = prefs.getInt(_keyVoice) ?? 0;
+      final safeVoiceIndex =
+          voiceIndex.clamp(0, VoiceOption.values.length - 1);
 
       state = AppSettings(
         orientationLock: OrientationLockMode.values[safeOrientationIndex],
         hapticEnabled: hapticEnabled,
         soundEnabled: soundEnabled,
         keepScreenOn: keepScreenOn,
+        voice: VoiceOption.values[safeVoiceIndex],
       );
 
       // Apply orientation lock
@@ -103,6 +126,7 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       await prefs.setBool(_keyHapticEnabled, state.hapticEnabled);
       await prefs.setBool(_keySoundEnabled, state.soundEnabled);
       await prefs.setBool(_keyKeepScreenOn, state.keepScreenOn);
+      await prefs.setInt(_keyVoice, state.voice.index);
     } catch (e) {
       // Ignore save errors
     }
@@ -161,6 +185,12 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   /// Toggle keep screen on.
   Future<void> setKeepScreenOn({required bool enabled}) async {
     state = state.copyWith(keepScreenOn: enabled);
+    await _saveSettings();
+  }
+
+  /// Set voice for audio cues.
+  Future<void> setVoice(VoiceOption voice) async {
+    state = state.copyWith(voice: voice);
     await _saveSettings();
   }
 }

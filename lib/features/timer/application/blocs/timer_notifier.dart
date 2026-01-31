@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
@@ -65,10 +66,25 @@ class TimerNotifier extends _$TimerNotifier {
     return const TimerNotifierState.initial();
   }
 
+  /// Resolve the voice pack name from the current setting.
+  /// For [VoiceOption.random], randomly picks between available packs.
+  String _resolveVoicePack() {
+    final voice = ref.read(appSettingsNotifierProvider).voice;
+    switch (voice) {
+      case VoiceOption.major:
+        return 'major';
+      case VoiceOption.liam:
+        return 'liam';
+      case VoiceOption.random:
+        return _random.nextBool() ? 'major' : 'liam';
+    }
+  }
+
   /// Start a timer session for the given workout.
   Future<void> start(Workout workout) async {
     _lastWorkout = workout;
     _resetAudioState();
+    _audioService.setVoicePack(_resolveVoicePack());
 
     final result = await _startTimer(workout);
 

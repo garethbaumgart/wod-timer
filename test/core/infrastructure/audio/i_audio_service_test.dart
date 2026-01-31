@@ -256,6 +256,16 @@ void main() {
       });
     });
 
+    group('setVoicePack', () {
+      test('should set voice pack without error', () {
+        when(() => mockAudioService.setVoicePack(any())).thenReturn(null);
+
+        mockAudioService.setVoicePack('liam');
+
+        verify(() => mockAudioService.setVoicePack('liam')).called(1);
+      });
+    });
+
     group('mute control', () {
       test('should return muted state', () {
         when(() => mockAudioService.isMuted).thenReturn(true);

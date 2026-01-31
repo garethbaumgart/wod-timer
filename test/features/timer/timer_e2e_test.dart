@@ -78,6 +78,7 @@ void main() {
     when(() => mockAudioService.playNoRep())
         .thenAnswer((_) async => right(unit));
     when(() => mockAudioService.dispose()).thenAnswer((_) async {});
+    when(() => mockAudioService.setVoicePack(any())).thenReturn(null);
   });
 
   tearDown(() {

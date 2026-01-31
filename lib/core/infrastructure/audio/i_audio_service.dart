@@ -77,4 +77,7 @@ abstract class IAudioService {
 
   /// Mute or unmute audio.
   Future<void> setMuted({required bool muted});
+
+  /// Set the voice pack directory name (e.g. 'major', 'liam').
+  void setVoicePack(String voicePack);
 }
