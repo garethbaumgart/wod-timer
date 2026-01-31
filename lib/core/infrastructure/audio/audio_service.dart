@@ -257,8 +257,10 @@ class AudioService implements IAudioService {
     _isMuted = muted;
   }
 
+  static const _validVoicePacks = {'major', 'liam'};
+
   @override
   void setVoicePack(String voicePack) {
-    _voicePack = voicePack;
+    _voicePack = _validVoicePacks.contains(voicePack) ? voicePack : 'major';
   }
 }

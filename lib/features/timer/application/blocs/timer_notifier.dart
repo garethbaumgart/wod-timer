@@ -47,6 +47,7 @@ class TimerNotifier extends _$TimerNotifier {
   bool _playedAlmostThere = false;
   bool _playedKeepGoing = false;
   bool _playedFinalCountdown = false;
+  int _completionCueToken = 0;
   final _random = Random();
 
   @override
@@ -413,7 +414,9 @@ class TimerNotifier extends _$TimerNotifier {
         ? const Duration(milliseconds: 600)
         : Duration.zero;
 
+    final token = ++_completionCueToken;
     Future.delayed(delay, () {
+      if (token != _completionCueToken) return;
       if (_random.nextBool()) {
         _audioService.playGoodJob();
       } else {
@@ -423,6 +426,7 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void _resetAudioState() {
+    _completionCueToken++;
     _lastCountdownSecond = -1;
     _playedGo = false;
     _lastRound = 0;
