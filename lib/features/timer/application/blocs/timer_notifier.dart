@@ -67,17 +67,27 @@ class TimerNotifier extends _$TimerNotifier {
     return const TimerNotifierState.initial();
   }
 
-  /// Resolve the voice pack name from the current setting.
-  /// For [VoiceOption.random], randomly picks between available packs.
-  String _resolveVoicePack() {
+  /// Configure the audio service voice from the current setting.
+  ///
+  /// For [VoiceOption.random], enables per-cue randomization so each
+  /// voice cue picks a different voice pack at random.
+  void _configureVoice() {
     final voice = ref.read(appSettingsNotifierProvider).voice;
     switch (voice) {
       case VoiceOption.major:
-        return 'major';
+        _audioService
+          ..setRandomizePerCue(enabled: false)
+          ..setVoicePack('major');
       case VoiceOption.liam:
-        return 'liam';
+        _audioService
+          ..setRandomizePerCue(enabled: false)
+          ..setVoicePack('liam');
+      case VoiceOption.holly:
+        _audioService
+          ..setRandomizePerCue(enabled: false)
+          ..setVoicePack('holly');
       case VoiceOption.random:
-        return _random.nextBool() ? 'major' : 'liam';
+        _audioService.setRandomizePerCue(enabled: true);
     }
   }
 
@@ -85,7 +95,7 @@ class TimerNotifier extends _$TimerNotifier {
   Future<void> start(Workout workout) async {
     _lastWorkout = workout;
     _resetAudioState();
-    _audioService.setVoicePack(_resolveVoicePack());
+    _configureVoice();
 
     final result = await _startTimer(workout);
 

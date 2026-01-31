@@ -250,6 +250,8 @@ class SettingsPage extends ConsumerWidget {
         return 'Major';
       case VoiceOption.liam:
         return 'Liam';
+      case VoiceOption.holly:
+        return 'Holly';
       case VoiceOption.random:
         return 'Random';
     }
@@ -261,8 +263,10 @@ class SettingsPage extends ConsumerWidget {
         return 'Major (CrossFit Coach)';
       case VoiceOption.liam:
         return 'Liam (Old British Man)';
+      case VoiceOption.holly:
+        return 'Holly';
       case VoiceOption.random:
-        return 'Random (surprise me)';
+        return 'Random (mix it up each cue)';
     }
   }
 
@@ -272,6 +276,8 @@ class SettingsPage extends ConsumerWidget {
         return Icons.record_voice_over;
       case VoiceOption.liam:
         return Icons.record_voice_over_outlined;
+      case VoiceOption.holly:
+        return Icons.face;
       case VoiceOption.random:
         return Icons.shuffle;
     }

@@ -14,7 +14,10 @@ enum VoiceOption {
   /// Liam - Old British Man voice.
   liam,
 
-  /// Random - randomly pick a voice for each workout.
+  /// Holly - female voice.
+  holly,
+
+  /// Random - randomly pick a different voice for each cue.
   random,
 }
 
