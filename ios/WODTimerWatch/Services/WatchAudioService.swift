@@ -1,8 +1,10 @@
 import AVFoundation
 import Foundation
+import Observation
 
 /// Audio service for watchOS that plays voice cue MP3s from bundled resources.
 /// Uses AVAudioPlayer for playback with ducking of other audio.
+@Observable
 final class WatchAudioService {
 
     // MARK: - Configuration
@@ -20,6 +22,7 @@ final class WatchAudioService {
 
     // MARK: - Internal
 
+    @ObservationIgnored
     private var player: AVAudioPlayer?
 
     init() {
