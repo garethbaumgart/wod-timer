@@ -53,13 +53,13 @@ class TimerSession with _$TimerSession {
 
   /// Create a new session from a workout configuration.
   factory TimerSession.fromWorkout(Workout workout) => TimerSession(
-        id: UniqueId(),
-        workout: workout,
-        state: TimerState.ready,
-        currentRound: 1,
-        elapsed: TimerDuration.zero,
-        currentIntervalElapsed: TimerDuration.zero,
-      );
+    id: UniqueId(),
+    workout: workout,
+    state: TimerState.ready,
+    currentRound: 1,
+    elapsed: TimerDuration.zero,
+    currentIntervalElapsed: TimerDuration.zero,
+  );
 
   /// Start the timer session.
   ///
@@ -78,10 +78,12 @@ class TimerSession with _$TimerSession {
     final now = DateTime.now();
     final hasPrepCountdown = workout.prepCountdown.seconds > 0;
 
-    return right(copyWith(
-      state: hasPrepCountdown ? TimerState.preparing : TimerState.running,
-      startedAt: now,
-    ));
+    return right(
+      copyWith(
+        state: hasPrepCountdown ? TimerState.preparing : TimerState.running,
+        startedAt: now,
+      ),
+    );
   }
 
   /// Pause the timer.
@@ -91,17 +93,11 @@ class TimerSession with _$TimerSession {
   Either<TimerFailure, TimerSession> pause() {
     if (!state.canPause) {
       return left(
-        TimerFailure.invalidStateTransition(
-          from: state,
-          to: TimerState.paused,
-        ),
+        TimerFailure.invalidStateTransition(from: state, to: TimerState.paused),
       );
     }
 
-    return right(copyWith(
-      state: TimerState.paused,
-      stateBeforePause: state,
-    ));
+    return right(copyWith(state: TimerState.paused, stateBeforePause: state));
   }
 
   /// Resume the timer from paused state.
@@ -119,10 +115,7 @@ class TimerSession with _$TimerSession {
     }
 
     final targetState = stateBeforePause ?? TimerState.running;
-    return right(copyWith(
-      state: targetState,
-      stateBeforePause: null,
-    ));
+    return right(copyWith(state: targetState, stateBeforePause: null));
   }
 
   /// Update elapsed time by the given duration.
@@ -153,32 +146,30 @@ class TimerSession with _$TimerSession {
     if (state == TimerState.preparing) {
       if (newIntervalElapsed.seconds >= workout.prepCountdown.seconds) {
         // Prep is done, start the workout
-        return right(copyWith(
-          state: TimerState.running,
-          currentIntervalElapsed: TimerDuration.zero,
-          intervalElapsedMillis: 0,
-          elapsedMillis: newElapsedMillisRemainder,
-        ));
+        return right(
+          copyWith(
+            state: TimerState.running,
+            currentIntervalElapsed: TimerDuration.zero,
+            intervalElapsedMillis: 0,
+            elapsedMillis: newElapsedMillisRemainder,
+          ),
+        );
       }
-      return right(copyWith(
-        currentIntervalElapsed: newIntervalElapsed,
-        intervalElapsedMillis: newIntervalMillisRemainder,
-        elapsedMillis: newElapsedMillisRemainder,
-      ));
+      return right(
+        copyWith(
+          currentIntervalElapsed: newIntervalElapsed,
+          intervalElapsedMillis: newIntervalMillisRemainder,
+          elapsedMillis: newElapsedMillisRemainder,
+        ),
+      );
     }
 
     // Handle based on timer type
     return workout.timerType.when(
-      amrap: (timer) => _tickAmrap(
-        timer,
-        newElapsed,
-        newElapsedMillisRemainder,
-      ),
-      forTime: (timer) => _tickForTime(
-        timer,
-        newElapsed,
-        newElapsedMillisRemainder,
-      ),
+      amrap: (timer) =>
+          _tickAmrap(timer, newElapsed, newElapsedMillisRemainder),
+      forTime: (timer) =>
+          _tickForTime(timer, newElapsed, newElapsedMillisRemainder),
       emom: (timer) => _tickEmom(
         timer,
         newElapsed,
@@ -204,10 +195,9 @@ class TimerSession with _$TimerSession {
     if (newElapsed.seconds >= timer.duration.seconds) {
       return right(_complete());
     }
-    return right(copyWith(
-      elapsed: newElapsed,
-      elapsedMillis: newElapsedMillis,
-    ));
+    return right(
+      copyWith(elapsed: newElapsed, elapsedMillis: newElapsedMillis),
+    );
   }
 
   Either<TimerFailure, TimerSession> _tickForTime(
@@ -218,10 +208,9 @@ class TimerSession with _$TimerSession {
     if (newElapsed.seconds >= timer.timeCap.seconds) {
       return right(_complete());
     }
-    return right(copyWith(
-      elapsed: newElapsed,
-      elapsedMillis: newElapsedMillis,
-    ));
+    return right(
+      copyWith(elapsed: newElapsed, elapsedMillis: newElapsedMillis),
+    );
   }
 
   Either<TimerFailure, TimerSession> _tickEmom(
@@ -239,21 +228,25 @@ class TimerSession with _$TimerSession {
       if (currentRound >= timer.rounds.value) {
         return right(_complete());
       }
-      return right(copyWith(
-        elapsed: newElapsed,
-        elapsedMillis: newElapsedMillis,
-        currentIntervalElapsed: TimerDuration.zero,
-        intervalElapsedMillis: 0,
-        currentRound: currentRound + 1,
-      ));
+      return right(
+        copyWith(
+          elapsed: newElapsed,
+          elapsedMillis: newElapsedMillis,
+          currentIntervalElapsed: TimerDuration.zero,
+          intervalElapsedMillis: 0,
+          currentRound: currentRound + 1,
+        ),
+      );
     }
 
-    return right(copyWith(
-      elapsed: newElapsed,
-      elapsedMillis: newElapsedMillis,
-      currentIntervalElapsed: newIntervalElapsed,
-      intervalElapsedMillis: newIntervalMillis,
-    ));
+    return right(
+      copyWith(
+        elapsed: newElapsed,
+        elapsedMillis: newElapsedMillis,
+        currentIntervalElapsed: newIntervalElapsed,
+        intervalElapsedMillis: newIntervalMillis,
+      ),
+    );
   }
 
   Either<TimerFailure, TimerSession> _tickTabata(
@@ -274,36 +267,42 @@ class TimerSession with _$TimerSession {
     if (newIntervalElapsed.seconds >= phaseSeconds) {
       if (isWorkPhase) {
         // Work done, start rest
-        return right(copyWith(
-          state: TimerState.resting,
-          elapsed: newElapsed,
-          elapsedMillis: newElapsedMillis,
-          currentIntervalElapsed: TimerDuration.zero,
-          intervalElapsedMillis: 0,
-        ));
+        return right(
+          copyWith(
+            state: TimerState.resting,
+            elapsed: newElapsed,
+            elapsedMillis: newElapsedMillis,
+            currentIntervalElapsed: TimerDuration.zero,
+            intervalElapsedMillis: 0,
+          ),
+        );
       } else {
         // Rest done, check if workout is complete
         if (currentRound >= timer.rounds.value) {
           return right(_complete());
         }
         // Start next round's work phase
-        return right(copyWith(
-          state: TimerState.running,
-          elapsed: newElapsed,
-          elapsedMillis: newElapsedMillis,
-          currentIntervalElapsed: TimerDuration.zero,
-          intervalElapsedMillis: 0,
-          currentRound: currentRound + 1,
-        ));
+        return right(
+          copyWith(
+            state: TimerState.running,
+            elapsed: newElapsed,
+            elapsedMillis: newElapsedMillis,
+            currentIntervalElapsed: TimerDuration.zero,
+            intervalElapsedMillis: 0,
+            currentRound: currentRound + 1,
+          ),
+        );
       }
     }
 
-    return right(copyWith(
-      elapsed: newElapsed,
-      elapsedMillis: newElapsedMillis,
-      currentIntervalElapsed: newIntervalElapsed,
-      intervalElapsedMillis: newIntervalMillis,
-    ));
+    return right(
+      copyWith(
+        elapsed: newElapsed,
+        elapsedMillis: newElapsedMillis,
+        currentIntervalElapsed: newIntervalElapsed,
+        intervalElapsedMillis: newIntervalMillis,
+      ),
+    );
   }
 
   /// Manually complete the workout (e.g., user finishes For Time early).
@@ -322,36 +321,45 @@ class TimerSession with _$TimerSession {
     return right(_complete());
   }
 
-  TimerSession _complete() => copyWith(
-        state: TimerState.completed,
-        completedAt: DateTime.now(),
-      );
+  TimerSession _complete() =>
+      copyWith(state: TimerState.completed, completedAt: DateTime.now());
 
   // Computed properties
 
   /// Time remaining in the current phase/interval.
   TimerDuration get timeRemaining {
     if (state == TimerState.preparing) {
-      final remaining = workout.prepCountdown.seconds - currentIntervalElapsed.seconds;
-      return TimerDuration.fromSeconds(remaining.clamp(0, workout.prepCountdown.seconds));
+      final remaining =
+          workout.prepCountdown.seconds - currentIntervalElapsed.seconds;
+      return TimerDuration.fromSeconds(
+        remaining.clamp(0, workout.prepCountdown.seconds),
+      );
     }
 
     return workout.timerType.when(
       amrap: (timer) {
         final remaining = timer.duration.seconds - elapsed.seconds;
-        return TimerDuration.fromSeconds(remaining.clamp(0, timer.duration.seconds));
+        return TimerDuration.fromSeconds(
+          remaining.clamp(0, timer.duration.seconds),
+        );
       },
       forTime: (timer) {
         final remaining = timer.timeCap.seconds - elapsed.seconds;
-        return TimerDuration.fromSeconds(remaining.clamp(0, timer.timeCap.seconds));
+        return TimerDuration.fromSeconds(
+          remaining.clamp(0, timer.timeCap.seconds),
+        );
       },
       emom: (timer) {
-        final remaining = timer.intervalDuration.seconds - currentIntervalElapsed.seconds;
-        return TimerDuration.fromSeconds(remaining.clamp(0, timer.intervalDuration.seconds));
+        final remaining =
+            timer.intervalDuration.seconds - currentIntervalElapsed.seconds;
+        return TimerDuration.fromSeconds(
+          remaining.clamp(0, timer.intervalDuration.seconds),
+        );
       },
       tabata: (timer) {
-        final phaseSeconds =
-            state == TimerState.running ? timer.workDuration.seconds : timer.restDuration.seconds;
+        final phaseSeconds = state == TimerState.running
+            ? timer.workDuration.seconds
+            : timer.restDuration.seconds;
         final remaining = phaseSeconds - currentIntervalElapsed.seconds;
         return TimerDuration.fromSeconds(remaining.clamp(0, phaseSeconds));
       },

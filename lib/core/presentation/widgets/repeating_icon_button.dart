@@ -87,9 +87,7 @@ class _RepeatingIconButtonState extends State<RepeatingIconButton> {
           height: widget.size,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border,
-            ),
+            border: Border.all(color: AppColors.border),
           ),
           child: Center(
             child: Icon(

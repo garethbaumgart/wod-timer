@@ -175,8 +175,9 @@ class _DurationPickerState extends State<DurationPicker> {
             ),
             RepeatingIconButton(
               icon: Icons.add,
-              onPressed:
-                  _minutes < widget.maxMinutes ? _incrementMinutes : null,
+              onPressed: _minutes < widget.maxMinutes
+                  ? _incrementMinutes
+                  : null,
               semanticsLabel: 'Increase minutes',
             ),
             const SizedBox(width: 24),

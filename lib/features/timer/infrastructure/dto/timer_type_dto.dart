@@ -26,10 +26,8 @@ class TimerTypeDto {
   /// Create DTO from domain entity.
   factory TimerTypeDto.fromDomain(TimerType timerType) {
     return timerType.when(
-      amrap: (t) => TimerTypeDto(
-        type: 'amrap',
-        durationSeconds: t.duration.seconds,
-      ),
+      amrap: (t) =>
+          TimerTypeDto(type: 'amrap', durationSeconds: t.duration.seconds),
       forTime: (t) => TimerTypeDto(
         type: 'fortime',
         timeCapSeconds: t.timeCap.seconds,
@@ -79,25 +77,26 @@ class TimerTypeDto {
   TimerType toDomain() {
     return switch (type) {
       'amrap' => AmrapTimer(
-          duration: TimerDuration.fromSeconds(durationSeconds ?? 600),
-        ),
+        duration: TimerDuration.fromSeconds(durationSeconds ?? 600),
+      ),
       'fortime' => ForTimeTimer(
-          timeCap: TimerDuration.fromSeconds(timeCapSeconds ?? 1200),
-          countUp: countUp ?? true,
-        ),
+        timeCap: TimerDuration.fromSeconds(timeCapSeconds ?? 1200),
+        countUp: countUp ?? true,
+      ),
       'emom' => EmomTimer(
-          intervalDuration:
-              TimerDuration.fromSeconds(intervalDurationSeconds ?? 60),
-          rounds: RoundCount.fromInt(rounds ?? 10),
+        intervalDuration: TimerDuration.fromSeconds(
+          intervalDurationSeconds ?? 60,
         ),
+        rounds: RoundCount.fromInt(rounds ?? 10),
+      ),
       'tabata' => TabataTimer(
-          workDuration: TimerDuration.fromSeconds(workDurationSeconds ?? 20),
-          restDuration: TimerDuration.fromSeconds(restDurationSeconds ?? 10),
-          rounds: RoundCount.fromInt(rounds ?? 8),
-        ),
+        workDuration: TimerDuration.fromSeconds(workDurationSeconds ?? 20),
+        restDuration: TimerDuration.fromSeconds(restDurationSeconds ?? 10),
+        rounds: RoundCount.fromInt(rounds ?? 8),
+      ),
       _ => AmrapTimer(
-          duration: TimerDuration.fromSeconds(durationSeconds ?? 600),
-        ),
+        duration: TimerDuration.fromSeconds(durationSeconds ?? 600),
+      ),
     };
   }
 }

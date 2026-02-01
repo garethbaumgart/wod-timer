@@ -46,8 +46,9 @@ class LargeTimerText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultColor =
-        isDark ? AppColors.timerTextDark : AppColors.timerTextLight;
+    final defaultColor = isDark
+        ? AppColors.timerTextDark
+        : AppColors.timerTextLight;
 
     return Text(
       time,

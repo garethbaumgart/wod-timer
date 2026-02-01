@@ -60,14 +60,16 @@ class RecentWorkouts extends _$RecentWorkouts {
         final lastUsedMs = prefs.getInt('${_keyPrefix}${i}_lastUsed');
 
         if (timerType != null && name != null) {
-          recents.add(RecentWorkout(
-            timerType: timerType,
-            name: name,
-            description: description ?? '',
-            lastUsed: lastUsedMs != null
-                ? DateTime.fromMillisecondsSinceEpoch(lastUsedMs)
-                : DateTime.now(),
-          ));
+          recents.add(
+            RecentWorkout(
+              timerType: timerType,
+              name: name,
+              description: description ?? '',
+              lastUsed: lastUsedMs != null
+                  ? DateTime.fromMillisecondsSinceEpoch(lastUsedMs)
+                  : DateTime.now(),
+            ),
+          );
         }
       }
 
@@ -91,10 +93,12 @@ class RecentWorkouts extends _$RecentWorkouts {
 
     // Remove existing entry with same configuration (type + name + description)
     final updated = state
-        .where((r) =>
-            !(r.timerType == timerType &&
-                r.name == name &&
-                r.description == description))
+        .where(
+          (r) =>
+              !(r.timerType == timerType &&
+                  r.name == name &&
+                  r.description == description),
+        )
         .toList();
 
     // Add new entry at the front
@@ -126,7 +130,9 @@ class RecentWorkouts extends _$RecentWorkouts {
         await prefs.setString('${_keyPrefix}${i}_name', recent.name);
         await prefs.setString('${_keyPrefix}${i}_desc', recent.description);
         await prefs.setInt(
-            '${_keyPrefix}${i}_lastUsed', recent.lastUsed.millisecondsSinceEpoch);
+          '${_keyPrefix}${i}_lastUsed',
+          recent.lastUsed.millisecondsSinceEpoch,
+        );
       }
     } catch (e) {
       // Ignore errors saving preferences

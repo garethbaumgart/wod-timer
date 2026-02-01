@@ -10,11 +10,7 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
-  const PlaceholderPage({
-    required this.title,
-    super.key,
-    this.subtitle,
-  });
+  const PlaceholderPage({required this.title, super.key, this.subtitle});
 
   /// The page title.
   final String title;
@@ -25,9 +21,7 @@ class PlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -74,10 +68,7 @@ class PlaceholderPage extends StatelessWidget {
 
 /// Signal design home page with hero title and colored sidebar strips.
 class PlaceholderHomePage extends ConsumerWidget {
-  const PlaceholderHomePage({
-    required this.onTimerSelected,
-    super.key,
-  });
+  const PlaceholderHomePage({required this.onTimerSelected, super.key});
 
   /// Callback when a timer type is selected.
   final void Function(String timerType) onTimerSelected;

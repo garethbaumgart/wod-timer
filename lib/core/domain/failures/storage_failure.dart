@@ -33,13 +33,13 @@ sealed class StorageFailure with _$StorageFailure {
 /// Extension to get user-friendly error messages from StorageFailure.
 extension StorageFailureMessage on StorageFailure {
   String get message => when(
-        readError: (msg) => msg ?? 'Failed to read data',
-        writeError: (msg) => msg ?? 'Failed to save data',
-        deleteError: (msg) => msg ?? 'Failed to delete data',
-        notFound: (key) => key != null ? 'Data not found: $key' : 'Data not found',
-        corrupted: (msg) => msg ?? 'Data is corrupted',
-        permissionDenied: () => 'Storage permission denied',
-        storageFull: () => 'Storage is full',
-        unexpected: (msg) => msg ?? 'An unexpected storage error occurred',
-      );
+    readError: (msg) => msg ?? 'Failed to read data',
+    writeError: (msg) => msg ?? 'Failed to save data',
+    deleteError: (msg) => msg ?? 'Failed to delete data',
+    notFound: (key) => key != null ? 'Data not found: $key' : 'Data not found',
+    corrupted: (msg) => msg ?? 'Data is corrupted',
+    permissionDenied: () => 'Storage permission denied',
+    storageFull: () => 'Storage is full',
+    unexpected: (msg) => msg ?? 'An unexpected storage error occurred',
+  );
 }

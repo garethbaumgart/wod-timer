@@ -87,7 +87,9 @@ void main() {
       });
 
       test('should use provided message', () {
-        const failure = TimerFailure.unexpected(message: 'Something went wrong');
+        const failure = TimerFailure.unexpected(
+          message: 'Something went wrong',
+        );
 
         expect(failure.message, 'Something went wrong');
       });

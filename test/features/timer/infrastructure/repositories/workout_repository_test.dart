@@ -29,14 +29,12 @@ void main() {
   group('WorkoutRepository', () {
     group('getAll', () {
       test('should return list of workouts from data source', () async {
-        final workouts = [
-          Workout.defaultAmrap(),
-          Workout.defaultTabata(),
-        ];
+        final workouts = [Workout.defaultAmrap(), Workout.defaultTabata()];
         final dtos = workouts.map(WorkoutDto.fromDomain).toList();
 
-        when(() => mockDataSource.getAll())
-            .thenAnswer((_) async => right(dtos));
+        when(
+          () => mockDataSource.getAll(),
+        ).thenAnswer((_) async => right(dtos));
 
         final result = await repository.getAll();
 
@@ -49,9 +47,9 @@ void main() {
       });
 
       test('should return failure when data source fails', () async {
-        when(() => mockDataSource.getAll()).thenAnswer(
-          (_) async => left(const StorageFailure.readError()),
-        );
+        when(
+          () => mockDataSource.getAll(),
+        ).thenAnswer((_) async => left(const StorageFailure.readError()));
 
         final result = await repository.getAll();
 
@@ -68,26 +66,25 @@ void main() {
         final workout = Workout.defaultEmom();
         final dto = WorkoutDto.fromDomain(workout);
 
-        when(() => mockDataSource.getById(workout.id.value))
-            .thenAnswer((_) async => right(dto));
+        when(
+          () => mockDataSource.getById(workout.id.value),
+        ).thenAnswer((_) async => right(dto));
 
         final result = await repository.getById(workout.id);
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (found) {
-            expect(found, isNotNull);
-            expect(found!.id.value, workout.id.value);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (found) {
+          expect(found, isNotNull);
+          expect(found!.id.value, workout.id.value);
+        });
       });
 
       test('should return null when not found', () async {
         final id = UniqueId();
 
-        when(() => mockDataSource.getById(id.value))
-            .thenAnswer((_) async => right(null));
+        when(
+          () => mockDataSource.getById(id.value),
+        ).thenAnswer((_) async => right(null));
 
         final result = await repository.getById(id);
 
@@ -101,9 +98,9 @@ void main() {
       test('should return failure when data source fails', () async {
         final id = UniqueId();
 
-        when(() => mockDataSource.getById(id.value)).thenAnswer(
-          (_) async => left(const StorageFailure.readError()),
-        );
+        when(
+          () => mockDataSource.getById(id.value),
+        ).thenAnswer((_) async => left(const StorageFailure.readError()));
 
         final result = await repository.getById(id);
 
@@ -115,8 +112,9 @@ void main() {
       test('should save workout through data source', () async {
         final workout = Workout.defaultForTime();
 
-        when(() => mockDataSource.save(any()))
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockDataSource.save(any()),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await repository.save(workout);
 
@@ -127,9 +125,9 @@ void main() {
       test('should return failure when data source fails', () async {
         final workout = Workout.defaultAmrap();
 
-        when(() => mockDataSource.save(any())).thenAnswer(
-          (_) async => left(const StorageFailure.writeError()),
-        );
+        when(
+          () => mockDataSource.save(any()),
+        ).thenAnswer((_) async => left(const StorageFailure.writeError()));
 
         final result = await repository.save(workout);
 
@@ -141,8 +139,9 @@ void main() {
       test('should delete workout through data source', () async {
         final id = UniqueId();
 
-        when(() => mockDataSource.delete(id.value))
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockDataSource.delete(id.value),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await repository.delete(id);
 
@@ -153,9 +152,9 @@ void main() {
       test('should return failure when data source fails', () async {
         final id = UniqueId();
 
-        when(() => mockDataSource.delete(id.value)).thenAnswer(
-          (_) async => left(const StorageFailure.deleteError()),
-        );
+        when(
+          () => mockDataSource.delete(id.value),
+        ).thenAnswer((_) async => left(const StorageFailure.deleteError()));
 
         final result = await repository.delete(id);
 
@@ -168,9 +167,9 @@ void main() {
         final workouts = [Workout.defaultAmrap()];
         final dtos = workouts.map(WorkoutDto.fromDomain).toList();
 
-        when(() => mockDataSource.watchAll()).thenAnswer(
-          (_) => Stream.value(right(dtos)),
-        );
+        when(
+          () => mockDataSource.watchAll(),
+        ).thenAnswer((_) => Stream.value(right(dtos)));
 
         final stream = repository.watchAll();
 
@@ -199,23 +198,18 @@ void main() {
         final originalWorkout = Workout.defaultTabata();
         final dto = WorkoutDto.fromDomain(originalWorkout);
 
-        when(() => mockDataSource.getById(originalWorkout.id.value))
-            .thenAnswer((_) async => right(dto));
+        when(
+          () => mockDataSource.getById(originalWorkout.id.value),
+        ).thenAnswer((_) async => right(dto));
 
         final result = await repository.getById(originalWorkout.id);
 
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (found) {
-            expect(found, isNotNull);
-            expect(found!.id.value, originalWorkout.id.value);
-            expect(found.name.value, originalWorkout.name.value);
-            expect(
-              found.timerType.typeCode,
-              originalWorkout.timerType.typeCode,
-            );
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (found) {
+          expect(found, isNotNull);
+          expect(found!.id.value, originalWorkout.id.value);
+          expect(found.name.value, originalWorkout.name.value);
+          expect(found.timerType.typeCode, originalWorkout.timerType.typeCode);
+        });
       });
     });
   });

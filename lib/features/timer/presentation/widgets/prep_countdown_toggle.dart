@@ -44,12 +44,7 @@ class _PrepCountdownToggleState extends State<PrepCountdownToggle> {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: AppColors.divider,
-                width: 1,
-              ),
-            ),
+            border: Border(top: BorderSide(color: AppColors.divider, width: 1)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

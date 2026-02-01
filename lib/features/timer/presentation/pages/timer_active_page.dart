@@ -17,10 +17,7 @@ import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 /// Shows the running timer with large display for gym visibility.
 /// Supports pause/resume and stop controls.
 class TimerActivePage extends ConsumerStatefulWidget {
-  const TimerActivePage({
-    required this.timerType,
-    super.key,
-  });
+  const TimerActivePage({required this.timerType, super.key});
 
   /// The type of timer being displayed.
   final String timerType;
@@ -103,9 +100,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                ),
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
                 child: const Text('EXIT'),
               ),
             ],
@@ -157,8 +152,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 _onPauseResume();
               }
               // Swipe down (positive velocity) to resume when paused
-              else if (details.primaryVelocity! > 300 &&
-                  timerState.canResume) {
+              else if (details.primaryVelocity! > 300 && timerState.canResume) {
                 ref.read(hapticServiceProvider).mediumImpact();
                 _onPauseResume();
               }
@@ -374,9 +368,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildControlsCompact(state),
-            ],
+            children: [_buildControlsCompact(state)],
           ),
         ),
       ],
@@ -392,19 +384,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     final phaseLabel = _getPhaseLabel(state);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: phaseColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
       ),
       child: Text(
         '$typeLabel  \u00B7  $phaseLabel',
-        style: AppTypography.pillBadge.copyWith(
-          color: phaseColor,
-        ),
+        style: AppTypography.pillBadge.copyWith(color: phaseColor),
       ),
     );
   }
@@ -436,10 +423,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [
-                phaseColor.withValues(alpha: 0.06),
-                Colors.transparent,
-              ],
+              colors: [phaseColor.withValues(alpha: 0.06), Colors.transparent],
               stops: const [0.0, 0.7],
             ),
           ),
@@ -619,8 +603,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           label: isPaused ? 'Resume' : 'Pause',
           borderColor: AppColors.primary,
           iconColor: AppColors.primary,
-          onPressed:
-              state.canPause || state.canResume ? _onPauseResume : null,
+          onPressed: state.canPause || state.canResume ? _onPauseResume : null,
           size: 72,
         ),
 
@@ -666,8 +649,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           label: isPaused ? 'Resume' : 'Pause',
           borderColor: AppColors.primary,
           iconColor: AppColors.primary,
-          onPressed:
-              state.canPause || state.canResume ? _onPauseResume : null,
+          onPressed: state.canPause || state.canResume ? _onPauseResume : null,
           size: 72,
         ),
         if (widget.timerType == TimerTypes.forTime) ...[
@@ -716,9 +698,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isDisabled
-                    ? const Color(0xFF222222)
-                    : borderColor,
+                color: isDisabled ? const Color(0xFF222222) : borderColor,
                 width: 1.5,
               ),
             ),
@@ -753,11 +733,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         const Spacer(flex: 2),
 
         // Checkmark icon
-        const Icon(
-          Icons.check,
-          size: 56,
-          color: AppColors.primary,
-        ),
+        const Icon(Icons.check, size: 56, color: AppColors.primary),
         const SizedBox(height: AppSpacing.md),
 
         // "Finished!" title
@@ -778,7 +754,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
               // Total time card
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(12),
@@ -813,7 +792,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 // Rounds card
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(12),
@@ -877,11 +859,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.check,
-                size: 56,
-                color: AppColors.primary,
-              ),
+              const Icon(Icons.check, size: 56, color: AppColors.primary),
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Finished!',
@@ -932,9 +910,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildCompletedButtons(),
-            ],
+            children: [_buildCompletedButtons()],
           ),
         ),
       ],
@@ -955,16 +931,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _onRestart,
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusSm),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   child: Container(
                     height: 56,
                     decoration: BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusSm),
-                      border: Border.all(
-                        color: AppColors.border,
-                      ),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      border: Border.all(color: AppColors.border),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -991,14 +963,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _onComplete,
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusSm),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   child: Container(
                     height: 56,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusSm),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     ),
                     alignment: Alignment.center,
                     child: Text(

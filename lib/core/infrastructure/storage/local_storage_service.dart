@@ -45,11 +45,14 @@ abstract class LocalStorageService {
 /// Stores JSON data in the app's documents directory.
 class FileLocalStorageService implements LocalStorageService {
   FileLocalStorageService({Directory? baseDirectory})
-      : _baseDirectory = baseDirectory;
+    : _baseDirectory = baseDirectory;
 
   Directory? _baseDirectory;
   final _watchControllers =
-      <String, StreamController<Either<StorageFailure, List<Map<String, dynamic>>>>>{};
+      <
+        String,
+        StreamController<Either<StorageFailure, List<Map<String, dynamic>>>>
+      >{};
 
   Future<Directory> get _directory async {
     if (_baseDirectory != null) return _baseDirectory!;
@@ -192,14 +195,16 @@ class FileLocalStorageService implements LocalStorageService {
     String key,
   ) {
     if (!_watchControllers.containsKey(key)) {
-      _watchControllers[key] = StreamController<
-          Either<StorageFailure, List<Map<String, dynamic>>>>.broadcast(
-        onListen: () async {
-          // Emit current value when first listener subscribes
-          final result = await readJsonList(key);
-          _watchControllers[key]?.add(result);
-        },
-      );
+      _watchControllers[key] =
+          StreamController<
+            Either<StorageFailure, List<Map<String, dynamic>>>
+          >.broadcast(
+            onListen: () async {
+              // Emit current value when first listener subscribes
+              final result = await readJsonList(key);
+              _watchControllers[key]?.add(result);
+            },
+          );
     }
     return _watchControllers[key]!.stream;
   }

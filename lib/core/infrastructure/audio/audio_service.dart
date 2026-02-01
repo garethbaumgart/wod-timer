@@ -36,11 +36,10 @@ class AudioService implements IAudioService {
       final session = await audio_session.AudioSession.instance;
       await session.configure(
         audio_session.AudioSessionConfiguration(
-          avAudioSessionCategory:
-              audio_session.AVAudioSessionCategory.playback,
+          avAudioSessionCategory: audio_session.AVAudioSessionCategory.playback,
           avAudioSessionCategoryOptions:
               audio_session.AVAudioSessionCategoryOptions.duckOthers |
-                  audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
+              audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
         ),
       );
 
@@ -55,8 +54,7 @@ class AudioService implements IAudioService {
       // Use a single listener to avoid double-decrementing _activePlayers.
       for (final player in _players.values) {
         final sub = player.onPlayerStateChanged.listen((state) async {
-          if (state == PlayerState.completed ||
-              state == PlayerState.stopped) {
+          if (state == PlayerState.completed || state == PlayerState.stopped) {
             await _deactivateSession();
           }
         });

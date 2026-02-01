@@ -119,10 +119,14 @@ void main() {
 
     test('should not be equal for different rounds', () {
       final interval = TimerDuration.fromSeconds(60);
-      final timer1 =
-          EmomTimer(intervalDuration: interval, rounds: RoundCount.fromInt(10));
-      final timer2 =
-          EmomTimer(intervalDuration: interval, rounds: RoundCount.fromInt(12));
+      final timer1 = EmomTimer(
+        intervalDuration: interval,
+        rounds: RoundCount.fromInt(10),
+      );
+      final timer2 = EmomTimer(
+        intervalDuration: interval,
+        rounds: RoundCount.fromInt(12),
+      );
 
       expect(timer1, isNot(equals(timer2)));
     });
@@ -207,12 +211,14 @@ void main() {
         TabataTimer.standard(),
       ];
 
-      final labels = timers.map((timer) => switch (timer) {
-            AmrapTimer() => 'AMRAP',
-            ForTimeTimer() => 'FOR TIME',
-            EmomTimer() => 'EMOM',
-            TabataTimer() => 'TABATA',
-          });
+      final labels = timers.map(
+        (timer) => switch (timer) {
+          AmrapTimer() => 'AMRAP',
+          ForTimeTimer() => 'FOR TIME',
+          EmomTimer() => 'EMOM',
+          TabataTimer() => 'TABATA',
+        },
+      );
 
       expect(labels, ['AMRAP', 'FOR TIME', 'EMOM', 'TABATA']);
     });

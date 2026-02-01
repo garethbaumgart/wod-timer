@@ -13,7 +13,8 @@ import 'package:wod_timer/features/timer/application/usecases/start_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/stop_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/tick_timer.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
-import 'package:wod_timer/features/timer/domain/entities/timer_state.dart' as domain;
+import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
+    as domain;
 import 'package:wod_timer/features/timer/domain/entities/workout.dart';
 import 'package:wod_timer/features/timer/infrastructure/services/i_timer_engine.dart';
 
@@ -271,7 +272,9 @@ class TimerNotifier extends _$TimerNotifier {
     // Skip if "Get ready" already played this tick (e.g. prep is exactly 3s)
     if (!voiceCuePlayed && newSession.state == domain.TimerState.preparing) {
       final remaining = newSession.timeRemaining.seconds;
-      if (remaining <= 3 && remaining > 0 && remaining != _lastCountdownSecond) {
+      if (remaining <= 3 &&
+          remaining > 0 &&
+          remaining != _lastCountdownSecond) {
         _lastCountdownSecond = remaining;
         _audioService.playCountdown(remaining);
         _hapticService.mediumImpact(); // Haptic for each countdown tick
@@ -354,7 +357,8 @@ class TimerNotifier extends _$TimerNotifier {
     // Handle halfway point
     // Skip if another voice cue already played this tick (e.g. round transition)
     if (!voiceCuePlayed &&
-        newSession.progress >= 0.5 && oldSession.progress < 0.5) {
+        newSession.progress >= 0.5 &&
+        oldSession.progress < 0.5) {
       _audioService.playHalfway();
       _hapticService.mediumImpact();
       voiceCuePlayed = true;

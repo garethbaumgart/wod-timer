@@ -35,22 +35,18 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
   @override
   Future<Either<StorageFailure, List<WorkoutDto>>> getAll() async {
     final result = await _storageService.readJsonList(_storageKey);
-    return result.map(
-      (list) => list.map(WorkoutDto.fromJson).toList(),
-    );
+    return result.map((list) => list.map(WorkoutDto.fromJson).toList());
   }
 
   @override
   Future<Either<StorageFailure, WorkoutDto?>> getById(String id) async {
     final result = await getAll();
-    return result.map(
-      (workouts) {
-        for (final workout in workouts) {
-          if (workout.id == id) return workout;
-        }
-        return null;
-      },
-    );
+    return result.map((workouts) {
+      for (final workout in workouts) {
+        if (workout.id == id) return workout;
+      }
+      return null;
+    });
   }
 
   @override
@@ -66,9 +62,8 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
       ..add(workout)
       // Sort by creation date (newest first)
       ..sort(
-        (a, b) => DateTime.parse(b.createdAt).compareTo(
-          DateTime.parse(a.createdAt),
-        ),
+        (a, b) =>
+            DateTime.parse(b.createdAt).compareTo(DateTime.parse(a.createdAt)),
       );
 
     final jsonList = updated.map((w) => w.toJson()).toList();
@@ -90,10 +85,11 @@ class WorkoutLocalDataSourceImpl implements WorkoutLocalDataSource {
 
   @override
   Stream<Either<StorageFailure, List<WorkoutDto>>> watchAll() {
-    return _storageService.watchJsonList(_storageKey).map(
-          (result) => result.map(
-            (list) => list.map(WorkoutDto.fromJson).toList(),
-          ),
+    return _storageService
+        .watchJsonList(_storageKey)
+        .map(
+          (result) =>
+              result.map((list) => list.map(WorkoutDto.fromJson).toList()),
         );
   }
 }

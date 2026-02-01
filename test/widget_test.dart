@@ -3,11 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wod_timer/main.dart';
 
 void main() {
-  testWidgets('App renders correctly with home page',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: WodTimerApp()),
-    );
+  testWidgets('App renders correctly with home page', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: WodTimerApp()));
     await tester.pumpAndSettle();
 
     // Check that the Signal design home page renders with all four
