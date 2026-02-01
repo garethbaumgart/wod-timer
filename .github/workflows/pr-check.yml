@@ -41,12 +41,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Find watchOS simulator
+        id: sim
+        run: |
+          SIM=$(xcrun simctl list devices available watchOS -j | python3 -c "
+          import json,sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data['devices'].items():
+            if 'watchOS' in runtime:
+              for d in devices:
+                if d['isAvailable']:
+                  print(d['name']); sys.exit(0)
+          " 2>/dev/null || echo "Any watchOS Simulator Device")
+          echo "name=$SIM" >> "$GITHUB_OUTPUT"
+
       - name: Build watchOS app
         working-directory: ios
         run: |
           xcodebuild -project Runner.xcodeproj \
             -scheme WODTimerWatch \
-            -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
+            -destination 'platform=watchOS Simulator,name=${{ steps.sim.outputs.name }}' \
             build
 
       - name: Run watchOS tests
@@ -54,5 +68,5 @@ jobs:
         run: |
           xcodebuild -project Runner.xcodeproj \
             -scheme WODTimerWatch \
-            -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
+            -destination 'platform=watchOS Simulator,name=${{ steps.sim.outputs.name }}' \
             test
