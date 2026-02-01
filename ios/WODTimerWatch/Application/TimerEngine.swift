@@ -2,6 +2,7 @@ import Foundation
 
 /// Precise timer engine that fires at ~100ms intervals.
 /// Uses DispatchSourceTimer for better background precision than Timer.
+/// All state mutations are synchronized on the internal serial queue.
 final class TimerEngine {
     private var timer: DispatchSourceTimer?
     private var startTime: Date?
@@ -10,36 +11,51 @@ final class TimerEngine {
 
     var onTick: ((TimeInterval) -> Void)?
 
-    var isRunning: Bool { timer != nil && startTime != nil }
+    private(set) var isPaused: Bool = false
+
+    var isRunning: Bool {
+        queue.sync { timer != nil && startTime != nil }
+    }
 
     func start() {
-        stop()
-        startTime = Date()
-        pausedElapsed = 0
-        createTimer()
+        queue.sync {
+            cancelTimer()
+            startTime = Date()
+            pausedElapsed = 0
+            isPaused = false
+            createTimer()
+        }
     }
 
     func pause() {
-        guard let startTime else { return }
-        pausedElapsed += Date().timeIntervalSince(startTime)
-        self.startTime = nil
-        timer?.cancel()
-        timer = nil
+        queue.sync {
+            guard let startTime else { return }
+            pausedElapsed += Date().timeIntervalSince(startTime)
+            self.startTime = nil
+            isPaused = true
+            cancelTimer()
+        }
     }
 
     func resume() {
-        guard startTime == nil else { return }
-        startTime = Date()
-        createTimer()
+        queue.sync {
+            guard startTime == nil, isPaused else { return }
+            startTime = Date()
+            isPaused = false
+            createTimer()
+        }
     }
 
     func stop() {
-        timer?.cancel()
-        timer = nil
-        startTime = nil
-        pausedElapsed = 0
+        queue.sync {
+            cancelTimer()
+            startTime = nil
+            pausedElapsed = 0
+            isPaused = false
+        }
     }
 
+    /// Must be called on `queue`.
     private func createTimer() {
         let source = DispatchSource.makeTimerSource(queue: queue)
         source.schedule(deadline: .now(), repeating: .milliseconds(100), leeway: .milliseconds(10))
@@ -52,6 +68,12 @@ final class TimerEngine {
         }
         source.resume()
         timer = source
+    }
+
+    /// Must be called on `queue`.
+    private func cancelTimer() {
+        timer?.cancel()
+        timer = nil
     }
 
     deinit {

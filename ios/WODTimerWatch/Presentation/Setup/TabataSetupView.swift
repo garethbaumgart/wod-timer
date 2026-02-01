@@ -100,7 +100,7 @@ struct TabataSetupView: View {
                 )
                 let workout = WorkoutFactory.create(timerType: timerType)
                 viewModel.start(workout: workout)
-                showingTimer = true
+                showingTimer = viewModel.session?.state != .ready
             } label: {
                 Text("START")
                     .font(.system(size: 16, weight: .bold))
