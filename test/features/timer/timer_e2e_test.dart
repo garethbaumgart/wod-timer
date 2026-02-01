@@ -79,6 +79,8 @@ void main() {
         .thenAnswer((_) async => right(unit));
     when(() => mockAudioService.dispose()).thenAnswer((_) async {});
     when(() => mockAudioService.setVoicePack(any())).thenReturn(null);
+    when(() => mockAudioService.setRandomizePerCue(enabled: any(named: 'enabled')))
+        .thenReturn(null);
   });
 
   tearDown(() {
