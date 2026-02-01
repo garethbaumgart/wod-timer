@@ -95,14 +95,15 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       final prefs = await SharedPreferences.getInstance();
 
       final orientationIndex = prefs.getInt(_keyOrientationLock) ?? 0;
-      final safeOrientationIndex =
-          orientationIndex.clamp(0, OrientationLockMode.values.length - 1);
+      final safeOrientationIndex = orientationIndex.clamp(
+        0,
+        OrientationLockMode.values.length - 1,
+      );
       final hapticEnabled = prefs.getBool(_keyHapticEnabled) ?? true;
       final soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
       final keepScreenOn = prefs.getBool(_keyKeepScreenOn) ?? true;
       final voiceIndex = prefs.getInt(_keyVoice) ?? 0;
-      final safeVoiceIndex =
-          voiceIndex.clamp(0, VoiceOption.values.length - 1);
+      final safeVoiceIndex = voiceIndex.clamp(0, VoiceOption.values.length - 1);
 
       state = AppSettings(
         orientationLock: OrientationLockMode.values[safeOrientationIndex],

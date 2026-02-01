@@ -13,9 +13,8 @@ class TimerEngine implements ITimerEngine {
   ///
   /// The [tickInterval] determines how often the [tickStream] emits.
   /// Default is 100ms for smooth UI updates.
-  TimerEngine({
-    Duration tickInterval = const Duration(milliseconds: 100),
-  }) : _tickInterval = tickInterval;
+  TimerEngine({Duration tickInterval = const Duration(milliseconds: 100)})
+    : _tickInterval = tickInterval;
 
   final Duration _tickInterval;
   final Stopwatch _stopwatch = Stopwatch();

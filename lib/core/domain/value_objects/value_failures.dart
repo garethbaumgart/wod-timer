@@ -38,11 +38,11 @@ sealed class ValueFailure<T> with _$ValueFailure<T> {
 /// Extension to get user-friendly error messages from ValueFailure.
 extension ValueFailureMessage<T> on ValueFailure<T> {
   String get message => when(
-        empty: (_) => 'Value cannot be empty',
-        negativeValue: (_) => 'Value cannot be negative',
-        exceedsMaximum: (_, max) => 'Value cannot exceed $max',
-        belowMinimum: (_, min) => 'Value must be at least $min',
-        tooLong: (_, maxLength) => 'Value cannot exceed $maxLength characters',
-        invalidFormat: (_) => 'Invalid format',
-      );
+    empty: (_) => 'Value cannot be empty',
+    negativeValue: (_) => 'Value cannot be negative',
+    exceedsMaximum: (_, max) => 'Value cannot exceed $max',
+    belowMinimum: (_, min) => 'Value must be at least $min',
+    tooLong: (_, maxLength) => 'Value cannot exceed $maxLength characters',
+    invalidFormat: (_) => 'Invalid format',
+  );
 }

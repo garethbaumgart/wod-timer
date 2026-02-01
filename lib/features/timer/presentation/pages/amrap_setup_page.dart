@@ -41,9 +41,9 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
     await workoutResult.fold<Future<void>>(
       (failure) async {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${failure.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${failure.toString()}')));
       },
       (workout) async {
         await ref.read(timerNotifierProvider.notifier).start(workout);
@@ -210,25 +210,25 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
         child: GestureDetector(
           onTap: isEnabled ? _onStart : null,
           child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: _duration.inSeconds > 0
-                ? AppColors.primary
-                : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: Text(
-              'START WORKOUT',
-              style: AppTypography.buttonLarge.copyWith(
-                color: Colors.black,
-                fontSize: 16,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: _duration.inSeconds > 0
+                  ? AppColors.primary
+                  : AppColors.primary.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                'START WORKOUT',
+                style: AppTypography.buttonLarge.copyWith(
+                  color: Colors.black,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

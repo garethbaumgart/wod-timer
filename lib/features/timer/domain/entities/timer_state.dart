@@ -44,11 +44,11 @@ extension TimerStateExtension on TimerState {
 
   /// Display label for the state.
   String get displayLabel => switch (this) {
-        TimerState.ready => 'Ready',
-        TimerState.preparing => 'Get Ready',
-        TimerState.running => 'Work',
-        TimerState.resting => 'Rest',
-        TimerState.paused => 'Paused',
-        TimerState.completed => 'Complete',
-      };
+    TimerState.ready => 'Ready',
+    TimerState.preparing => 'Get Ready',
+    TimerState.running => 'Work',
+    TimerState.resting => 'Rest',
+    TimerState.paused => 'Paused',
+    TimerState.completed => 'Complete',
+  };
 }

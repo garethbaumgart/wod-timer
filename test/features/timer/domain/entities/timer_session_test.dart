@@ -22,21 +22,21 @@ void main() {
     });
 
     group('start', () {
-      test('should transition from ready to preparing when has prep countdown', () {
-        final workout = Workout.defaultAmrap();
-        final session = TimerSession.fromWorkout(workout);
+      test(
+        'should transition from ready to preparing when has prep countdown',
+        () {
+          final workout = Workout.defaultAmrap();
+          final session = TimerSession.fromWorkout(workout);
 
-        final result = session.start();
+          final result = session.start();
 
-        expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (started) {
+          expect(result.isRight(), true);
+          result.fold((failure) => fail('Should not fail'), (started) {
             expect(started.state, TimerState.preparing);
             expect(started.startedAt, isNotNull);
-          },
-        );
-      });
+          });
+        },
+      );
 
       test('should transition directly to running when no prep countdown', () {
         final workout = Workout(
@@ -87,13 +87,10 @@ void main() {
         final result = session.pause();
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (paused) {
-            expect(paused.state, TimerState.paused);
-            expect(paused.stateBeforePause, TimerState.running);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (paused) {
+          expect(paused.state, TimerState.paused);
+          expect(paused.stateBeforePause, TimerState.running);
+        });
       });
 
       test('should fail when not running', () {
@@ -122,13 +119,10 @@ void main() {
         final result = session.resume();
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (resumed) {
-            expect(resumed.state, TimerState.running);
-            expect(resumed.stateBeforePause, isNull);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (resumed) {
+          expect(resumed.state, TimerState.running);
+          expect(resumed.stateBeforePause, isNull);
+        });
       });
 
       test('should fail when not paused', () {
@@ -172,7 +166,9 @@ void main() {
         );
         var session = TimerSession.fromWorkout(workout);
         session = session.start().getOrElse((f) => session);
-        session = session.tick(const Duration(seconds: 9)).getOrElse((f) => session);
+        session = session
+            .tick(const Duration(seconds: 9))
+            .getOrElse((f) => session);
 
         final result = session.tick(const Duration(seconds: 2));
 
@@ -183,29 +179,29 @@ void main() {
         );
       });
 
-      test('should transition from preparing to running after prep countdown', () {
-        final workout = Workout(
-          id: UniqueId(),
-          name: WorkoutName.defaultAmrap,
-          timerType: AmrapTimer(duration: TimerDuration.fromSeconds(600)),
-          prepCountdown: TimerDuration.fromSeconds(5),
-          createdAt: DateTime.now(),
-        );
-        var session = TimerSession.fromWorkout(workout);
-        session = session.start().getOrElse((f) => session);
-        expect(session.state, TimerState.preparing);
+      test(
+        'should transition from preparing to running after prep countdown',
+        () {
+          final workout = Workout(
+            id: UniqueId(),
+            name: WorkoutName.defaultAmrap,
+            timerType: AmrapTimer(duration: TimerDuration.fromSeconds(600)),
+            prepCountdown: TimerDuration.fromSeconds(5),
+            createdAt: DateTime.now(),
+          );
+          var session = TimerSession.fromWorkout(workout);
+          session = session.start().getOrElse((f) => session);
+          expect(session.state, TimerState.preparing);
 
-        final result = session.tick(const Duration(seconds: 6));
+          final result = session.tick(const Duration(seconds: 6));
 
-        expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (ticked) {
+          expect(result.isRight(), true);
+          result.fold((failure) => fail('Should not fail'), (ticked) {
             expect(ticked.state, TimerState.running);
             expect(ticked.currentIntervalElapsed.seconds, 0);
-          },
-        );
-      });
+          });
+        },
+      );
 
       test('should fail when not active', () {
         final workout = Workout.defaultAmrap();
@@ -258,7 +254,9 @@ void main() {
         var session = TimerSession.fromWorkout(workout);
         session = session.start().getOrElse((f) => session);
         // Complete work phase
-        session = session.tick(const Duration(seconds: 6)).getOrElse((f) => session);
+        session = session
+            .tick(const Duration(seconds: 6))
+            .getOrElse((f) => session);
         expect(session.state, TimerState.resting);
         expect(session.currentRound, 1);
 
@@ -266,13 +264,10 @@ void main() {
         final result = session.tick(const Duration(seconds: 4));
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (ticked) {
-            expect(ticked.state, TimerState.running);
-            expect(ticked.currentRound, 2);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.state, TimerState.running);
+          expect(ticked.currentRound, 2);
+        });
       });
     });
 
@@ -295,13 +290,10 @@ void main() {
         final result = session.tick(const Duration(seconds: 11));
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (ticked) {
-            expect(ticked.currentRound, 2);
-            expect(ticked.currentIntervalElapsed.seconds, 0);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.currentRound, 2);
+          expect(ticked.currentIntervalElapsed.seconds, 0);
+        });
       });
 
       test('should complete after all rounds', () {
@@ -318,7 +310,9 @@ void main() {
         var session = TimerSession.fromWorkout(workout);
         session = session.start().getOrElse((f) => session);
         // Round 1
-        session = session.tick(const Duration(seconds: 11)).getOrElse((f) => session);
+        session = session
+            .tick(const Duration(seconds: 11))
+            .getOrElse((f) => session);
         expect(session.currentRound, 2);
 
         // Round 2 complete
@@ -347,13 +341,10 @@ void main() {
         final result = session.complete();
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (completed) {
-            expect(completed.state, TimerState.completed);
-            expect(completed.completedAt, isNotNull);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (completed) {
+          expect(completed.state, TimerState.completed);
+          expect(completed.completedAt, isNotNull);
+        });
       });
 
       test('should fail when already completed', () {
@@ -398,7 +389,9 @@ void main() {
         );
         var session = TimerSession.fromWorkout(workout);
         session = session.start().getOrElse((f) => session);
-        session = session.tick(const Duration(seconds: 100)).getOrElse((f) => session);
+        session = session
+            .tick(const Duration(seconds: 100))
+            .getOrElse((f) => session);
 
         expect(session.timeRemaining.seconds, 500);
       });
@@ -413,7 +406,9 @@ void main() {
         );
         var session = TimerSession.fromWorkout(workout);
         session = session.start().getOrElse((f) => session);
-        session = session.tick(const Duration(seconds: 50)).getOrElse((f) => session);
+        session = session
+            .tick(const Duration(seconds: 50))
+            .getOrElse((f) => session);
 
         expect(session.progress, closeTo(0.5, 0.01));
       });

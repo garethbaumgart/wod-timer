@@ -46,9 +46,9 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     await workoutResult.fold<Future<void>>(
       (failure) async {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${failure.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${failure.toString()}')));
       },
       (workout) async {
         await ref.read(timerNotifierProvider.notifier).start(workout);
@@ -244,26 +244,26 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.borderLight,
-            width: 1,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.borderLight,
+              width: 1,
+            ),
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
           ),
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
-        ),
-        child: Text(
-          label,
-          style: AppTypography.bodySmall.copyWith(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? AppColors.primary : const Color(0xFF666666),
+          child: Text(
+            label,
+            style: AppTypography.bodySmall.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? AppColors.primary : const Color(0xFF666666),
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -279,25 +279,25 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
         child: GestureDetector(
           onTap: isEnabled ? _onStart : null,
           child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: _timeCap.inSeconds > 0
-                ? AppColors.primary
-                : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: Text(
-              'START WORKOUT',
-              style: AppTypography.buttonLarge.copyWith(
-                color: Colors.black,
-                fontSize: 16,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: _timeCap.inSeconds > 0
+                  ? AppColors.primary
+                  : AppColors.primary.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                'START WORKOUT',
+                style: AppTypography.buttonLarge.copyWith(
+                  color: Colors.black,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

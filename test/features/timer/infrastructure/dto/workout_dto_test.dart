@@ -48,9 +48,7 @@ void main() {
         final dto = WorkoutDto(
           id: 'test-id-3',
           name: 'Quick AMRAP',
-          timerType: WorkoutDto.fromDomain(
-            Workout.defaultAmrap(),
-          ).timerType,
+          timerType: WorkoutDto.fromDomain(Workout.defaultAmrap()).timerType,
           prepCountdownSeconds: 15,
           createdAt: '2024-03-10T08:00:00.000',
         );
@@ -68,9 +66,7 @@ void main() {
         final dto = WorkoutDto(
           id: 'test-id-4',
           name: 'Morning EMOM',
-          timerType: WorkoutDto.fromDomain(
-            Workout.defaultEmom(),
-          ).timerType,
+          timerType: WorkoutDto.fromDomain(Workout.defaultEmom()).timerType,
           prepCountdownSeconds: 10,
           createdAt: '2024-04-05T06:30:00.000',
         );
@@ -93,7 +89,7 @@ void main() {
 
         expect(json['id'], isNotEmpty);
         expect(json['name'], 'AMRAP Workout');
-        expect(json['timerType'], isA<Map>());
+        expect(json['timerType'], isA<Map<String, dynamic>>());
         expect(json['prepCountdownSeconds'], 10);
         expect(json['createdAt'], isNotEmpty);
       });

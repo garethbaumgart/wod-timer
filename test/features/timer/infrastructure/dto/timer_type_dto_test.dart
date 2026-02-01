@@ -7,9 +7,7 @@ void main() {
   group('TimerTypeDto', () {
     group('AmrapTimer serialization', () {
       test('should serialize to JSON', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
         final dto = TimerTypeDto.fromDomain(timerType);
         final json = dto.toJson();
@@ -19,10 +17,7 @@ void main() {
       });
 
       test('should deserialize from JSON', () {
-        final json = <String, dynamic>{
-          'type': 'amrap',
-          'durationSeconds': 600,
-        };
+        final json = <String, dynamic>{'type': 'amrap', 'durationSeconds': 600};
 
         final dto = TimerTypeDto.fromJson(json);
         final timerType = dto.toDomain();
@@ -32,9 +27,7 @@ void main() {
       });
 
       test('should round-trip correctly', () {
-        final original = AmrapTimer(
-          duration: TimerDuration.fromSeconds(900),
-        );
+        final original = AmrapTimer(duration: TimerDuration.fromSeconds(900));
 
         final dto = TimerTypeDto.fromDomain(original);
         final json = dto.toJson();

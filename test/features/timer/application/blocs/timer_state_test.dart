@@ -51,15 +51,22 @@ void main() {
       });
 
       test('should create error state with failure', () {
-        const failure = TimerFailure.invalidConfiguration(message: 'Test error');
+        const failure = TimerFailure.invalidConfiguration(
+          message: 'Test error',
+        );
         final state = TimerNotifierState.error(failure: failure);
         expect(state, isA<TimerError>());
         expect((state as TimerError).failure, failure);
       });
 
       test('should create error state with failure and session', () {
-        const failure = TimerFailure.invalidConfiguration(message: 'Test error');
-        final state = TimerNotifierState.error(failure: failure, session: session);
+        const failure = TimerFailure.invalidConfiguration(
+          message: 'Test error',
+        );
+        final state = TimerNotifierState.error(
+          failure: failure,
+          session: session,
+        );
         expect(state, isA<TimerError>());
         expect((state as TimerError).failure, failure);
         expect((state).session, session);
@@ -101,7 +108,10 @@ void main() {
 
       test('should return session for error state with session', () {
         const failure = TimerFailure.invalidConfiguration(message: 'Test');
-        final state = TimerNotifierState.error(failure: failure, session: session);
+        final state = TimerNotifierState.error(
+          failure: failure,
+          session: session,
+        );
         expect(state.sessionOrNull, session);
       });
 

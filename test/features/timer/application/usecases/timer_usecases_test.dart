@@ -44,17 +44,15 @@ void main() {
       final result = await startTimer(workout);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (session) {
-          expect(session.workout, workout);
-          // Session should be preparing or running depending on prep countdown
-          expect(
-            session.state == TimerState.preparing || session.state == TimerState.running,
-            isTrue,
-          );
-        },
-      );
+      result.fold((_) => fail('Should be right'), (session) {
+        expect(session.workout, workout);
+        // Session should be preparing or running depending on prep countdown
+        expect(
+          session.state == TimerState.preparing ||
+              session.state == TimerState.running,
+          isTrue,
+        );
+      });
       verify(() => mockAudioService.preloadSounds()).called(1);
     });
 
@@ -65,12 +63,9 @@ void main() {
       final result = await startTimer(workout);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (session) {
-          expect(session.workout, workout);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (session) {
+        expect(session.workout, workout);
+      });
     });
 
     test('should create session from EMOM workout', () async {
@@ -80,12 +75,9 @@ void main() {
       final result = await startTimer(workout);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (session) {
-          expect(session.workout, workout);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (session) {
+        expect(session.workout, workout);
+      });
     });
 
     test('should create session from Tabata workout', () async {
@@ -95,12 +87,9 @@ void main() {
       final result = await startTimer(workout);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (session) {
-          expect(session.workout, workout);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (session) {
+        expect(session.workout, workout);
+      });
     });
   });
 
@@ -113,12 +102,9 @@ void main() {
       final result = pauseTimer(session);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (paused) {
-          expect(paused.state, TimerState.paused);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (paused) {
+        expect(paused.state, TimerState.paused);
+      });
     });
 
     test('should fail to pause ready session', () {
@@ -145,13 +131,10 @@ void main() {
       final result = resumeTimer(session);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (resumed) {
-          // Should go back to the state before pause
-          expect(resumed.state != TimerState.paused, isTrue);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (resumed) {
+        // Should go back to the state before pause
+        expect(resumed.state != TimerState.paused, isTrue);
+      });
     });
 
     test('should fail to resume non-paused session', () {
@@ -178,12 +161,9 @@ void main() {
       final result = stopTimer(session);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (stopped) {
-          expect(stopped.state, TimerState.completed);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (stopped) {
+        expect(stopped.state, TimerState.completed);
+      });
     });
 
     test('should stop paused session', () {
@@ -195,12 +175,9 @@ void main() {
       final result = stopTimer(session);
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should be right'),
-        (stopped) {
-          expect(stopped.state, TimerState.completed);
-        },
-      );
+      result.fold((_) => fail('Should be right'), (stopped) {
+        expect(stopped.state, TimerState.completed);
+      });
     });
   });
 

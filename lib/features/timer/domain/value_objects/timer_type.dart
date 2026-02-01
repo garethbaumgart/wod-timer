@@ -59,10 +59,7 @@ final class AmrapTimer extends TimerType {
 /// optionally with a time cap.
 @immutable
 final class ForTimeTimer extends TimerType {
-  const ForTimeTimer({
-    required this.timeCap,
-    this.countUp = true,
-  });
+  const ForTimeTimer({required this.timeCap, this.countUp = true});
 
   /// The maximum time allowed to complete the workout.
   final TimerDuration timeCap;
@@ -100,10 +97,7 @@ final class ForTimeTimer extends TimerType {
 /// Rest is whatever time remains in the minute after completing the work.
 @immutable
 final class EmomTimer extends TimerType {
-  const EmomTimer({
-    required this.intervalDuration,
-    required this.rounds,
-  });
+  const EmomTimer({required this.intervalDuration, required this.rounds});
 
   /// The duration of each interval (typically 60 seconds).
   final TimerDuration intervalDuration;
@@ -151,10 +145,10 @@ final class TabataTimer extends TimerType {
 
   /// Creates a standard Tabata (20s work, 10s rest, 8 rounds).
   factory TabataTimer.standard() => TabataTimer(
-        workDuration: TimerDuration.fromSeconds(20),
-        restDuration: TimerDuration.fromSeconds(10),
-        rounds: RoundCount.tabataDefault,
-      );
+    workDuration: TimerDuration.fromSeconds(20),
+    restDuration: TimerDuration.fromSeconds(10),
+    rounds: RoundCount.tabataDefault,
+  );
 
   /// The duration of each work interval.
   final TimerDuration workDuration;

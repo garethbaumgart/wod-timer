@@ -36,13 +36,13 @@ sealed class TimerFailure with _$TimerFailure {
 /// Extension to get user-friendly error messages from TimerFailure.
 extension TimerFailureMessage on TimerFailure {
   String get message => when(
-        invalidStateTransition: (from, to) =>
-            'Cannot transition from ${from.displayLabel} to ${to.displayLabel}',
-        timerNotActive: () => 'Timer is not active',
-        alreadyCompleted: () => 'Workout is already completed',
-        invalidWorkout: (msg) => msg ?? 'Invalid workout configuration',
-        invalidConfiguration: (msg) => msg ?? 'Invalid timer configuration',
-        sessionNotFound: () => 'Timer session not found',
-        unexpected: (msg) => msg ?? 'An unexpected error occurred',
-      );
+    invalidStateTransition: (from, to) =>
+        'Cannot transition from ${from.displayLabel} to ${to.displayLabel}',
+    timerNotActive: () => 'Timer is not active',
+    alreadyCompleted: () => 'Workout is already completed',
+    invalidWorkout: (msg) => msg ?? 'Invalid workout configuration',
+    invalidConfiguration: (msg) => msg ?? 'Invalid timer configuration',
+    sessionNotFound: () => 'Timer session not found',
+    unexpected: (msg) => msg ?? 'An unexpected error occurred',
+  );
 }

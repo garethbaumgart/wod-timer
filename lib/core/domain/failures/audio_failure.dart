@@ -32,14 +32,16 @@ sealed class AudioFailure with _$AudioFailure {
 /// Extension to get user-friendly error messages from AudioFailure.
 extension AudioFailureMessage on AudioFailure {
   String get message => when(
-        loadError: (fileName) =>
-            fileName != null ? 'Failed to load audio: $fileName' : 'Failed to load audio',
-        playbackError: (msg) => msg ?? 'Audio playback failed',
-        fileNotFound: (fileName) => 'Audio file not found: $fileName',
-        unsupportedFormat: (format) =>
-            format != null ? 'Unsupported audio format: $format' : 'Unsupported audio format',
-        permissionDenied: () => 'Audio permission denied',
-        deviceUnavailable: () => 'Audio device is unavailable',
-        unexpected: (msg) => msg ?? 'An unexpected audio error occurred',
-      );
+    loadError: (fileName) => fileName != null
+        ? 'Failed to load audio: $fileName'
+        : 'Failed to load audio',
+    playbackError: (msg) => msg ?? 'Audio playback failed',
+    fileNotFound: (fileName) => 'Audio file not found: $fileName',
+    unsupportedFormat: (format) => format != null
+        ? 'Unsupported audio format: $format'
+        : 'Unsupported audio format',
+    permissionDenied: () => 'Audio permission denied',
+    deviceUnavailable: () => 'Audio device is unavailable',
+    unexpected: (msg) => msg ?? 'An unexpected audio error occurred',
+  );
 }

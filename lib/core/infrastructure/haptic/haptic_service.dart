@@ -71,9 +71,9 @@ class HapticService implements IHapticService {
     try {
       // Success pattern: light-medium-heavy
       await HapticFeedback.lightImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await HapticFeedback.mediumImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await HapticFeedback.heavyImpact();
       return right(unit);
     } catch (e) {
@@ -88,7 +88,7 @@ class HapticService implements IHapticService {
     try {
       // Warning pattern: two medium impacts
       await HapticFeedback.mediumImpact();
-      await Future.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
       await HapticFeedback.mediumImpact();
       return right(unit);
     } catch (e) {
@@ -103,9 +103,9 @@ class HapticService implements IHapticService {
     try {
       // Error pattern: three quick heavy impacts
       await HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await HapticFeedback.heavyImpact();
       return right(unit);
     } catch (e) {

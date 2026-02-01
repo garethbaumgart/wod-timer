@@ -10,11 +10,7 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
-  const PlaceholderPage({
-    required this.title,
-    super.key,
-    this.subtitle,
-  });
+  const PlaceholderPage({required this.title, super.key, this.subtitle});
 
   /// The page title.
   final String title;
@@ -25,9 +21,7 @@ class PlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -74,10 +68,7 @@ class PlaceholderPage extends StatelessWidget {
 
 /// Signal design home page with hero title and colored sidebar strips.
 class PlaceholderHomePage extends ConsumerWidget {
-  const PlaceholderHomePage({
-    required this.onTimerSelected,
-    super.key,
-  });
+  const PlaceholderHomePage({required this.onTimerSelected, super.key});
 
   /// Callback when a timer type is selected.
   final void Function(String timerType) onTimerSelected;
@@ -191,14 +182,12 @@ class _SignalStripItem extends StatelessWidget {
     required this.description,
     required this.accentColor,
     required this.onTap,
-    this.isSelected = false,
   });
 
   final String name;
   final String description;
   final Color accentColor;
   final VoidCallback onTap;
-  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -214,14 +203,8 @@ class _SignalStripItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? accentColor.withValues(alpha: 0.15)
-                    : Colors.transparent,
-              ),
-              color: isSelected
-                  ? accentColor.withValues(alpha: 0.03)
-                  : Colors.transparent,
+              border: Border.all(color: Colors.transparent),
+              color: Colors.transparent,
             ),
             child: Row(
               children: [

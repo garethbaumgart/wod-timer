@@ -17,9 +17,7 @@ class WorkoutRepository implements IWorkoutRepository {
   @override
   Future<Either<StorageFailure, List<Workout>>> getAll() async {
     final result = await _localDataSource.getAll();
-    return result.map(
-      (dtos) => dtos.map((dto) => dto.toDomain()).toList(),
-    );
+    return result.map((dtos) => dtos.map((dto) => dto.toDomain()).toList());
   }
 
   @override
@@ -42,9 +40,8 @@ class WorkoutRepository implements IWorkoutRepository {
   @override
   Stream<Either<StorageFailure, List<Workout>>> watchAll() {
     return _localDataSource.watchAll().map(
-          (result) => result.map(
-            (dtos) => dtos.map((dto) => dto.toDomain()).toList(),
-          ),
-        );
+      (result) =>
+          result.map((dtos) => dtos.map((dto) => dto.toDomain()).toList()),
+    );
   }
 }

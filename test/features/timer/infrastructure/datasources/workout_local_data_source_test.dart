@@ -71,14 +71,11 @@ void main() {
         final result = await dataSource.getById(workout.id);
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (found) {
-            expect(found, isNotNull);
-            expect(found!.id, workout.id);
-            expect(found.name, workout.name);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (found) {
+          expect(found, isNotNull);
+          expect(found!.id, workout.id);
+          expect(found.name, workout.name);
+        });
       });
     });
 
@@ -112,14 +109,11 @@ void main() {
         await dataSource.save(updated);
 
         final result = await dataSource.getAll();
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (workouts) {
-            expect(workouts.length, 1);
-            expect(workouts.first.name, 'Updated AMRAP');
-            expect(workouts.first.prepCountdownSeconds, 20);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (workouts) {
+          expect(workouts.length, 1);
+          expect(workouts.first.name, 'Updated AMRAP');
+          expect(workouts.first.prepCountdownSeconds, 20);
+        });
       });
 
       test('should sort workouts by creation date (newest first)', () async {
@@ -143,13 +137,10 @@ void main() {
         await dataSource.save(newer);
 
         final result = await dataSource.getAll();
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (workouts) {
-            expect(workouts.first.id, 'newer-id');
-            expect(workouts.last.id, 'older-id');
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (workouts) {
+          expect(workouts.first.id, 'newer-id');
+          expect(workouts.last.id, 'older-id');
+        });
       });
     });
 
@@ -182,13 +173,10 @@ void main() {
         await dataSource.delete(workout1.id);
 
         final result = await dataSource.getAll();
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (workouts) {
-            expect(workouts.length, 1);
-            expect(workouts.first.id, workout2.id);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (workouts) {
+          expect(workouts.length, 1);
+          expect(workouts.first.id, workout2.id);
+        });
       });
     });
 
@@ -201,11 +189,7 @@ void main() {
 
         await expectLater(
           stream,
-          emits(isA<dynamic>().having(
-            (r) => r.isRight(),
-            'is right',
-            true,
-          )),
+          emits(isA<dynamic>().having((r) => r.isRight(), 'is right', true)),
         );
       });
     });
@@ -221,13 +205,10 @@ void main() {
 
         // Should find the workout
         final result = await newDataSource.getById(workout.id);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (found) {
-            expect(found, isNotNull);
-            expect(found!.id, workout.id);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (found) {
+          expect(found, isNotNull);
+          expect(found!.id, workout.id);
+        });
       });
 
       test('should correctly serialize all timer types', () async {
@@ -242,15 +223,12 @@ void main() {
         await dataSource.save(tabata);
 
         final result = await dataSource.getAll();
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (workouts) {
-            expect(workouts.length, 4);
+        result.fold((failure) => fail('Should not fail'), (workouts) {
+          expect(workouts.length, 4);
 
-            final types = workouts.map((w) => w.timerType.type).toSet();
-            expect(types, containsAll(['amrap', 'fortime', 'emom', 'tabata']));
-          },
-        );
+          final types = workouts.map((w) => w.timerType.type).toSet();
+          expect(types, containsAll(['amrap', 'fortime', 'emom', 'tabata']));
+        });
       });
     });
   });

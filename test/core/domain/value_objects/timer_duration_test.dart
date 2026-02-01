@@ -8,14 +8,11 @@ void main() {
         final result = TimerDuration.create(60);
 
         expect(result.isRight(), true);
-        result.fold(
-          (failure) => fail('Should not fail'),
-          (duration) {
-            expect(duration.seconds, 60);
-            expect(duration.minutes, 1);
-            expect(duration.remainingSeconds, 0);
-          },
-        );
+        result.fold((failure) => fail('Should not fail'), (duration) {
+          expect(duration.seconds, 60);
+          expect(duration.minutes, 1);
+          expect(duration.remainingSeconds, 0);
+        });
       });
 
       test('should create zero duration', () {
@@ -33,10 +30,7 @@ void main() {
 
         expect(result.isLeft(), true);
         result.fold(
-          (failure) => expect(
-            failure,
-            isA<ValueFailure<int>>(),
-          ),
+          (failure) => expect(failure, isA<ValueFailure<int>>()),
           (duration) => fail('Should fail'),
         );
       });

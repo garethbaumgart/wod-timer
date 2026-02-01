@@ -15,24 +15,16 @@ void main() {
   group('CreateWorkout', () {
     group('valid configurations', () {
       test('should create AMRAP workout successfully', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
-        final result = createWorkout(
-          name: 'Test AMRAP',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test AMRAP', timerType: timerType);
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Should be right'),
-          (workout) {
-            expect(workout.name.value, 'Test AMRAP');
-            expect(workout.timerType, isA<AmrapTimer>());
-            expect(workout.prepCountdown.seconds, 10);
-          },
-        );
+        result.fold((_) => fail('Should be right'), (workout) {
+          expect(workout.name.value, 'Test AMRAP');
+          expect(workout.timerType, isA<AmrapTimer>());
+          expect(workout.prepCountdown.seconds, 10);
+        });
       });
 
       test('should create For Time workout successfully', () {
@@ -46,13 +38,10 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Should be right'),
-          (workout) {
-            expect(workout.name.value, 'Test For Time');
-            expect(workout.timerType, isA<ForTimeTimer>());
-          },
-        );
+        result.fold((_) => fail('Should be right'), (workout) {
+          expect(workout.name.value, 'Test For Time');
+          expect(workout.timerType, isA<ForTimeTimer>());
+        });
       });
 
       test('should create EMOM workout successfully', () {
@@ -61,19 +50,13 @@ void main() {
           rounds: RoundCount.fromInt(10),
         );
 
-        final result = createWorkout(
-          name: 'Test EMOM',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test EMOM', timerType: timerType);
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Should be right'),
-          (workout) {
-            expect(workout.name.value, 'Test EMOM');
-            expect(workout.timerType, isA<EmomTimer>());
-          },
-        );
+        result.fold((_) => fail('Should be right'), (workout) {
+          expect(workout.name.value, 'Test EMOM');
+          expect(workout.timerType, isA<EmomTimer>());
+        });
       });
 
       test('should create Tabata workout successfully', () {
@@ -83,25 +66,17 @@ void main() {
           rounds: RoundCount.fromInt(8),
         );
 
-        final result = createWorkout(
-          name: 'Test Tabata',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test Tabata', timerType: timerType);
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Should be right'),
-          (workout) {
-            expect(workout.name.value, 'Test Tabata');
-            expect(workout.timerType, isA<TabataTimer>());
-          },
-        );
+        result.fold((_) => fail('Should be right'), (workout) {
+          expect(workout.name.value, 'Test Tabata');
+          expect(workout.timerType, isA<TabataTimer>());
+        });
       });
 
       test('should use custom prep countdown', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
         final result = createWorkout(
           name: 'Test Workout',
@@ -110,18 +85,13 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Should be right'),
-          (workout) {
-            expect(workout.prepCountdown.seconds, 5);
-          },
-        );
+        result.fold((_) => fail('Should be right'), (workout) {
+          expect(workout.prepCountdown.seconds, 5);
+        });
       });
 
       test('should trim whitespace from name', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
         final result = createWorkout(
           name: '  Test Workout  ',
@@ -129,25 +99,17 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Should be right'),
-          (workout) {
-            expect(workout.name.value, 'Test Workout');
-          },
-        );
+        result.fold((_) => fail('Should be right'), (workout) {
+          expect(workout.name.value, 'Test Workout');
+        });
       });
     });
 
     group('invalid configurations', () {
       test('should fail with empty name', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
-        final result = createWorkout(
-          name: '',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: '', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
         result.fold(
@@ -157,40 +119,25 @@ void main() {
       });
 
       test('should fail with whitespace-only name', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
-        final result = createWorkout(
-          name: '   ',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: '   ', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
 
       test('should fail with zero AMRAP duration', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(0),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(0));
 
-        final result = createWorkout(
-          name: 'Test',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
 
       test('should fail with zero For Time time cap', () {
-        final timerType = ForTimeTimer(
-          timeCap: TimerDuration.fromSeconds(0),
-        );
+        final timerType = ForTimeTimer(timeCap: TimerDuration.fromSeconds(0));
 
-        final result = createWorkout(
-          name: 'Test',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
@@ -201,10 +148,7 @@ void main() {
           rounds: RoundCount.fromInt(10),
         );
 
-        final result = createWorkout(
-          name: 'Test',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
@@ -215,10 +159,7 @@ void main() {
           rounds: RoundCount.fromInt(0),
         );
 
-        final result = createWorkout(
-          name: 'Test',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
@@ -230,10 +171,7 @@ void main() {
           rounds: RoundCount.fromInt(8),
         );
 
-        final result = createWorkout(
-          name: 'Test',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
@@ -245,18 +183,13 @@ void main() {
           rounds: RoundCount.fromInt(0),
         );
 
-        final result = createWorkout(
-          name: 'Test',
-          timerType: timerType,
-        );
+        final result = createWorkout(name: 'Test', timerType: timerType);
 
         expect(result.isLeft(), isTrue);
       });
 
       test('should fail with negative prep countdown', () {
-        final timerType = AmrapTimer(
-          duration: TimerDuration.fromSeconds(600),
-        );
+        final timerType = AmrapTimer(duration: TimerDuration.fromSeconds(600));
 
         final result = createWorkout(
           name: 'Test',

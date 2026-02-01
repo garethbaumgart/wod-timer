@@ -80,4 +80,10 @@ abstract class IAudioService {
 
   /// Set the voice pack directory name (e.g. 'major', 'liam').
   void setVoicePack(String voicePack);
+
+  /// Enable or disable per-cue voice randomization.
+  ///
+  /// When enabled, each voice cue randomly picks between available
+  /// voice packs instead of using the fixed [setVoicePack] value.
+  void setRandomizePerCue({required bool enabled});
 }

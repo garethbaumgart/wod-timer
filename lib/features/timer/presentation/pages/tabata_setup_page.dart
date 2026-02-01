@@ -63,9 +63,9 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     await workoutResult.fold<Future<void>>(
       (failure) async {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${failure.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${failure.toString()}')));
       },
       (workout) async {
         await ref.read(timerNotifierProvider.notifier).start(workout);
@@ -301,11 +301,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.flash_on,
-                size: 16,
-                color: AppColors.primary,
-              ),
+              const Icon(Icons.flash_on, size: 16, color: AppColors.primary),
               const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,10 +348,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
             Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
             Text(
@@ -424,25 +417,25 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
         child: GestureDetector(
           onTap: isValid ? _onStart : null,
           child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: isValid
-                ? AppColors.primary
-                : AppColors.primary.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: Text(
-              'START WORKOUT',
-              style: AppTypography.buttonLarge.copyWith(
-                color: Colors.black,
-                fontSize: 16,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: isValid
+                  ? AppColors.primary
+                  : AppColors.primary.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                'START WORKOUT',
+                style: AppTypography.buttonLarge.copyWith(
+                  color: Colors.black,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

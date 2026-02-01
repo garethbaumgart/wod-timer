@@ -8,9 +8,7 @@ void main() {
     late TimerEngine timerEngine;
 
     setUp(() {
-      timerEngine = TimerEngine(
-        tickInterval: const Duration(milliseconds: 50),
-      );
+      timerEngine = TimerEngine(tickInterval: const Duration(milliseconds: 50));
     });
 
     tearDown(() {

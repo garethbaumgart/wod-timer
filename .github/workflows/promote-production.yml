@@ -1,0 +1,35 @@
+name: Promote to App Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to promote (e.g., 1.0.0)"
+        required: true
+        type: string
+      build_number:
+        description: "Build number to promote (from TestFlight)"
+        required: true
+        type: string
+
+jobs:
+  promote:
+    name: Submit for App Store Review
+    runs-on: macos-15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Promote to App Store
+        working-directory: ios
+        run: bundle exec fastlane promote_to_production

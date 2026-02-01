@@ -44,15 +44,12 @@ void main() {
 
         final readResult = await storageService.readJson('test_key');
         expect(readResult.isRight(), true);
-        readResult.fold(
-          (failure) => fail('Should not fail'),
-          (value) {
-            expect(value, isNotNull);
-            expect(value!['name'], 'Test');
-            expect(value['value'], 42);
-            expect(value['nested']['a'], 1);
-          },
-        );
+        readResult.fold((failure) => fail('Should not fail'), (value) {
+          expect(value, isNotNull);
+          expect(value!['name'], 'Test');
+          expect(value['value'], 42);
+          expect(value['nested']['a'], 1);
+        });
       });
 
       test('should overwrite existing data', () async {
@@ -88,20 +85,19 @@ void main() {
           {'id': '3', 'name': 'Third'},
         ];
 
-        final writeResult =
-            await storageService.writeJsonList('list_key', data);
+        final writeResult = await storageService.writeJsonList(
+          'list_key',
+          data,
+        );
         expect(writeResult.isRight(), true);
 
         final readResult = await storageService.readJsonList('list_key');
         expect(readResult.isRight(), true);
-        readResult.fold(
-          (failure) => fail('Should not fail'),
-          (value) {
-            expect(value.length, 3);
-            expect(value[0]['id'], '1');
-            expect(value[1]['name'], 'Second');
-          },
-        );
+        readResult.fold((failure) => fail('Should not fail'), (value) {
+          expect(value.length, 3);
+          expect(value[0]['id'], '1');
+          expect(value[1]['name'], 'Second');
+        });
       });
 
       test('should handle empty list', () async {
@@ -169,11 +165,7 @@ void main() {
 
         await expectLater(
           stream,
-          emits(isA<dynamic>().having(
-            (r) => r.isRight(),
-            'is right',
-            true,
-          )),
+          emits(isA<dynamic>().having((r) => r.isRight(), 'is right', true)),
         );
       });
 

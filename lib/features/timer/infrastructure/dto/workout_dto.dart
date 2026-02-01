@@ -21,12 +21,12 @@ class WorkoutDto {
 
   /// Create DTO from domain entity.
   factory WorkoutDto.fromDomain(Workout workout) => WorkoutDto(
-        id: workout.id.value,
-        name: workout.name.value,
-        timerType: TimerTypeDto.fromDomain(workout.timerType),
-        prepCountdownSeconds: workout.prepCountdown.seconds,
-        createdAt: workout.createdAt.toIso8601String(),
-      );
+    id: workout.id.value,
+    name: workout.name.value,
+    timerType: TimerTypeDto.fromDomain(workout.timerType),
+    prepCountdownSeconds: workout.prepCountdown.seconds,
+    createdAt: workout.createdAt.toIso8601String(),
+  );
 
   /// Unique identifier.
   final String id;
@@ -47,10 +47,10 @@ class WorkoutDto {
 
   /// Convert to domain entity.
   Workout toDomain() => Workout(
-        id: UniqueId.fromString(id),
-        name: WorkoutName.fromString(name),
-        timerType: timerType.toDomain(),
-        prepCountdown: TimerDuration.fromSeconds(prepCountdownSeconds),
-        createdAt: DateTime.parse(createdAt),
-      );
+    id: UniqueId.fromString(id),
+    name: WorkoutName.fromString(name),
+    timerType: timerType.toDomain(),
+    prepCountdown: TimerDuration.fromSeconds(prepCountdownSeconds),
+    createdAt: DateTime.parse(createdAt),
+  );
 }

@@ -99,10 +99,7 @@ class WorkoutSummaryCard extends StatelessWidget {
                   value: timerType.toUpperCase(),
                 ),
                 if (rounds != null)
-                  _buildSummaryItem(
-                    label: 'ROUNDS',
-                    value: rounds.toString(),
-                  ),
+                  _buildSummaryItem(label: 'ROUNDS', value: rounds.toString()),
                 if (workDuration != null)
                   _buildSummaryItem(
                     label: 'WORK',
@@ -126,10 +123,7 @@ class WorkoutSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryItem({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildSummaryItem({required String label, required String value}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -142,9 +136,7 @@ class WorkoutSummaryCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: AppTypography.summaryValue.copyWith(
-            color: AppColors.primary,
-          ),
+          style: AppTypography.summaryValue.copyWith(color: AppColors.primary),
         ),
       ],
     );

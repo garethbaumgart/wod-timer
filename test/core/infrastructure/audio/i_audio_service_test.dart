@@ -16,8 +16,9 @@ void main() {
 
     group('playBeep', () {
       test('should return success when beep plays', () async {
-        when(() => mockAudioService.playBeep())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playBeep(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playBeep();
 
@@ -26,9 +27,9 @@ void main() {
       });
 
       test('should return failure on playback error', () async {
-        when(() => mockAudioService.playBeep()).thenAnswer(
-          (_) async => left(const AudioFailure.playbackError()),
-        );
+        when(
+          () => mockAudioService.playBeep(),
+        ).thenAnswer((_) async => left(const AudioFailure.playbackError()));
 
         final result = await mockAudioService.playBeep();
 
@@ -38,8 +39,9 @@ void main() {
 
     group('playCountdown', () {
       test('should play countdown numbers', () async {
-        when(() => mockAudioService.playCountdown(any()))
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playCountdown(any()),
+        ).thenAnswer((_) async => right(unit));
 
         for (final num in [3, 2, 1]) {
           final result = await mockAudioService.playCountdown(num);
@@ -54,8 +56,9 @@ void main() {
 
     group('playGo', () {
       test('should return success when go sound plays', () async {
-        when(() => mockAudioService.playGo())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playGo(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playGo();
 
@@ -66,8 +69,9 @@ void main() {
 
     group('playRest', () {
       test('should return success when rest sound plays', () async {
-        when(() => mockAudioService.playRest())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playRest(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playRest();
 
@@ -78,8 +82,9 @@ void main() {
 
     group('playComplete', () {
       test('should return success when complete sound plays', () async {
-        when(() => mockAudioService.playComplete())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playComplete(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playComplete();
 
@@ -90,8 +95,9 @@ void main() {
 
     group('playHalfway', () {
       test('should return success when halfway sound plays', () async {
-        when(() => mockAudioService.playHalfway())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playHalfway(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playHalfway();
 
@@ -102,8 +108,9 @@ void main() {
 
     group('playIntervalStart', () {
       test('should return success when interval sound plays', () async {
-        when(() => mockAudioService.playIntervalStart())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playIntervalStart(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playIntervalStart();
 
@@ -114,8 +121,9 @@ void main() {
 
     group('playGetReady', () {
       test('should return success when get ready sound plays', () async {
-        when(() => mockAudioService.playGetReady())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playGetReady(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playGetReady();
 
@@ -126,8 +134,9 @@ void main() {
 
     group('playTenSeconds', () {
       test('should return success when ten seconds sound plays', () async {
-        when(() => mockAudioService.playTenSeconds())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playTenSeconds(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playTenSeconds();
 
@@ -138,8 +147,9 @@ void main() {
 
     group('playLastRound', () {
       test('should return success when last round sound plays', () async {
-        when(() => mockAudioService.playLastRound())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playLastRound(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playLastRound();
 
@@ -150,8 +160,9 @@ void main() {
 
     group('playKeepGoing', () {
       test('should return success when keep going sound plays', () async {
-        when(() => mockAudioService.playKeepGoing())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playKeepGoing(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playKeepGoing();
 
@@ -162,8 +173,9 @@ void main() {
 
     group('playGoodJob', () {
       test('should return success when good job sound plays', () async {
-        when(() => mockAudioService.playGoodJob())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playGoodJob(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playGoodJob();
 
@@ -174,8 +186,9 @@ void main() {
 
     group('playNextRound', () {
       test('should return success when next round sound plays', () async {
-        when(() => mockAudioService.playNextRound())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playNextRound(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playNextRound();
 
@@ -186,8 +199,9 @@ void main() {
 
     group('playFinalCountdown', () {
       test('should return success when final countdown sound plays', () async {
-        when(() => mockAudioService.playFinalCountdown())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playFinalCountdown(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playFinalCountdown();
 
@@ -198,8 +212,9 @@ void main() {
 
     group('playLetsGo', () {
       test('should return success when lets go sound plays', () async {
-        when(() => mockAudioService.playLetsGo())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playLetsGo(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playLetsGo();
 
@@ -210,8 +225,9 @@ void main() {
 
     group('playComeOn', () {
       test('should return success when come on sound plays', () async {
-        when(() => mockAudioService.playComeOn())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playComeOn(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playComeOn();
 
@@ -222,8 +238,9 @@ void main() {
 
     group('playAlmostThere', () {
       test('should return success when almost there sound plays', () async {
-        when(() => mockAudioService.playAlmostThere())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playAlmostThere(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playAlmostThere();
 
@@ -234,8 +251,9 @@ void main() {
 
     group('playThatsIt', () {
       test('should return success when thats it sound plays', () async {
-        when(() => mockAudioService.playThatsIt())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playThatsIt(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playThatsIt();
 
@@ -246,8 +264,9 @@ void main() {
 
     group('playNoRep', () {
       test('should return success when no rep sound plays', () async {
-        when(() => mockAudioService.playNoRep())
-            .thenAnswer((_) async => right(unit));
+        when(
+          () => mockAudioService.playNoRep(),
+        ).thenAnswer((_) async => right(unit));
 
         final result = await mockAudioService.playNoRep();
 
@@ -276,8 +295,9 @@ void main() {
       });
 
       test('should call setMuted', () async {
-        when(() => mockAudioService.setMuted(muted: any(named: 'muted')))
-            .thenAnswer((_) async {});
+        when(
+          () => mockAudioService.setMuted(muted: any(named: 'muted')),
+        ).thenAnswer((_) async {});
 
         await mockAudioService.setMuted(muted: true);
 
@@ -287,8 +307,7 @@ void main() {
 
     group('volume control', () {
       test('should call setVolume', () async {
-        when(() => mockAudioService.setVolume(any()))
-            .thenAnswer((_) async {});
+        when(() => mockAudioService.setVolume(any())).thenAnswer((_) async {});
 
         await mockAudioService.setVolume(0.5);
 
@@ -298,8 +317,7 @@ void main() {
 
     group('lifecycle', () {
       test('should call preloadSounds', () async {
-        when(() => mockAudioService.preloadSounds())
-            .thenAnswer((_) async {});
+        when(() => mockAudioService.preloadSounds()).thenAnswer((_) async {});
 
         await mockAudioService.preloadSounds();
 
@@ -307,8 +325,7 @@ void main() {
       });
 
       test('should call dispose', () async {
-        when(() => mockAudioService.dispose())
-            .thenAnswer((_) async {});
+        when(() => mockAudioService.dispose()).thenAnswer((_) async {});
 
         await mockAudioService.dispose();
 
@@ -319,9 +336,8 @@ void main() {
     group('error handling', () {
       test('should return file not found failure', () async {
         when(() => mockAudioService.playBeep()).thenAnswer(
-          (_) async => left(
-            const AudioFailure.fileNotFound(fileName: 'beep.mp3'),
-          ),
+          (_) async =>
+              left(const AudioFailure.fileNotFound(fileName: 'beep.mp3')),
         );
 
         final result = await mockAudioService.playBeep();
@@ -334,9 +350,9 @@ void main() {
       });
 
       test('should return device unavailable failure', () async {
-        when(() => mockAudioService.playComplete()).thenAnswer(
-          (_) async => left(const AudioFailure.deviceUnavailable()),
-        );
+        when(
+          () => mockAudioService.playComplete(),
+        ).thenAnswer((_) async => left(const AudioFailure.deviceUnavailable()));
 
         final result = await mockAudioService.playComplete();
 

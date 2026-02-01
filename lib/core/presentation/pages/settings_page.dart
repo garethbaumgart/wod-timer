@@ -143,10 +143,7 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Widget _buildDivider() {
-    return Container(
-      height: 1,
-      color: AppColors.divider,
-    );
+    return Container(height: 1, color: AppColors.divider);
   }
 
   Widget _buildTapRow({
@@ -164,9 +161,7 @@ class SettingsPage extends ConsumerWidget {
           children: [
             Text(
               label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: _labelColor,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: _labelColor),
             ),
             Text(
               '$value >',
@@ -192,9 +187,7 @@ class SettingsPage extends ConsumerWidget {
         children: [
           Text(
             label,
-            style: AppTypography.bodyMedium.copyWith(
-              color: _labelColor,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: _labelColor),
           ),
           SizedBox(
             height: 28,
@@ -229,9 +222,7 @@ class SettingsPage extends ConsumerWidget {
         children: [
           Text(
             'Version',
-            style: AppTypography.bodyMedium.copyWith(
-              color: _labelColor,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: _labelColor),
           ),
           Text(
             versionText,

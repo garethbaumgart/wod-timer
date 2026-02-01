@@ -34,17 +34,16 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonHeight =
-        isLarge ? AppSpacing.largeButtonHeight : AppSpacing.buttonHeight;
+    final buttonHeight = isLarge
+        ? AppSpacing.largeButtonHeight
+        : AppSpacing.buttonHeight;
 
     return SizedBox(
       height: buttonHeight,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: backgroundColor != null
-            ? ElevatedButton.styleFrom(
-                backgroundColor: backgroundColor,
-              )
+            ? ElevatedButton.styleFrom(backgroundColor: backgroundColor)
             : null,
         child: isLoading
             ? const SizedBox(
@@ -63,10 +62,7 @@ class PrimaryButton extends StatelessWidget {
                     Icon(icon, size: isLarge ? 28 : 24),
                     const SizedBox(width: AppSpacing.xs),
                   ],
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: isLarge ? 20 : 18),
-                  ),
+                  Text(label, style: TextStyle(fontSize: isLarge ? 20 : 18)),
                 ],
               ),
       ),

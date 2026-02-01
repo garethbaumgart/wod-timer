@@ -27,11 +27,11 @@ class _AudioTestButtonState extends ConsumerState<AudioTestButton> {
 
     // Play countdown sequence
     await audioService.playCountdown(3);
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     await audioService.playCountdown(2);
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     await audioService.playCountdown(1);
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     await audioService.playGo();
 
     if (mounted) {
