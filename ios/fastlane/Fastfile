@@ -1,0 +1,96 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Sync signing certificates and profiles via match"
+  lane :sync_certificates do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    match(
+      type: "appstore",
+      app_identifier: ["com.wodtimer.wodTimer", "com.wodtimer.wodTimer.watchkitapp"],
+      git_url: ENV["MATCH_GIT_URL"],
+      readonly: true,
+      api_key: api_key
+    )
+  end
+
+  desc "Build iOS app for App Store distribution"
+  lane :build do
+    sync_certificates
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "G9NY882LMJ",
+      bundle_identifier: "com.wodtimer.wodTimer",
+      code_sign_identity: "iPhone Distribution",
+      profile_name: ENV["sigh_com.wodtimer.wodTimer_appstore_profile-name"]
+    )
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      archive_path: "../build/Runner.xcarchive",
+      output_directory: "../build/ios",
+      output_name: "WodTimer.ipa",
+      export_method: "app-store",
+      clean: false,
+      export_options: {
+        provisioningProfiles: {
+          "com.wodtimer.wodTimer" => ENV["sigh_com.wodtimer.wodTimer_appstore_profile-name"]
+        }
+      }
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :upload_testflight do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: "../build/ios/WodTimer.ipa",
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build and deploy to TestFlight"
+  lane :deploy_testflight do
+    build
+    upload_testflight
+  end
+
+  desc "Promote latest TestFlight build to App Store production"
+  lane :promote_to_production do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    deliver(
+      api_key: api_key,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
+    )
+  end
+end

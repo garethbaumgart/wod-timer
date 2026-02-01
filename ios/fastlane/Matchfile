@@ -1,0 +1,5 @@
+git_url(ENV["MATCH_GIT_URL"] || "git@github.com:garethbaumgart/wod-timer-certificates.git")
+storage_mode("git")
+type("appstore")
+app_identifier(["com.wodtimer.wodTimer", "com.wodtimer.wodTimer.watchkitapp"])
+team_id("G9NY882LMJ")

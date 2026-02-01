@@ -1,0 +1,58 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Check formatting
+        run: dart format --set-exit-if-changed lib/ test/
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+  test-watchos:
+    name: Build & Test watchOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build watchOS app
+        working-directory: ios
+        run: |
+          xcodebuild -project Runner.xcodeproj \
+            -scheme WODTimerWatch \
+            -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
+            build
+
+      - name: Run watchOS tests
+        working-directory: ios
+        run: |
+          xcodebuild -project Runner.xcodeproj \
+            -scheme WODTimerWatch \
+            -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
+            test

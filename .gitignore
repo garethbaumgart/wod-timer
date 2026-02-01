@@ -61,3 +61,12 @@ test-results/
 
 # Local configuration
 *.local.dart
+
+# Fastlane
+ios/fastlane/report.xml
+ios/fastlane/README.md
+ios/fastlane/test_output/
+
+# Build artifacts
+*.ipa
+*.dSYM.zip
