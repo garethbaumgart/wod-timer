@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "WODTimerWatch"
+               BlueprintIdentifier = "31A572DEDEC401EC162B570B"
                BuildableName = "WODTimerWatch.app"
                BlueprintName = "WODTimerWatch"
                ReferencedContainer = "container:Runner.xcodeproj">
@@ -34,7 +34,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "WODTimerWatchTests"
+               BlueprintIdentifier = "F00B29CAE8E68AC4DFA20968"
                BuildableName = "WODTimerWatchTests.xctest"
                BlueprintName = "WODTimerWatchTests"
                ReferencedContainer = "container:Runner.xcodeproj">
@@ -56,7 +56,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "WODTimerWatch"
+            BlueprintIdentifier = "31A572DEDEC401EC162B570B"
             BuildableName = "WODTimerWatch.app"
             BlueprintName = "WODTimerWatch"
             ReferencedContainer = "container:Runner.xcodeproj">
@@ -73,7 +73,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "WODTimerWatch"
+            BlueprintIdentifier = "31A572DEDEC401EC162B570B"
             BuildableName = "WODTimerWatch.app"
             BlueprintName = "WODTimerWatch"
             ReferencedContainer = "container:Runner.xcodeproj">

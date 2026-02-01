@@ -41,6 +41,27 @@ struct HomeView: View {
                     )
                 }
 
+                // Voice settings
+                Section {
+                    NavigationLink {
+                        VoiceSettingsView(viewModel: viewModel)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "speaker.wave.2")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.teal)
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Voice")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text(voiceSubtitle)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
                 // Recent workouts
                 let recents = viewModel.recentsStore.load()
                 if !recents.isEmpty {
@@ -70,6 +91,13 @@ struct HomeView: View {
                 ActiveTimerView(viewModel: viewModel)
             }
         }
+    }
+
+    private var voiceSubtitle: String {
+        let audio = viewModel.audio
+        if audio.muted { return "Muted" }
+        if audio.randomizePerCue { return "Random" }
+        return audio.voicePack.rawValue.capitalized
     }
 
     private func timerTypeRow<Destination: View>(
