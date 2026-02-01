@@ -5,13 +5,11 @@ import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
-import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/usecases/pause_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/resume_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/start_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/stop_timer.dart';
 import 'package:wod_timer/features/timer/application/usecases/tick_timer.dart';
-import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
     as domain;
 import 'package:wod_timer/features/timer/domain/entities/workout.dart';
@@ -122,7 +120,7 @@ void main() {
       expect(timerEngine.isRunning, isTrue);
 
       // Wait for ticks
-      await Future.delayed(const Duration(milliseconds: 350));
+      await Future<void>.delayed(const Duration(milliseconds: 350));
 
       // Stop and cleanup
       timerEngine.stop();
@@ -141,7 +139,7 @@ void main() {
       final subscription = timerEngine.tickStream.listen(ticks.add);
 
       timerEngine.start();
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
 
       final ticksBeforePause = ticks.length;
       print('Ticks before pause: $ticksBeforePause');
@@ -149,7 +147,7 @@ void main() {
       timerEngine.pause();
       expect(timerEngine.isPaused, isTrue);
 
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       final ticksDuringPause = ticks.length;
       expect(
         ticksDuringPause,
@@ -160,7 +158,7 @@ void main() {
       timerEngine.resume();
       expect(timerEngine.isPaused, isFalse);
 
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
 
       timerEngine.stop();
       await subscription.cancel();
@@ -207,7 +205,7 @@ void main() {
 
       // Simulate 4 seconds of ticks (1s prep + 2s work + buffer)
       for (int i = 0; i < 40; i++) {
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         final now = timerEngine.elapsed;
         final delta = now - lastTick;

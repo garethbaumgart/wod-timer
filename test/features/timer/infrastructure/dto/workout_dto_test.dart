@@ -89,7 +89,7 @@ void main() {
 
         expect(json['id'], isNotEmpty);
         expect(json['name'], 'AMRAP Workout');
-        expect(json['timerType'], isA<Map>());
+        expect(json['timerType'], isA<Map<String, dynamic>>());
         expect(json['prepCountdownSeconds'], 10);
         expect(json['createdAt'], isNotEmpty);
       });
