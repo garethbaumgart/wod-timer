@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// Main state management for the timer.
-/// Manages TimerSession lifecycle, triggers haptic cues.
+/// Manages TimerSession lifecycle, triggers haptic + voice cues.
 @Observable
 final class TimerViewModel {
     // MARK: - Published State
@@ -14,6 +14,7 @@ final class TimerViewModel {
 
     private let engine = TimerEngine()
     private let haptics = WatchHapticService()
+    let audio = WatchAudioService()
     let recentsStore = RecentWorkoutsStore()
 
     // MARK: - Internal State
@@ -26,6 +27,9 @@ final class TimerViewModel {
     private var playedLastRound = false
     private var playedKeepGoing = false
     private var playedHalfway = false
+    private var playedAlmostThere = false
+    private var playedTenSeconds = false
+    private var playedFinalCountdown = false
     private var lastWorkout: Workout?
 
     init() {
@@ -95,6 +99,7 @@ final class TimerViewModel {
             phase = .completed
             engine.stop()
             haptics.complete()
+            playCompletionEncouragement()
         case .failure:
             break
         }
@@ -119,7 +124,6 @@ final class TimerViewModel {
     private func onTick(elapsed: TimeInterval) {
         guard var current = session else { return }
 
-        // Calculate delta since last tick in milliseconds
         let deltaMs = Int((elapsed - lastTickElapsed) * 1000)
         lastTickElapsed = elapsed
 
@@ -128,13 +132,14 @@ final class TimerViewModel {
 
         switch result {
         case let .success(updated):
-            handleHapticCues(old: oldSession, new: updated)
+            handleCues(old: oldSession, new: updated)
 
             if updated.state == .completed {
                 session = updated
                 phase = .completed
                 engine.stop()
                 haptics.complete()
+                playCompletionEncouragement()
             } else {
                 session = updated
                 phase = updated.state
@@ -146,47 +151,56 @@ final class TimerViewModel {
                 phase = .completed
                 engine.stop()
                 haptics.complete()
+                playCompletionEncouragement()
             }
         }
     }
 
-    // MARK: - Haptic Cue Logic
+    // MARK: - Cue Logic (Haptics + Voice)
 
     /// Ported from timer_notifier.dart _handleAudioCues.
-    /// On watch: haptics replace audio as primary feedback.
-    private func handleHapticCues(old: TimerSession, new: TimerSession) {
-        var cuePlayed = false
+    /// Plays voice cues alongside haptic feedback.
+    private func handleCues(old: TimerSession, new: TimerSession) {
+        var voiceCuePlayed = false
 
-        // "Get ready" haptic when entering prep
+        // "Get ready" when entering prep
         if new.state == .preparing && !playedGetReady {
             playedGetReady = true
-            cuePlayed = true
+            audio.playGetReady()
+            voiceCuePlayed = true
         }
 
         // Countdown ticks during preparation (3, 2, 1)
-        if !cuePlayed && new.state == .preparing {
+        if !voiceCuePlayed && new.state == .preparing {
             let remaining = new.timeRemaining.seconds
             if remaining <= 3 && remaining > 0 && remaining != lastCountdownSecond {
                 lastCountdownSecond = remaining
+                audio.playCountdown(remaining)
                 haptics.prepTick()
-                cuePlayed = true
+                voiceCuePlayed = true
             }
         }
 
-        // GO! when transitioning from preparing to running
+        // "Go!" or "Let's go!" when prep → running
         if old.state == .preparing && new.state == .running && !playedGo {
             playedGo = true
+            if Bool.random() {
+                audio.playGo()
+            } else {
+                audio.playLetsGo()
+            }
             haptics.go()
-            cuePlayed = true
+            voiceCuePlayed = true
         }
 
         // Detect round change
         let roundChanged = new.currentRound != lastRound && lastRound != 0
 
-        // Work → Rest transition (Tabata)
+        // Work → Rest transition (prefer round cue if both happen)
         if old.state == .running && new.state == .resting && !roundChanged {
+            audio.playRest()
             haptics.workToRest()
-            cuePlayed = true
+            voiceCuePlayed = true
         }
 
         // Rest → Work transition
@@ -202,33 +216,78 @@ final class TimerViewModel {
                new.currentRound == totalRounds,
                !playedLastRound {
                 playedLastRound = true
+                audio.playLastRound()
                 haptics.lastRound()
             } else {
+                audio.playNextRound()
                 haptics.roundChange()
             }
-            cuePlayed = true
+            voiceCuePlayed = true
         } else if lastRound == 0 {
             lastRound = new.currentRound
         }
 
-        // Halfway haptic
-        if !cuePlayed && new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
-            playedHalfway = true
-            haptics.halfway()
-            cuePlayed = true
-        }
-
-        // Keep going haptic at ~33%
-        if !cuePlayed && new.progress >= 0.33 && old.progress < 0.33 && !playedKeepGoing {
+        // Motivational cue at ~33% progress
+        if !voiceCuePlayed && new.progress >= 0.33 && old.progress < 0.33 && !playedKeepGoing {
             playedKeepGoing = true
-            // No distinct haptic for this — skip to avoid haptic fatigue
+            if Bool.random() {
+                audio.playKeepGoing()
+            } else {
+                audio.playComeOn()
+            }
+            voiceCuePlayed = true
         }
 
-        // Final 3 seconds countdown ticks (for overall timer, not interval)
-        if !cuePlayed && new.state == .running {
+        // Halfway point
+        if !voiceCuePlayed && new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
+            playedHalfway = true
+            audio.playHalfway()
+            haptics.halfway()
+            voiceCuePlayed = true
+        }
+
+        // "Almost there" at ~85% progress
+        if !voiceCuePlayed && new.progress >= 0.85 && old.progress < 0.85 && !playedAlmostThere {
+            playedAlmostThere = true
+            audio.playAlmostThere()
+            voiceCuePlayed = true
+        }
+
+        // "Ten seconds" warning (only if workout > 15s to avoid overlap with final countdown)
+        if !voiceCuePlayed && new.state == .running && !playedTenSeconds
+            && new.workout.timerType.estimatedDuration.seconds > 15 {
             let remaining = new.timeRemaining.seconds
-            if remaining <= 3 && remaining > 0 {
+            if remaining <= 10 && remaining > 7 {
+                playedTenSeconds = true
+                audio.playTenSeconds()
+                voiceCuePlayed = true
+            }
+        }
+
+        // Final countdown (single pre-recorded "5, 4, 3, 2, 1" clip)
+        if !voiceCuePlayed && new.state == .running && !playedFinalCountdown {
+            let remaining = new.timeRemaining.seconds
+            if remaining <= 5 && remaining > 0 {
+                playedFinalCountdown = true
+                audio.playFinalCountdown()
                 haptics.finalCountdown()
+            }
+        }
+    }
+
+    /// Plays "Good job" or "That's it" after completion,
+    /// delayed if the final countdown clip may still be playing.
+    /// The "5, 4, 3, 2, 1" clip starts at 5s remaining and runs ~5s,
+    /// so it should finish near completion. A 1s buffer avoids overlap
+    /// if the timer completes slightly before the clip ends.
+    private func playCompletionEncouragement() {
+        let delay: TimeInterval = playedFinalCountdown ? 1.0 : 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.phase == .completed else { return }
+            if Bool.random() {
+                self.audio.playGoodJob()
+            } else {
+                self.audio.playThatsIt()
             }
         }
     }
@@ -241,5 +300,8 @@ final class TimerViewModel {
         playedLastRound = false
         playedKeepGoing = false
         playedHalfway = false
+        playedAlmostThere = false
+        playedTenSeconds = false
+        playedFinalCountdown = false
     }
 }
