@@ -253,8 +253,9 @@ final class TimerViewModel {
             voiceCuePlayed = true
         }
 
-        // "Ten seconds" warning (only if workout > 15s to avoid overlap)
-        if !voiceCuePlayed && new.state == .running && !playedTenSeconds {
+        // "Ten seconds" warning (only if workout > 15s to avoid overlap with final countdown)
+        if !voiceCuePlayed && new.state == .running && !playedTenSeconds
+            && new.workout.timerType.estimatedDuration.seconds > 15 {
             let remaining = new.timeRemaining.seconds
             if remaining <= 10 && remaining > 7 {
                 playedTenSeconds = true
@@ -275,9 +276,12 @@ final class TimerViewModel {
     }
 
     /// Plays "Good job" or "That's it" after completion,
-    /// delayed if final countdown was still playing.
+    /// delayed if the final countdown clip may still be playing.
+    /// The "5, 4, 3, 2, 1" clip starts at 5s remaining and runs ~5s,
+    /// so it should finish near completion. A 1s buffer avoids overlap
+    /// if the timer completes slightly before the clip ends.
     private func playCompletionEncouragement() {
-        let delay: TimeInterval = playedFinalCountdown ? 0.6 : 0
+        let delay: TimeInterval = playedFinalCountdown ? 1.0 : 0
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, self.phase == .completed else { return }
             if Bool.random() {

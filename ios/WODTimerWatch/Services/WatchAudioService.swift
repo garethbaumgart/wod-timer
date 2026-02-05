@@ -24,9 +24,15 @@ final class WatchAudioService {
 
     @ObservationIgnored
     private var player: AVAudioPlayer?
+    @ObservationIgnored
+    private let playbackDelegate = AudioPlaybackDelegate()
 
     init() {
         configureAudioSession()
+    }
+
+    deinit {
+        deactivateAudioSession()
     }
 
     // MARK: - Configuration
@@ -49,11 +55,6 @@ final class WatchAudioService {
 
     // MARK: - Voice Cues
 
-    func playBeep() {
-        // Beep is always from major pack, .m4a format
-        play(file: "beep", ext: "m4a", forcePack: .major)
-    }
-
     func playCountdown(_ number: Int) {
         play(file: "countdown_\(number)")
     }
@@ -66,16 +67,8 @@ final class WatchAudioService {
         play(file: "rest")
     }
 
-    func playComplete() {
-        play(file: "complete")
-    }
-
     func playHalfway() {
         play(file: "halfway")
-    }
-
-    func playIntervalStart() {
-        play(file: "interval")
     }
 
     func playGetReady() {
@@ -122,22 +115,30 @@ final class WatchAudioService {
         play(file: "thats_it")
     }
 
-    func playNoRep() {
-        play(file: "no_rep")
-    }
-
     // MARK: - Private
 
     private func configureAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, options: [.duckOthers, .interruptSpokenAudioAndMixWithOthers])
-            try session.setActive(true)
         } catch {
             // Audio session config is non-critical
         }
     }
 
+    private func activateAudioSession() {
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
+    private func deactivateAudioSession() {
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    /// Plays a voice cue audio file.
+    /// Uses a single player instance — a new cue replaces any in-progress cue.
+    /// This is intentional: voice cues are short and sequential, so overlapping
+    /// playback would sound garbled. The timer logic already prevents rapid-fire
+    /// triggers via the `voiceCuePlayed` flag.
     private func play(file: String, ext: String = "mp3", forcePack: VoicePack? = nil) {
         guard !muted else { return }
 
@@ -156,13 +157,24 @@ final class WatchAudioService {
         }
 
         do {
+            activateAudioSession()
             let newPlayer = try AVAudioPlayer(contentsOf: url)
             newPlayer.volume = volume
+            newPlayer.delegate = playbackDelegate
             newPlayer.prepareToPlay()
             newPlayer.play()
             player = newPlayer // retain
         } catch {
             // Audio playback is non-critical on watch
         }
+    }
+}
+
+// MARK: - Playback Delegate
+
+/// Deactivates the audio session when playback finishes to conserve battery.
+private final class AudioPlaybackDelegate: NSObject, AVAudioPlayerDelegate {
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully _: Bool) {
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }

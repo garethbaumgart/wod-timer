@@ -47,8 +47,10 @@ struct VoiceSettingsView: View {
         Button {
             audio.setVoicePack(pack)
             audio.setRandomizePerCue(false)
-            // Play a sample so user hears the voice
-            audio.playLetsGo()
+            // Play a sample so user hears the voice (skip if muted)
+            if !audio.muted {
+                audio.playLetsGo()
+            }
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
