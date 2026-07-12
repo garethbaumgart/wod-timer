@@ -70,3 +70,8 @@ ios/fastlane/test_output/
 # Build artifacts
 *.ipa
 *.dSYM.zip
+
+# FVM Version Cache
+.fvm/
+# Android build output
+android/build/

@@ -14,8 +14,14 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
-      // Verify home page is shown
-      expect(find.text('WOD Timer'), findsOneWidget);
+      // Verify home page is shown (hero renders "WOD." as a RichText)
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText && widget.text.toPlainText() == 'WOD.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('AMRAP'), findsOneWidget);
       print('✓ Home page loaded');
 
@@ -79,8 +85,8 @@ void main() {
       for (int i = 0; i < 150; i++) {
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Check if we've transitioned to WORK phase
-        final workFinder = find.text('WORK');
+        // Check if we've transitioned to WORK phase (pill shows "AMRAP  ·  WORK")
+        final workFinder = find.textContaining('WORK');
         if (workFinder.evaluate().isNotEmpty) {
           print('✓ Transitioned to WORK phase after ${(i + 1) * 100}ms');
           transitionedToWork = true;
@@ -92,6 +98,12 @@ void main() {
       expect(transitionedToWork, isTrue,
           reason: 'Should transition from GET READY to WORK phase');
       print('✓ WORK phase verified - Timer flow is working correctly!');
+
+      // Stop the workout so audio players are released before teardown
+      // (a still-running session leaves audioplayers frame callbacks pending).
+      await tester.tap(find.byIcon(Icons.stop));
+      await tester.pumpAndSettle();
+      print('✓ Workout stopped cleanly');
 
       print('\n=== TIMER INTEGRATION TEST PASSED ===');
       print('The timer:');
