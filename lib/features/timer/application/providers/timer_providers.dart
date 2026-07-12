@@ -1,5 +1,4 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:wod_timer/core/infrastructure/audio/audio_service.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/features/timer/application/usecases/create_workout.dart';
@@ -15,11 +14,13 @@ import 'package:wod_timer/injection.dart';
 part 'timer_providers.g.dart';
 
 /// Provider for the audio service.
-@riverpod
+///
+/// Uses the singleton from get_it so the mute state set from settings
+/// applies to the same instance that plays the workout cues (a locally
+/// constructed instance here would silently diverge from it).
+@Riverpod(keepAlive: true)
 IAudioService audioService(AudioServiceRef ref) {
-  final service = AudioService();
-  ref.onDispose(service.dispose);
-  return service;
+  return getIt<IAudioService>();
 }
 
 /// Provider for the haptic feedback service.

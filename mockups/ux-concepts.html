@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOD Timer - 10 UX Mockup Concepts</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 80px 24px 40px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .page-header h1 {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #FF6B35, #4ECDC4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .page-header p {
+    font-size: 18px;
+    color: #888;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .mockup-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 24px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .mockup-section:last-child { border-bottom: none; }
+
+  .mockup-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .mockup-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: #FF6B35;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 8px;
+    padding: 4px 12px;
+    white-space: nowrap;
+  }
+
+  .mockup-info h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .mockup-info .philosophy {
+    font-size: 16px;
+    color: #999;
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .spec-item {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .spec-item .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    margin-bottom: 4px;
+  }
+
+  .spec-item .value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ddd;
+  }
+
+  .phones-row {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    padding: 20px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone-wrapper {
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .phone-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    margin-bottom: 12px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 280px;
+    height: 560px;
+    border-radius: 36px;
+    border: 3px solid #333;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .phone .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 28px;
+    background: #000;
+    border-radius: 0 0 16px 16px;
+    z-index: 10;
+  }
+
+  .phone .screen {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .phone .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.3);
+    z-index: 10;
+  }
+
+  /* ======================== */
+  /* CONCEPT 1: VOID          */
+  /* ======================== */
+  .c1-home {
+    background: #000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 20px 24px;
+  }
+  .c1-greeting {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .c1-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .c1-timer-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  .c1-timer-item {
+    padding: 22px 0;
+    border-bottom: 1px solid #111;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  .c1-timer-item:last-child { border-bottom: none; }
+  .c1-timer-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+  .c1-timer-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: #444;
+    font-weight: 400;
+  }
+  .c1-arrow {
+    color: #333;
+    font-size: 18px;
+  }
+  .c1-bottom {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding-top: 16px;
+  }
+  .c1-bottom-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #555;
+  }
+
+  /* C1 Active Timer */
+  .c1-active {
+    background: #000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c1-active-type {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #333;
+    position: absolute;
+    top: 48px;
+  }
+  .c1-active-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 96px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .c1-active-round {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-top: 8px;
+  }
+  .c1-progress-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 240px;
+    height: 240px;
+  }
+  .c1-pause {
+    position: absolute;
+    bottom: 60px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 18px;
+  }
+
+  /* ======================== */
+  /* CONCEPT 2: NEON PULSE    */
+  /* ======================== */
+  .c2-home {
+    background: #0a0a0f;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 20px 24px;
+  }
+  .c2-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .c2-logo span { color: #00ff88; }
+  .c2-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-content: center;
+  }
+  .c2-card {
+    aspect-ratio: 1;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .c2-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    border: 1px solid;
+    opacity: 0.3;
+  }
+  .c2-card-1 { background: rgba(0,255,136,0.05); }
+  .c2-card-1::before { border-color: #00ff88; }
+  .c2-card-2 { background: rgba(0,170,255,0.05); }
+  .c2-card-2::before { border-color: #00aaff; }
+  .c2-card-3 { background: rgba(255,0,136,0.05); }
+  .c2-card-3::before { border-color: #ff0088; }
+  .c2-card-4 { background: rgba(255,170,0,0.05); }
+  .c2-card-4::before { border-color: #ffaa00; }
+  .c2-card-icon {
+    font-size: 28px;
+  }
+  .c2-card-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+
+  /* C2 Active */
+  .c2-active {
+    background: #0a0a0f;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c2-active::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,136,0.08) 0%, transparent 70%);
+  }
+  .c2-active-time {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 88px;
+    font-weight: 700;
+    color: #00ff88;
+    letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 40px rgba(0,255,136,0.3);
+    position: relative;
+    z-index: 1;
+  }
+  .c2-active-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: rgba(0,255,136,0.5);
+    margin-bottom: 8px;
+    z-index: 1;
+  }
+  .c2-bar {
+    position: absolute;
+    bottom: 100px;
+    left: 24px;
+    right: 24px;
+    height: 3px;
+    background: #1a1a2e;
+    border-radius: 2px;
+    z-index: 1;
+  }
+  .c2-bar-fill {
+    height: 100%;
+    width: 65%;
+    background: #00ff88;
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0,255,136,0.5);
+  }
+
+  /* ======================== */
+  /* CONCEPT 3: BRUTALIST     */
+  /* ======================== */
+  .c3-home {
+    background: #fff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 0 0;
+  }
+  .c3-header {
+    padding: 0 16px 16px;
+    border-bottom: 3px solid #000;
+  }
+  .c3-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: #000;
+  }
+  .c3-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .c3-item {
+    flex: 1;
+    border-bottom: 2px solid #000;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    cursor: pointer;
+  }
+  .c3-item:last-child { border-bottom: none; }
+  .c3-item-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+  }
+  .c3-item-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    color: #999;
+    margin-right: 12px;
+  }
+
+  /* C3 Active */
+  .c3-active {
+    background: #fff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c3-active-type {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    color: #ccc;
+    position: absolute;
+    top: 48px;
+  }
+  .c3-active-time {
+    font-family: 'Inter', sans-serif;
+    font-size: 110px;
+    font-weight: 900;
+    color: #000;
+    letter-spacing: -6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .c3-active-phase {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: #FF6B35;
+    margin-top: 4px;
+  }
+  .c3-bottom-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+  }
+  .c3-ctrl {
+    color: #fff;
+    font-size: 22px;
+  }
+
+  /* ======================== */
+  /* CONCEPT 4: GRADIENT FLOW */
+  /* ======================== */
+  .c4-home {
+    background: linear-gradient(160deg, #0f0c29 0%, #1a1333 50%, #24243e 100%);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 20px 24px;
+  }
+  .c4-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .c4-sub {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 32px;
+  }
+  .c4-cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+  }
+  .c4-card {
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+  }
+  .c4-card-1 { background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(255,107,53,0.05)); border: 1px solid rgba(255,107,53,0.2); }
+  .c4-card-2 { background: linear-gradient(135deg, rgba(78,205,196,0.15), rgba(78,205,196,0.05)); border: 1px solid rgba(78,205,196,0.2); }
+  .c4-card-3 { background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.05)); border: 1px solid rgba(139,92,246,0.2); }
+  .c4-card-4 { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.2); }
+  .c4-card-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .c4-card-dot-1 { background: rgba(255,107,53,0.2); color: #FF6B35; }
+  .c4-card-dot-2 { background: rgba(78,205,196,0.2); color: #4ECDC4; }
+  .c4-card-dot-3 { background: rgba(139,92,246,0.2); color: #8B5CF6; }
+  .c4-card-dot-4 { background: rgba(245,158,11,0.2); color: #F59E0B; }
+  .c4-card-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .c4-card-desc {
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+
+  /* C4 Active */
+  .c4-active {
+    background: linear-gradient(160deg, #0f0c29, #302b63, #24243e);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c4-active-time {
+    font-family: 'Outfit', sans-serif;
+    font-size: 92px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .c4-active-round {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+  }
+  .c4-active-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,107,53,0.15);
+  }
+  .c4-active-ring2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #FF6B35;
+    border-right-color: #FF6B35;
+  }
+  .c4-active-controls {
+    position: absolute;
+    bottom: 60px;
+    display: flex;
+    gap: 24px;
+  }
+  .c4-ctrl-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.6);
+    font-size: 18px;
+  }
+
+  /* ======================== */
+  /* CONCEPT 5: MONO          */
+  /* ======================== */
+  .c5-home {
+    background: #111;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 24px 24px;
+  }
+  .c5-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .c5-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+  }
+  .c5-item {
+    padding: 20px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .c5-item-idx {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #333;
+    width: 24px;
+  }
+  .c5-item-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .c5-item-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #444;
+    margin-left: auto;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .c5-divider {
+    height: 1px;
+    background: #1a1a1a;
+  }
+
+  /* C5 Active */
+  .c5-active {
+    background: #111;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c5-active-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 80px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .c5-active-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 12px;
+  }
+  .c5-active-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 65%;
+    height: 3px;
+    background: #fff;
+  }
+
+  /* ======================== */
+  /* CONCEPT 6: WARM EARTH    */
+  /* ======================== */
+  .c6-home {
+    background: #1a1410;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 20px 24px;
+  }
+  .c6-brand {
+    font-family: 'Sora', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #E8D5B7;
+    margin-bottom: 32px;
+  }
+  .c6-section-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #5a4a3a;
+    margin-bottom: 16px;
+  }
+  .c6-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    align-content: center;
+  }
+  .c6-card {
+    background: #241e17;
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid #2e2519;
+  }
+  .c6-card-icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  .c6-card-name {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #E8D5B7;
+  }
+  .c6-card-desc {
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    color: #6a5a4a;
+    margin-top: 4px;
+  }
+
+  /* C6 Active */
+  .c6-active {
+    background: #1a1410;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c6-active-time {
+    font-family: 'Sora', sans-serif;
+    font-size: 88px;
+    font-weight: 800;
+    color: #E8D5B7;
+    font-variant-numeric: tabular-nums;
+  }
+  .c6-active-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #5a4a3a;
+    margin-bottom: 8px;
+  }
+  .c6-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    border: 3px solid #2e2519;
+  }
+  .c6-ring-fill {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: #C4956A;
+    border-right-color: #C4956A;
+  }
+
+  /* ======================== */
+  /* CONCEPT 7: GLASS         */
+  /* ======================== */
+  .c7-home {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 16px 24px;
+  }
+  .c7-greeting {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 2px;
+    padding: 0 4px;
+  }
+  .c7-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 32px;
+    padding: 0 4px;
+  }
+  .c7-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-content: center;
+  }
+  .c7-card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .c7-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .c7-icon-1 { background: rgba(255,107,53,0.2); color: #FF6B35; }
+  .c7-icon-2 { background: rgba(78,205,196,0.2); color: #4ECDC4; }
+  .c7-icon-3 { background: rgba(99,102,241,0.2); color: #6366F1; }
+  .c7-icon-4 { background: rgba(245,158,11,0.2); color: #F59E0B; }
+  .c7-card-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .c7-card-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* C7 Active */
+  .c7-active {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c7-active-glass {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 32px;
+    padding: 48px 32px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .c7-active-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 8px;
+  }
+  .c7-active-time {
+    font-family: 'Inter', sans-serif;
+    font-size: 72px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .c7-active-round {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.3);
+    margin-top: 8px;
+  }
+  .c7-progress {
+    position: absolute;
+    bottom: 90px;
+    left: 24px;
+    right: 24px;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+  }
+  .c7-progress-fill {
+    height: 100%;
+    width: 65%;
+    background: linear-gradient(90deg, #FF6B35, #4ECDC4);
+    border-radius: 2px;
+  }
+
+  /* ======================== */
+  /* CONCEPT 8: OVERSIZED     */
+  /* ======================== */
+  .c8-home {
+    background: #000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 16px 24px;
+    justify-content: center;
+  }
+  .c8-item {
+    padding: 8px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .c8-item-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    color: #222;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    line-height: 1;
+  }
+  .c8-item.active .c8-item-name {
+    color: #fff;
+  }
+  .c8-item-arrow {
+    color: #333;
+    font-size: 20px;
+    margin-left: auto;
+    opacity: 0;
+  }
+  .c8-item.active .c8-item-arrow { opacity: 1; color: #FF6B35; }
+
+  /* C8 Active */
+  .c8-active {
+    background: #000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c8-active-time {
+    font-family: 'Outfit', sans-serif;
+    font-size: 120px;
+    font-weight: 900;
+    color: #FF6B35;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -4px;
+    line-height: 1;
+  }
+  .c8-active-sub {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-top: 12px;
+  }
+
+  /* ======================== */
+  /* CONCEPT 9: PILL NAV      */
+  /* ======================== */
+  .c9-home {
+    background: #101010;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 16px 24px;
+  }
+  .c9-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    overflow-x: auto;
+    margin-bottom: 24px;
+    justify-content: center;
+  }
+  .c9-tab {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 999px;
+    white-space: nowrap;
+    cursor: pointer;
+    color: #555;
+    background: #1a1a1a;
+  }
+  .c9-tab.active {
+    background: #FF6B35;
+    color: #fff;
+  }
+  .c9-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .c9-timer-preview {
+    font-family: 'Inter', sans-serif;
+    font-size: 64px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .c9-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: #555;
+    text-align: center;
+    max-width: 200px;
+  }
+  .c9-config {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .c9-config-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 18px;
+  }
+  .c9-config-val {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    min-width: 60px;
+    text-align: center;
+  }
+  .c9-start {
+    width: 100%;
+    max-width: 240px;
+    padding: 16px;
+    border-radius: 16px;
+    background: #FF6B35;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* C9 Active */
+  .c9-active {
+    background: #101010;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .c9-active-phase {
+    position: absolute;
+    top: 48px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(255,107,53,0.15);
+    color: #FF6B35;
+    padding: 6px 16px;
+    border-radius: 999px;
+  }
+  .c9-active-time {
+    font-family: 'Inter', sans-serif;
+    font-size: 96px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .c9-active-round {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+    margin-top: 8px;
+  }
+  .c9-arc {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    border: 4px solid #1a1a1a;
+  }
+  .c9-arc-fill {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    border: 4px solid transparent;
+    border-top-color: #FF6B35;
+    border-right-color: #FF6B35;
+    border-bottom-color: #FF6B35;
+  }
+
+  /* ======================== */
+  /* CONCEPT 10: SPLIT        */
+  /* ======================== */
+  .c10-home {
+    background: #0d0d0d;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .c10-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 48px 24px 24px;
+  }
+  .c10-top h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+  .c10-top p {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    color: #444;
+    margin-top: 8px;
+  }
+  .c10-bottom {
+    flex: 1.2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    background: #1a1a1a;
+    margin-top: 24px;
+  }
+  .c10-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    background: #0d0d0d;
+  }
+  .c10-cell-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .c10-cell-line {
+    width: 24px;
+    height: 2px;
+    border-radius: 1px;
+  }
+  .c10-line-1 { background: #FF6B35; }
+  .c10-line-2 { background: #4ECDC4; }
+  .c10-line-3 { background: #8B5CF6; }
+  .c10-line-4 { background: #F59E0B; }
+
+  /* C10 Active */
+  .c10-active {
+    background: #0d0d0d;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .c10-active-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .c10-active-time {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 88px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -2px;
+  }
+  .c10-active-info {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+  .c10-active-bottom {
+    height: 160px;
+    background: #FF6B35;
+    border-radius: 32px 32px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .c10-active-phase {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .c10-active-controls {
+    display: flex;
+    gap: 32px;
+  }
+  .c10-ctrl {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>WOD Timer UX Concepts</h1>
+  <p>10 distinct design directions — from ultra-minimal to bold — each showing the Home screen and Active Timer screen with exact styling specifications.</p>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 1: VOID                              -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">01 / 10</span>
+    <div class="mockup-info">
+      <h2>Void</h2>
+      <p class="philosophy">Pure black. Nothing exists except the timer. Zero chrome, zero decoration. The screen IS the timer. Inspired by the way SmartWOD strips everything during active workouts, but applied to the entire app.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#000000 Pure Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Inter + JetBrains Mono</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">96px / 700 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">None — white only</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Near zero — text list nav</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Subtle circular ring</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c1-home">
+            <div class="c1-greeting">WORKOUT</div>
+            <div class="c1-title">Select a timer</div>
+            <div class="c1-timer-list">
+              <div class="c1-timer-item">
+                <div>
+                  <div class="c1-timer-name">AMRAP</div>
+                  <div class="c1-timer-desc">As many rounds as possible</div>
+                </div>
+                <div class="c1-arrow">›</div>
+              </div>
+              <div class="c1-timer-item">
+                <div>
+                  <div class="c1-timer-name">FOR TIME</div>
+                  <div class="c1-timer-desc">Complete as fast as possible</div>
+                </div>
+                <div class="c1-arrow">›</div>
+              </div>
+              <div class="c1-timer-item">
+                <div>
+                  <div class="c1-timer-name">EMOM</div>
+                  <div class="c1-timer-desc">Every minute on the minute</div>
+                </div>
+                <div class="c1-arrow">›</div>
+              </div>
+              <div class="c1-timer-item">
+                <div>
+                  <div class="c1-timer-name">TABATA</div>
+                  <div class="c1-timer-desc">High intensity intervals</div>
+                </div>
+                <div class="c1-arrow">›</div>
+              </div>
+            </div>
+            <div class="c1-bottom">
+              <div class="c1-bottom-icon">⚙</div>
+              <div class="c1-bottom-icon">★</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c1-active">
+            <div class="c1-active-type">AMRAP</div>
+            <svg class="c1-progress-ring" viewBox="0 0 240 240">
+              <circle cx="120" cy="120" r="110" stroke="#111" stroke-width="2" fill="none"/>
+              <circle cx="120" cy="120" r="110" stroke="#333" stroke-width="2" fill="none"
+                stroke-dasharray="691" stroke-dashoffset="242" stroke-linecap="round"
+                transform="rotate(-90 120 120)"/>
+            </svg>
+            <div class="c1-active-time">12:47</div>
+            <div class="c1-active-round">Round 4</div>
+            <div class="c1-pause">⏸</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 2: NEON PULSE                        -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">02 / 10</span>
+    <div class="mockup-info">
+      <h2>Neon Pulse</h2>
+      <p class="philosophy">Dark sci-fi aesthetic with glowing neon accents. Each timer type has its own neon color. The active timer glows with a soft radial pulse. High energy without clutter — the glow IS the decoration.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#0A0A0F Near-Black Blue</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Space Grotesk</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">88px / 700 weight</div></div>
+    <div class="spec-item"><div class="label">Accents</div><div class="value">#00FF88 Green, #00AAFF Blue, #FF0088 Pink, #FFAA00 Amber</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Glowing border cards, radial glow</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Neon-glow horizontal bar</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c2-home">
+            <div class="c2-logo">WOD<span>.</span></div>
+            <div class="c2-grid">
+              <div class="c2-card c2-card-1">
+                <div class="c2-card-icon" style="color:#00ff88">⟳</div>
+                <div class="c2-card-name" style="color:#00ff88">AMRAP</div>
+              </div>
+              <div class="c2-card c2-card-2">
+                <div class="c2-card-icon" style="color:#00aaff">⏱</div>
+                <div class="c2-card-name" style="color:#00aaff">FOR TIME</div>
+              </div>
+              <div class="c2-card c2-card-3">
+                <div class="c2-card-icon" style="color:#ff0088">◷</div>
+                <div class="c2-card-name" style="color:#ff0088">EMOM</div>
+              </div>
+              <div class="c2-card c2-card-4">
+                <div class="c2-card-icon" style="color:#ffaa00">⚡</div>
+                <div class="c2-card-name" style="color:#ffaa00">TABATA</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c2-active">
+            <div class="c2-active-label">AMRAP</div>
+            <div class="c2-active-time">12:47</div>
+            <div class="c2-bar"><div class="c2-bar-fill"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 3: BRUTALIST                         -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">03 / 10</span>
+    <div class="mockup-info">
+      <h2>Brutalist</h2>
+      <p class="philosophy">White background, black type, hard borders. Anti-design. Every pixel is functional. Inspired by brutalist web design — no gradients, no shadows, no curves. Raw, industrial, unapologetic. Reads like a gym whiteboard.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#FFFFFF White</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Inter Black (900 weight)</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">110px / 900 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#FF6B35 Orange (phase only)</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Thick borders, full-width rows</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">None — just the number</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c3-home">
+            <div class="c3-header">
+              <h1>WOD Timer</h1>
+            </div>
+            <div class="c3-list">
+              <div class="c3-item">
+                <span class="c3-item-num">01</span>
+                <span class="c3-item-name">AMRAP</span>
+              </div>
+              <div class="c3-item">
+                <span class="c3-item-num">02</span>
+                <span class="c3-item-name">FOR TIME</span>
+              </div>
+              <div class="c3-item">
+                <span class="c3-item-num">03</span>
+                <span class="c3-item-name">EMOM</span>
+              </div>
+              <div class="c3-item">
+                <span class="c3-item-num">04</span>
+                <span class="c3-item-name">TABATA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c3-active">
+            <div class="c3-active-type">AMRAP</div>
+            <div class="c3-active-time">12:47</div>
+            <div class="c3-active-phase">WORK</div>
+            <div class="c3-bottom-bar">
+              <div class="c3-ctrl">⏸</div>
+              <div class="c3-ctrl">■</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 4: GRADIENT FLOW                     -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">04 / 10</span>
+    <div class="mockup-info">
+      <h2>Gradient Flow</h2>
+      <p class="philosophy">Deep purple-to-midnight gradients with soft colored cards. Premium feel, like a high-end fitness brand. Timer types as a vertical list with icon badges. Clean hierarchy, nothing fights for attention.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">Gradient: #0F0C29 → #24243E</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">92px / 800 weight</div></div>
+    <div class="spec-item"><div class="label">Accents</div><div class="value">Multi — orange, teal, violet, amber per type</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Gradient cards, circular progress ring</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Rotating arc ring</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c4-home">
+            <div class="c4-title">Let's Work</div>
+            <div class="c4-sub">Choose your timer type</div>
+            <div class="c4-cards">
+              <div class="c4-card c4-card-1">
+                <div class="c4-card-dot c4-card-dot-1">⟳</div>
+                <div>
+                  <div class="c4-card-text">AMRAP</div>
+                  <div class="c4-card-desc">As many rounds as possible</div>
+                </div>
+              </div>
+              <div class="c4-card c4-card-2">
+                <div class="c4-card-dot c4-card-dot-2">⏱</div>
+                <div>
+                  <div class="c4-card-text">For Time</div>
+                  <div class="c4-card-desc">Complete as fast as possible</div>
+                </div>
+              </div>
+              <div class="c4-card c4-card-3">
+                <div class="c4-card-dot c4-card-dot-3">◷</div>
+                <div>
+                  <div class="c4-card-text">EMOM</div>
+                  <div class="c4-card-desc">Every minute on the minute</div>
+                </div>
+              </div>
+              <div class="c4-card c4-card-4">
+                <div class="c4-card-dot c4-card-dot-4">⚡</div>
+                <div>
+                  <div class="c4-card-text">Tabata</div>
+                  <div class="c4-card-desc">High intensity intervals</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c4-active">
+            <div class="c4-active-ring"></div>
+            <div class="c4-active-ring2"></div>
+            <div class="c4-active-time">12:47</div>
+            <div class="c4-active-round">Round 4 of 5</div>
+            <div class="c4-active-controls">
+              <div class="c4-ctrl-btn">⏸</div>
+              <div class="c4-ctrl-btn">■</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 5: MONO                              -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">05 / 10</span>
+    <div class="mockup-info">
+      <h2>Mono</h2>
+      <p class="philosophy">Fully monospace. Terminal aesthetic. Every character is the same width. No colors except white on near-black. For developers and minimalists who want a tool, not an experience. The anti-fitness-app.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#111111 Charcoal</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">JetBrains Mono only</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">80px / 700 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">None — monochrome</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Text-only, hairline dividers</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Bottom-edge bar, no border radius</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c5-home">
+            <div class="c5-title">WOD Timer</div>
+            <div class="c5-list">
+              <div class="c5-item">
+                <span class="c5-item-idx">01</span>
+                <span class="c5-item-name">AMRAP</span>
+                <span class="c5-item-tag">rounds</span>
+              </div>
+              <div class="c5-divider"></div>
+              <div class="c5-item">
+                <span class="c5-item-idx">02</span>
+                <span class="c5-item-name">FOR TIME</span>
+                <span class="c5-item-tag">speed</span>
+              </div>
+              <div class="c5-divider"></div>
+              <div class="c5-item">
+                <span class="c5-item-idx">03</span>
+                <span class="c5-item-name">EMOM</span>
+                <span class="c5-item-tag">interval</span>
+              </div>
+              <div class="c5-divider"></div>
+              <div class="c5-item">
+                <span class="c5-item-idx">04</span>
+                <span class="c5-item-name">TABATA</span>
+                <span class="c5-item-tag">hiit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c5-active">
+            <div class="c5-active-time">12:47</div>
+            <div class="c5-active-info">AMRAP — Round 4</div>
+            <div class="c5-active-bar"></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 6: WARM EARTH                        -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">06 / 10</span>
+    <div class="mockup-info">
+      <h2>Warm Earth</h2>
+      <p class="philosophy">Dark warm tones — espresso browns, sandstone, leather. Feels like a premium fitness journal. Moves away from the typical neon-on-black fitness app look. Calm, grounded, mature.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#1A1410 Dark Espresso</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Sora</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">88px / 800 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#E8D5B7 Warm Sand, #C4956A Copper</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Warm-bordered cards, subtle sections</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Copper ring arc</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c6-home">
+            <div class="c6-brand">WOD</div>
+            <div class="c6-section-label">Timers</div>
+            <div class="c6-grid">
+              <div class="c6-card">
+                <div class="c6-card-icon">⟳</div>
+                <div class="c6-card-name">AMRAP</div>
+                <div class="c6-card-desc">Max rounds</div>
+              </div>
+              <div class="c6-card">
+                <div class="c6-card-icon">⏱</div>
+                <div class="c6-card-name">FOR TIME</div>
+                <div class="c6-card-desc">Race the clock</div>
+              </div>
+              <div class="c6-card">
+                <div class="c6-card-icon">◷</div>
+                <div class="c6-card-name">EMOM</div>
+                <div class="c6-card-desc">Every minute</div>
+              </div>
+              <div class="c6-card">
+                <div class="c6-card-icon">⚡</div>
+                <div class="c6-card-name">TABATA</div>
+                <div class="c6-card-desc">Work / Rest</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c6-active">
+            <div class="c6-ring"></div>
+            <div class="c6-ring-fill"></div>
+            <div class="c6-active-label">AMRAP</div>
+            <div class="c6-active-time">12:47</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 7: GLASS                             -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">07 / 10</span>
+    <div class="mockup-info">
+      <h2>Glass</h2>
+      <p class="philosophy">Frosted glass morphism on deep blue gradients. Cards feel like translucent panels floating over depth. iOS-inspired but darker. The active timer is enclosed in a glass card for visual containment — all info in one place.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">Gradient: #1A1A2E → #0F3460</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Inter</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">72px / 800 weight</div></div>
+    <div class="spec-item"><div class="label">Accents</div><div class="value">Gradient bar: #FF6B35 → #4ECDC4</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Glassmorphism cards, 20px radius, blur(10px)</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Gradient horizontal bar</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c7-home">
+            <div class="c7-greeting">Good morning</div>
+            <div class="c7-name">Let's train</div>
+            <div class="c7-grid">
+              <div class="c7-card">
+                <div class="c7-card-icon c7-icon-1">⟳</div>
+                <div class="c7-card-name">AMRAP</div>
+                <div class="c7-card-desc">Max rounds</div>
+              </div>
+              <div class="c7-card">
+                <div class="c7-card-icon c7-icon-2">⏱</div>
+                <div class="c7-card-name">For Time</div>
+                <div class="c7-card-desc">Race clock</div>
+              </div>
+              <div class="c7-card">
+                <div class="c7-card-icon c7-icon-3">◷</div>
+                <div class="c7-card-name">EMOM</div>
+                <div class="c7-card-desc">Every minute</div>
+              </div>
+              <div class="c7-card">
+                <div class="c7-card-icon c7-icon-4">⚡</div>
+                <div class="c7-card-name">Tabata</div>
+                <div class="c7-card-desc">Intervals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c7-active">
+            <div class="c7-active-glass">
+              <div class="c7-active-label">AMRAP</div>
+              <div class="c7-active-time">12:47</div>
+              <div class="c7-active-round">Round 4 of 5</div>
+            </div>
+            <div class="c7-progress"><div class="c7-progress-fill"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 8: OVERSIZED                         -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">08 / 10</span>
+    <div class="mockup-info">
+      <h2>Oversized</h2>
+      <p class="philosophy">Typography IS the interface. Home screen uses enormous stacked text — the selected item lights up white, others recede to dark gray. No icons, no cards, no containers. Just massive type. The active timer goes even bigger with a bold accent color.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#000000 Pure Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">120px / 900 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#FF6B35 Orange (active timer only)</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Zero — pure typography</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">None</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c8-home">
+            <div class="c8-item active">
+              <span class="c8-item-name">AMRAP</span>
+              <span class="c8-item-arrow">→</span>
+            </div>
+            <div class="c8-item">
+              <span class="c8-item-name">FOR TIME</span>
+              <span class="c8-item-arrow">→</span>
+            </div>
+            <div class="c8-item">
+              <span class="c8-item-name">EMOM</span>
+              <span class="c8-item-arrow">→</span>
+            </div>
+            <div class="c8-item">
+              <span class="c8-item-name">TABATA</span>
+              <span class="c8-item-arrow">→</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c8-active">
+            <div class="c8-active-time">12:47</div>
+            <div class="c8-active-sub">AMRAP · Round 4</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 9: PILL NAV                          -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">09 / 10</span>
+    <div class="mockup-info">
+      <h2>Pill Nav</h2>
+      <p class="philosophy">Horizontal pill tabs for timer selection — one tap and you're configuring. The home screen IS the setup screen. No separate pages for type selection and configuration. Reduces navigation depth by one full step. Inspired by Seconds Pro's streamlined flow.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#101010 Near-Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Inter</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">96px / 800 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#FF6B35 Orange pills + arc</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Pill tabs, inline config, arc ring</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Circular arc with 4px stroke</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home (= Setup)</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c9-home">
+            <div class="c9-tabs">
+              <div class="c9-tab active">AMRAP</div>
+              <div class="c9-tab">FOR TIME</div>
+              <div class="c9-tab">EMOM</div>
+              <div class="c9-tab">TABATA</div>
+            </div>
+            <div class="c9-content">
+              <div class="c9-timer-preview">20:00</div>
+              <div class="c9-desc">As many rounds as possible within the time cap</div>
+              <div class="c9-config">
+                <div class="c9-config-btn">−</div>
+                <div class="c9-config-val">20 min</div>
+                <div class="c9-config-btn">+</div>
+              </div>
+              <div class="c9-start">START</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c9-active">
+            <div class="c9-active-phase">WORK</div>
+            <div class="c9-arc"></div>
+            <div class="c9-arc-fill"></div>
+            <div class="c9-active-time">12:47</div>
+            <div class="c9-active-round">Round 4</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONCEPT 10: SPLIT                            -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">10 / 10</span>
+    <div class="mockup-info">
+      <h2>Split</h2>
+      <p class="philosophy">Screen divided into zones. Home: top half is branding/context, bottom half is a 2x2 grid of tappable cells separated by hairline gaps. Active timer: top is the number, bottom is a colored phase panel with controls. The color block tells you the phase at a glance from across the room.</p>
+    </div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#0D0D0D Near-Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Space Grotesk</div></div>
+    <div class="spec-item"><div class="label">Timer Size</div><div class="value">88px / 700 weight</div></div>
+    <div class="spec-item"><div class="label">Accents</div><div class="value">Color-coded lines per type; full-color phase panel</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Hairline grid, colored bottom panel</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Phase color fills bottom panel</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper">
+      <div class="phone-label">Home</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c10-home">
+            <div class="c10-top">
+              <h1>Choose<br>your<br>timer.</h1>
+              <p>4 workout modes</p>
+            </div>
+            <div class="c10-bottom">
+              <div class="c10-cell">
+                <div class="c10-cell-line c10-line-1"></div>
+                <div class="c10-cell-name">AMRAP</div>
+              </div>
+              <div class="c10-cell">
+                <div class="c10-cell-line c10-line-2"></div>
+                <div class="c10-cell-name">FOR TIME</div>
+              </div>
+              <div class="c10-cell">
+                <div class="c10-cell-line c10-line-3"></div>
+                <div class="c10-cell-name">EMOM</div>
+              </div>
+              <div class="c10-cell">
+                <div class="c10-cell-line c10-line-4"></div>
+                <div class="c10-cell-name">TABATA</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label">Active Timer</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="c10-active">
+            <div class="c10-active-top">
+              <div class="c10-active-time">12:47</div>
+              <div class="c10-active-info">AMRAP · Round 4</div>
+            </div>
+            <div class="c10-active-bottom">
+              <div class="c10-active-phase">Work</div>
+              <div class="c10-active-controls">
+                <div class="c10-ctrl">⏸</div>
+                <div class="c10-ctrl">■</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div style="max-width:900px; margin:60px auto; padding:40px 24px 80px; text-align:center;">
+  <h2 style="font-size:28px; font-weight:700; margin-bottom:16px;">Comparison Summary</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+    <thead>
+      <tr style="border-bottom:2px solid #222;">
+        <th style="padding:12px 8px; color:#888; font-weight:600;">#</th>
+        <th style="padding:12px 8px; color:#888; font-weight:600;">Concept</th>
+        <th style="padding:12px 8px; color:#888; font-weight:600;">Vibe</th>
+        <th style="padding:12px 8px; color:#888; font-weight:600;">Busyness</th>
+        <th style="padding:12px 8px; color:#888; font-weight:600;">Best For</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">01</td>
+        <td style="padding:12px 8px; font-weight:600;">Void</td>
+        <td style="padding:12px 8px; color:#999;">Absolute minimal</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Very Low</td>
+        <td style="padding:12px 8px; color:#999;">Maximum focus, zero distraction</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">02</td>
+        <td style="padding:12px 8px; font-weight:600;">Neon Pulse</td>
+        <td style="padding:12px 8px; color:#999;">Sci-fi energy</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Low</td>
+        <td style="padding:12px 8px; color:#999;">Visual excitement without clutter</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">03</td>
+        <td style="padding:12px 8px; font-weight:600;">Brutalist</td>
+        <td style="padding:12px 8px; color:#999;">Raw industrial</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Very Low</td>
+        <td style="padding:12px 8px; color:#999;">No-nonsense, whiteboard feel</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">04</td>
+        <td style="padding:12px 8px; font-weight:600;">Gradient Flow</td>
+        <td style="padding:12px 8px; color:#999;">Premium calm</td>
+        <td style="padding:12px 8px; color:#FFC107;">Medium</td>
+        <td style="padding:12px 8px; color:#999;">Polished brand feel</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">05</td>
+        <td style="padding:12px 8px; font-weight:600;">Mono</td>
+        <td style="padding:12px 8px; color:#999;">Terminal hacker</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Very Low</td>
+        <td style="padding:12px 8px; color:#999;">Developer aesthetic, pure function</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">06</td>
+        <td style="padding:12px 8px; font-weight:600;">Warm Earth</td>
+        <td style="padding:12px 8px; color:#999;">Luxury organic</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Low</td>
+        <td style="padding:12px 8px; color:#999;">Standing out from neon fitness apps</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">07</td>
+        <td style="padding:12px 8px; font-weight:600;">Glass</td>
+        <td style="padding:12px 8px; color:#999;">Modern iOS</td>
+        <td style="padding:12px 8px; color:#FFC107;">Medium</td>
+        <td style="padding:12px 8px; color:#999;">Familiar Apple-style polish</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">08</td>
+        <td style="padding:12px 8px; font-weight:600;">Oversized</td>
+        <td style="padding:12px 8px; color:#999;">Bold typography</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Very Low</td>
+        <td style="padding:12px 8px; color:#999;">Gym readability at distance</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1a1a;">
+        <td style="padding:12px 8px; color:#555;">09</td>
+        <td style="padding:12px 8px; font-weight:600;">Pill Nav</td>
+        <td style="padding:12px 8px; color:#999;">Streamlined flow</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Low</td>
+        <td style="padding:12px 8px; color:#999;">Fewest taps to start a workout</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 8px; color:#555;">10</td>
+        <td style="padding:12px 8px; font-weight:600;">Split</td>
+        <td style="padding:12px 8px; color:#999;">Zoned layout</td>
+        <td style="padding:12px 8px; color:#4CAF50;">Low</td>
+        <td style="padding:12px 8px; color:#999;">Phase visibility from across the gym</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>
