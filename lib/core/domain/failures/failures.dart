@@ -2,4 +2,3 @@
 library;
 
 export 'audio_failure.dart';
-export 'storage_failure.dart';
