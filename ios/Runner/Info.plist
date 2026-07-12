@@ -9,7 +9,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
-	<string>Gazza WOD</string>
+	<string>Wharf WOD</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

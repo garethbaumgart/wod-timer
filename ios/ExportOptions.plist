@@ -10,10 +10,10 @@
 	<string>manual</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>app.mentalmetal.gazzawod</key>
-		<string>match AppStore app.mentalmetal.gazzawod</string>
-		<key>app.mentalmetal.gazzawod.watchkitapp</key>
-		<string>match AppStore app.mentalmetal.gazzawod.watchkitapp</string>
+		<key>app.mentalmetal.wharfwod</key>
+		<string>match AppStore app.mentalmetal.wharfwod</string>
+		<key>app.mentalmetal.wharfwod.watchkitapp</key>
+		<string>match AppStore app.mentalmetal.wharfwod.watchkitapp</string>
 	</dict>
 </dict>
 </plist>

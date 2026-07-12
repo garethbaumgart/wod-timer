@@ -3,7 +3,7 @@
          (the Flutter template only grants INTERNET in debug/profile manifests). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="Gazza WOD"
+        android:label="Wharf WOD"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

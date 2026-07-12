@@ -7,7 +7,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
-	<string>Gazza WOD</string>
+	<string>Wharf WOD</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -27,6 +27,6 @@
 	<key>WKWatchOnly</key>
 	<false/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>app.mentalmetal.gazzawod</string>
+	<string>app.mentalmetal.wharfwod</string>
 </dict>
 </plist>

@@ -1,11 +1,11 @@
-# Gazza WOD
+# The Wharf WOD Timer
 
 A no-fuss workout timer for functional fitness — AMRAP, For Time, EMOM and
 Tabata, with voice cues loud enough to hear across a garage gym. Part of the
 [Mentalmetal](https://mentalmetal.app) indie portfolio.
 
 Formerly "WOD Timer"; renamed and adopted into the portfolio July 2026
-(bundle id `app.mentalmetal.gazzawod`).
+(bundle id `app.mentalmetal.wharfwod`; home-screen name "Wharf WOD").
 
 ## What's built (v1)
 
@@ -23,7 +23,7 @@ Formerly "WOD Timer"; renamed and adopted into the portfolio July 2026
 - **watchOS companion app** — standalone timer on the wrist
 - Anonymous telemetry: Sentry crash reporting + Aptabase funnel events
   (release builds only, keys via Doppler; no PII, see
-  [privacy](https://mentalmetal.app/gazza-wod/privacy))
+  [privacy](https://mentalmetal.app/wharf-wod/privacy))
 
 Deliberately cut from v1: workout presets, recent-workout history, custom
 prep countdown (fixed at 10s). The friend's-voice recording/cloning idea is
@@ -38,7 +38,7 @@ fvm flutter pub get
 fvm dart run build_runner build --delete-conflicting-outputs
 fvm flutter run                       # dev: telemetry off (no keys)
 
-# With real telemetry keys (Doppler project `gazzawod`):
+# With real telemetry keys (Doppler project `wharfwod`):
 scripts/with-secrets.sh dev run
 
 fvm flutter test                      # full suite
@@ -61,7 +61,7 @@ audioplayers + audio_session, wakelock_plus, sentry_flutter, aptabase_flutter.
 
 Wired to the shared `mentalmetal-fastlane` lanes (see the portfolio's
 setup-deploy / ship skills). Store state is tracked in the portfolio's
-`state/apps/gazzawod.yaml`.
+`state/apps/wharfwod.yaml`.
 
 ## License
 

@@ -8,7 +8,7 @@ import 'package:wod_timer/core/presentation/router/app_router.dart';
 import 'package:wod_timer/core/presentation/theme/app_theme.dart';
 import 'package:wod_timer/injection.dart';
 
-// Per-app compile-time secrets, injected from the `gazzawod` Doppler project
+// Per-app compile-time secrets, injected from the `wharfwod` Doppler project
 // via --dart-define-from-file at build time (see scripts/with-secrets.sh).
 // Empty in dev builds → telemetry stays off.
 const _sentryDsn = String.fromEnvironment('SENTRY_DSN');
@@ -63,7 +63,7 @@ class WodTimerApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'Gazza WOD',
+      title: 'Wharf WOD',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

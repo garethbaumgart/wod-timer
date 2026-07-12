@@ -17,7 +17,7 @@
 #
 # Prereqs:
 #   - `doppler` CLI installed + logged in (one-time: `doppler login`)
-#   - Doppler project `gazzawod` exists with a prd config
+#   - Doppler project `wharfwod` exists with a prd config
 
 set -euo pipefail
 
@@ -47,13 +47,13 @@ fi
 
 # Materialise filtered Doppler secrets as a temp dart-define JSON file in a
 # private dir; deleted on exit (incl. Ctrl+C).
-TEMP_DIR=$(mktemp -d -t gazzawod-dart-defines)
+TEMP_DIR=$(mktemp -d -t wharfwod-dart-defines)
 chmod 700 "$TEMP_DIR"
 trap 'rm -rf "$TEMP_DIR"' EXIT INT TERM
 TEMP="$TEMP_DIR/dart-defines.json"
 
 doppler secrets download \
-  --project gazzawod --config "$CONFIG" \
+  --project wharfwod --config "$CONFIG" \
   --no-file --format json \
   | python3 -c '
 import json, sys
