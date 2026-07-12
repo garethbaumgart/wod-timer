@@ -104,15 +104,31 @@ class TimerNotifier extends _$TimerNotifier {
       (failure) => state = TimerNotifierState.error(failure: failure),
       (session) {
         state = _stateFromSession(session);
+        // With no prep countdown the session starts directly in running —
+        // there is no preparing→running tick transition to catch, so play
+        // the GO cue here.
+        if (session.state == domain.TimerState.running && !_playedGo) {
+          _playedGo = true;
+          if (_random.nextBool()) {
+            _audioService.playGo();
+          } else {
+            _audioService.playLetsGo();
+          }
+          _hapticService.heavyImpact();
+        }
         _startTicking();
       },
     );
   }
 
   /// Pause the current timer session.
+  ///
+  /// A no-op when the session can't be paused (already paused, completed)
+  /// so external callers can't knock a valid session into the error state.
   void pause() {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
+    if (!currentSession.state.canPause) return;
 
     final result = _pauseTimer(currentSession);
 
@@ -130,9 +146,12 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   /// Resume the paused timer session.
+  ///
+  /// A no-op when the session isn't paused (see [pause]).
   void resume() {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
+    if (!currentSession.state.canResume) return;
 
     final result = _resumeTimer(currentSession);
 
@@ -197,6 +216,10 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void _startTicking() {
+    // Never double-subscribe: a fast double-tap on start would otherwise
+    // leak the first subscription and process every tick twice (~2x clock).
+    _stopTicking();
+
     _lastTickElapsed = Duration.zero;
 
     // Subscribe to tick stream BEFORE starting the engine
@@ -217,6 +240,13 @@ class TimerNotifier extends _$TimerNotifier {
   void _onTick(Duration elapsed) {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
+
+    // A tick can already be in flight on the broadcast stream when the user
+    // pauses (the subscription stays alive across pause/resume). Drop it —
+    // feeding it to the domain returns timerNotActive and flashed the error
+    // state. Not updating _lastTickElapsed keeps the time: the next
+    // processed tick's delta covers the dropped span.
+    if (!currentSession.state.isActive) return;
 
     // Calculate delta since last tick
     final delta = elapsed - _lastTickElapsed;
@@ -377,10 +407,14 @@ class TimerNotifier extends _$TimerNotifier {
 
     // Handle "Ten seconds" warning — only if workout is long enough (>15s)
     // to avoid overlapping with the final countdown clip.
+    // Uses WHOLE-workout remaining: for EMOM/Tabata, timeRemaining is the
+    // current interval's remaining, which would fire this at the end of
+    // round 1 (and latch, never playing at the actual workout end).
     if (!voiceCuePlayed &&
-        newSession.state == domain.TimerState.running &&
+        newSession.state.isActive &&
+        newSession.state != domain.TimerState.preparing &&
         !_playedTenSeconds) {
-      final remaining = newSession.timeRemaining.seconds;
+      final remaining = _workoutRemainingSeconds(newSession);
       if (remaining <= 10 && remaining > 7) {
         _playedTenSeconds = true;
         _audioService.playTenSeconds();
@@ -391,15 +425,27 @@ class TimerNotifier extends _$TimerNotifier {
     // Handle spoken "5, 4, 3, 2, 1" final countdown.
     // This is a single pre-recorded clip (~5s long) so we trigger it
     // once at 5 seconds remaining and let it play through naturally.
+    // Whole-workout remaining, same reasoning as "Ten seconds" — and the
+    // final phase of a Tabata is a rest, so resting counts too.
     if (!voiceCuePlayed &&
-        newSession.state == domain.TimerState.running &&
+        newSession.state.isActive &&
+        newSession.state != domain.TimerState.preparing &&
         !_playedFinalCountdown) {
-      final remaining = newSession.timeRemaining.seconds;
+      final remaining = _workoutRemainingSeconds(newSession);
       if (remaining <= 5 && remaining > 0) {
         _playedFinalCountdown = true;
         _audioService.playFinalCountdown();
       }
     }
+  }
+
+  /// Seconds left in the WHOLE workout (not the current interval/phase).
+  ///
+  /// [TimerSession.timeRemaining] is per-interval for EMOM/Tabata; the
+  /// end-of-workout cues need the total scale.
+  int _workoutRemainingSeconds(TimerSession session) {
+    final total = session.workout.timerType.estimatedDuration.seconds;
+    return (total - session.elapsed.seconds).clamp(0, total);
   }
 
   TimerNotifierState _stateFromSession(TimerSession session) {
