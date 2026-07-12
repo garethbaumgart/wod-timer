@@ -10,10 +10,10 @@
 	<string>manual</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>com.wodtimer.wodTimer</key>
-		<string>match AppStore com.wodtimer.wodTimer</string>
-		<key>com.wodtimer.wodTimer.watchkitapp</key>
-		<string>match AppStore com.wodtimer.wodTimer.watchkitapp</string>
+		<key>app.mentalmetal.gazzawod</key>
+		<string>match AppStore app.mentalmetal.gazzawod</string>
+		<key>app.mentalmetal.gazzawod.watchkitapp</key>
+		<string>match AppStore app.mentalmetal.gazzawod.watchkitapp</string>
 	</dict>
 </dict>
 </plist>

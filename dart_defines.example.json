@@ -1,0 +1,5 @@
+{
+  "SENTRY_DSN": "https://YOUR_KEY@oXXXX.ingest.sentry.io/PROJECT_ID",
+  "SENTRY_ENV": "development",
+  "APTABASE_KEY": "A-US-XXXXXXXXXX"
+}

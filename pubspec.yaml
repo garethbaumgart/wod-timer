@@ -7,6 +7,7 @@ environment:
   sdk: ^3.12.0
 
 dependencies:
+  aptabase_flutter: ^0.4.1
   audio_session: ^0.2.2
   audioplayers: ^6.1.0
   cupertino_icons: ^1.0.8
@@ -25,6 +26,7 @@ dependencies:
   package_info_plus: ^8.3.0
   path_provider: ^2.1.5
   riverpod_annotation: ^2.6.1
+  sentry_flutter: ^9.20.0
   shared_preferences: ^2.3.5
   uuid: ^4.5.1
   wakelock_plus: ^1.2.10

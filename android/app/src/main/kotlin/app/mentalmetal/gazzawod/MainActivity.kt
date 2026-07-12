@@ -1,4 +1,4 @@
-package com.wodtimer.wod_timer
+package app.mentalmetal.gazzawod
 
 import io.flutter.embedding.android.FlutterActivity
 
