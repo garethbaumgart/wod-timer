@@ -24,7 +24,7 @@ class ForTimeSetupPage extends ConsumerStatefulWidget {
 class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
   // Default 20 minute time cap
   Duration _timeCap = const Duration(minutes: 20);
-  // Count up (stopwatch style) vs count down - will be passed to timer in future sprint
+  // Count up (stopwatch style) vs count down
   bool _countUp = true;
   Duration get _totalDuration => _timeCap + const Duration(seconds: 10);
 
@@ -32,6 +32,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     // Create the timer type
     final timerType = ForTimeTimer(
       timeCap: TimerDuration.fromSeconds(_timeCap.inSeconds),
+      countUp: _countUp,
     );
 
     // Create the workout

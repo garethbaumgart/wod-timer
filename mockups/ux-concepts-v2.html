@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOD Timer v2 — Neon × Oversized Concepts</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050505;color:#fff;font-family:'Inter',system-ui,sans-serif;line-height:1.5}
+
+.page-header{text-align:center;padding:80px 24px 20px;max-width:800px;margin:0 auto}
+.page-header h1{font-size:44px;font-weight:800;letter-spacing:-1.5px;margin-bottom:12px;background:linear-gradient(135deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-header p{font-size:16px;color:#666;max-width:600px;margin:0 auto}
+
+.mockup-section{max-width:1600px;margin:0 auto;padding:60px 24px;border-bottom:1px solid #111}
+.mockup-header{margin-bottom:32px}
+.mockup-number{font-size:13px;font-weight:700;color:#00ff88;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);border-radius:8px;padding:3px 10px;display:inline-block;margin-bottom:12px}
+.mockup-header h2{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.mockup-header .philosophy{font-size:15px;color:#777;max-width:800px}
+
+.spec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:28px}
+.spec-item{background:#0a0a0a;border:1px solid #181818;border-radius:8px;padding:10px 12px}
+.spec-item .label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:2px}
+.spec-item .value{font-size:13px;font-weight:500;color:#ccc}
+
+.phones-row{display:flex;gap:24px;overflow-x:auto;padding:16px 0;justify-content:flex-start}
+.phone-wrapper{text-align:center;flex-shrink:0}
+.phone-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:8px}
+
+/* Phone frame: 9:19.5 ratio like iPhone, tall enough for content */
+.phone{width:260px;height:563px;border-radius:32px;border:2px solid #282828;overflow:hidden;position:relative;box-shadow:0 16px 48px rgba(0,0,0,0.5)}
+.phone .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100px;height:24px;background:#000;border-radius:0 0 14px 14px;z-index:10}
+.phone .screen{width:100%;height:100%;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.phone .home-indicator{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:100px;height:3px;border-radius:2px;background:rgba(255,255,255,0.2);z-index:10}
+
+/* ============================== */
+/* SHARED HELPERS                 */
+/* ============================== */
+.sw-on{width:34px;height:19px;border-radius:10px;background:#00ff88;position:relative;flex-shrink:0}
+.sw-on::after{content:'';position:absolute;top:2.5px;right:2.5px;width:14px;height:14px;border-radius:50%;background:#fff}
+.sw-off{width:34px;height:19px;border-radius:10px;background:#222;position:relative;flex-shrink:0}
+.sw-off::after{content:'';position:absolute;top:2.5px;left:2.5px;width:14px;height:14px;border-radius:50%;background:#666}
+
+/* Shared control button base */
+.cb{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;border:1px solid #1a1a1a;color:#444;flex-shrink:0}
+.cb.lg{width:52px;height:52px;font-size:18px}
+
+/* ================================================ */
+/* CONCEPT 1: NEON FORGE                            */
+/* ================================================ */
+.c1-home{background:#06060f;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c1-brand{font-family:'Space Grotesk';font-size:18px;font-weight:700;color:#fff;text-align:center;margin-bottom:24px}
+.c1-brand span{color:#00ff88}
+.c1-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center}
+.c1-card{border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:1;position:relative;overflow:hidden}
+.c1-card::before{content:'';position:absolute;inset:0;border-radius:16px;border:1px solid;opacity:0.25}
+.c1-hc1{background:rgba(0,255,136,0.04)}.c1-hc1::before{border-color:#00ff88}
+.c1-hc2{background:rgba(0,170,255,0.04)}.c1-hc2::before{border-color:#00aaff}
+.c1-hc3{background:rgba(255,0,136,0.04)}.c1-hc3::before{border-color:#ff0088}
+.c1-hc4{background:rgba(255,170,0,0.04)}.c1-hc4::before{border-color:#ffaa00}
+.c1-hc-name{font-family:'Space Grotesk';font-size:15px;font-weight:700;color:#fff;letter-spacing:0.5px}
+.c1-hc-sub{font-size:9px;color:#444;text-align:center}
+.c1-bottom{display:flex;justify-content:center;gap:24px;padding-top:12px}
+.c1-bottom-btn{color:#333;font-size:15px}
+
+.c1-setup{background:#06060f;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c1-setup-top{display:flex;align-items:center;margin-bottom:14px}
+.c1-setup-back{color:#444;font-size:16px;margin-right:8px}
+.c1-setup-title{font-family:'Space Grotesk';font-size:16px;font-weight:700;color:#fff}
+.c1-setup-desc{font-size:11px;color:#444;text-align:center;margin-bottom:14px}
+.c1-picker{background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.12);border-radius:14px;padding:16px;margin-bottom:10px;text-align:center}
+.c1-picker-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#00ff88;opacity:0.5;margin-bottom:6px}
+.c1-picker-val{font-family:'Space Grotesk';font-size:38px;font-weight:700;color:#fff}
+.c1-picker-unit{font-size:10px;color:#444;margin-top:2px}
+.c1-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #111}
+.c1-toggle-label{font-size:12px;color:#888}
+.c1-chips{display:flex;gap:6px;padding:4px 0 12px;flex-wrap:wrap}
+.c1-chip{font-size:10px;padding:4px 10px;border-radius:999px;border:1px solid #1a1a1a;color:#555}
+.c1-chip.sel{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,0.06)}
+.c1-start{margin-top:auto;background:#00ff88;color:#000;font-family:'Space Grotesk';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c1-active{background:#06060f;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c1-active::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,0.07) 0%,transparent 70%)}
+.c1-active-type{position:absolute;top:44px;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(0,255,136,0.4);text-transform:uppercase}
+.c1-active-time{font-family:'Space Grotesk';font-size:76px;font-weight:700;color:#00ff88;text-shadow:0 0 30px rgba(0,255,136,0.25);z-index:1;font-variant-numeric:tabular-nums}
+.c1-active-round{font-size:12px;color:#333;margin-top:4px;z-index:1}
+.c1-active-bar{position:absolute;bottom:90px;left:18px;right:18px;height:2px;background:#111;border-radius:1px;z-index:1}
+.c1-active-bar-fill{height:100%;width:65%;background:#00ff88;border-radius:1px;box-shadow:0 0 8px rgba(0,255,136,0.4)}
+.c1-active-ctrls{position:absolute;bottom:36px;z-index:1;display:flex;gap:18px}
+
+.c1-settings{background:#06060f;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c1-s-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #0e0e0e}
+.c1-s-label{font-size:12px;color:#aaa}
+.c1-s-val{font-size:11px;color:#444}
+
+.c1-complete{background:#06060f;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c1-complete::before{content:'';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,0.1) 0%,transparent 70%)}
+.c1-cpl-check{font-size:44px;color:#00ff88;margin-bottom:10px;z-index:1}
+.c1-cpl-title{font-family:'Space Grotesk';font-size:22px;font-weight:700;color:#fff;z-index:1}
+.c1-cpl-stat{font-size:13px;color:#444;margin-top:4px;z-index:1}
+.c1-cpl-btns{display:flex;gap:14px;margin-top:28px;z-index:1}
+.c1-cpl-btn{padding:11px 24px;border-radius:12px;font-family:'Space Grotesk';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.c1-cpl-again{border:1px solid #1a1a1a;color:#888}
+.c1-cpl-done{background:#00ff88;color:#000}
+
+/* ================================================ */
+/* CONCEPT 2: NEON TITAN                            */
+/* ================================================ */
+.c2-home{background:#08080e;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c2-title{font-family:'Outfit';font-size:40px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.c2-sub{font-size:11px;color:#333;margin-bottom:16px}
+.c2-list{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.c2-item{display:flex;align-items:center;padding:14px 0;cursor:pointer}
+.c2-item-name{font-family:'Outfit';font-size:34px;font-weight:800;color:#1a1a1a;letter-spacing:-1px;text-transform:uppercase;line-height:1}
+.c2-item.act .c2-item-name{color:#fff}
+.c2-dot{width:8px;height:8px;border-radius:50%;margin-right:12px;opacity:0}
+.c2-item.act .c2-dot{opacity:1}
+
+.c2-setup{background:#08080e;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c2-setup-head{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.c2-setup-back{color:#333;font-size:14px}
+.c2-setup-title{font-family:'Outfit';font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.c2-block{margin-bottom:16px}
+.c2-block-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;margin-bottom:6px}
+.c2-block-val{font-family:'Outfit';font-size:50px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1}
+.c2-block-ctrls{display:flex;gap:8px;margin-top:8px}
+.c2-inc{width:36px;height:36px;border-radius:10px;border:1px solid #1a1a1a;display:flex;align-items:center;justify-content:center;color:#555;font-size:16px}
+.c2-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #0e0e0e}
+.c2-toggle-text{font-size:12px;color:#777}
+.c2-start{margin-top:auto;background:#fff;color:#000;font-family:'Outfit';font-size:15px;font-weight:800;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c2-active{background:#08080e;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c2-active-type{position:absolute;top:44px;font-family:'Outfit';font-size:10px;font-weight:800;letter-spacing:4px;color:#333;text-transform:uppercase}
+.c2-active-time{font-family:'Outfit';font-size:104px;font-weight:900;color:#fff;letter-spacing:-4px;font-variant-numeric:tabular-nums;line-height:1;z-index:1}
+.c2-active-phase{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-top:10px;z-index:1;padding:4px 14px;border-radius:999px}
+.c2-phase-work{color:#00ff88;background:rgba(0,255,136,0.08)}
+.c2-phase-rest{color:#00aaff;background:rgba(0,170,255,0.08)}
+.c2-active-round{font-size:11px;color:#333;margin-top:10px;z-index:1}
+.c2-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c2-settings{background:#08080e;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c2-settings-title{font-family:'Outfit';font-size:24px;font-weight:800;color:#fff;margin-bottom:18px}
+
+.c2-complete{background:#08080e;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c2-cpl-icon{font-size:48px;margin-bottom:10px}
+.c2-cpl-title{font-family:'Outfit';font-size:30px;font-weight:900;color:#fff;letter-spacing:-1px}
+.c2-cpl-stat{font-size:13px;color:#444;margin-top:6px}
+.c2-cpl-btns{display:flex;gap:14px;margin-top:28px}
+.c2-cpl-btn{padding:11px 22px;border-radius:12px;font-family:'Outfit';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.c2-cpl-again{border:1px solid #1a1a1a;color:#777}
+.c2-cpl-done{background:#fff;color:#000}
+
+/* ================================================ */
+/* CONCEPT 3: ELECTRIC MINIMAL                      */
+/* ================================================ */
+.c3-home{background:#000;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c3-label{font-size:10px;font-weight:600;letter-spacing:3px;color:#333;text-transform:uppercase;margin-bottom:4px}
+.c3-htitle{font-family:'Outfit';font-size:22px;font-weight:700;color:#fff;margin-bottom:20px}
+.c3-cards{flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center}
+.c3-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:#0a0a0a;border:1px solid #141414}
+.c3-dot{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.c3-d1{background:rgba(0,255,136,0.1);color:#00ff88}
+.c3-d2{background:rgba(0,170,255,0.1);color:#00aaff}
+.c3-d3{background:rgba(255,0,136,0.1);color:#ff0088}
+.c3-d4{background:rgba(255,170,0,0.1);color:#ffaa00}
+.c3-cname{font-family:'Outfit';font-size:15px;font-weight:700;color:#fff}
+.c3-cdesc{font-size:10px;color:#444;margin-top:1px}
+.c3-footer{display:flex;justify-content:center;gap:20px;padding-top:12px}
+.c3-footer-btn{color:#222;font-size:16px}
+
+.c3-setup{background:#000;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c3-setup-top{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.c3-setup-back{color:#333;font-size:14px}
+.c3-setup-title{font-family:'Outfit';font-size:18px;font-weight:700;color:#fff}
+.c3-field{background:#0a0a0a;border:1px solid #141414;border-radius:14px;padding:16px;margin-bottom:10px;text-align:center}
+.c3-field-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#333;margin-bottom:4px}
+.c3-field-val{font-family:'Outfit';font-size:42px;font-weight:800;color:#fff;letter-spacing:-1px}
+.c3-field-hint{font-size:10px;color:#333;margin-top:2px}
+.c3-fields-row{display:flex;gap:10px}
+.c3-fields-row .c3-field{flex:1}
+.c3-fields-row .c3-field-val{font-size:30px}
+.c3-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.c3-toggle-text{font-size:11px;color:#666}
+.c3-start{margin-top:auto;background:#00ff88;color:#000;font-family:'Outfit';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c3-active{background:#000;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c3-active-type{position:absolute;top:44px;font-family:'Outfit';font-size:10px;font-weight:700;letter-spacing:3px;color:#222;text-transform:uppercase}
+.c3-active-time{font-family:'Outfit';font-size:82px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-3px;z-index:1}
+.c3-active-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,0.06) 0%,transparent 70%)}
+.c3-active-info{font-size:11px;color:#333;margin-top:6px;z-index:1}
+.c3-active-bar{position:absolute;bottom:90px;left:18px;right:18px;height:2px;background:#0e0e0e;border-radius:1px;z-index:1}
+.c3-active-bar-fill{height:100%;width:65%;background:linear-gradient(90deg,#00ff88,#00aaff);border-radius:1px}
+.c3-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c3-settings{background:#000;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c3-stitle{font-family:'Outfit';font-size:18px;font-weight:700;color:#fff;margin-bottom:14px}
+.c3-sgroup{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#333;margin-bottom:8px;margin-top:14px}
+.c3-sitem{background:#0a0a0a;border:1px solid #141414;border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.c3-sitem-label{font-size:12px;color:#aaa}
+.c3-sitem-val{font-size:11px;color:#444}
+
+.c3-complete{background:#000;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c3-cpl-check{width:56px;height:56px;border-radius:50%;background:rgba(0,255,136,0.1);display:flex;align-items:center;justify-content:center;font-size:24px;color:#00ff88;margin-bottom:14px}
+.c3-cpl-title{font-family:'Outfit';font-size:22px;font-weight:700;color:#fff}
+.c3-cpl-stat{font-size:13px;color:#333;margin-top:4px}
+.c3-cpl-btns{display:flex;gap:12px;margin-top:28px}
+.c3-cpl-btn{padding:11px 22px;border-radius:12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c3-cpl-again{border:1px solid #1a1a1a;color:#666}
+.c3-cpl-done{background:#00ff88;color:#000}
+
+/* ================================================ */
+/* CONCEPT 4: SIGNAL                                */
+/* ================================================ */
+.c4-home{background:#050510;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c4-hero{font-family:'Outfit';font-size:44px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1;margin-bottom:20px}
+.c4-hero span{color:#00ff88}
+.c4-strip{flex:1;display:flex;flex-direction:column;gap:3px;justify-content:center}
+.c4-strip-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid transparent}
+.c4-strip-item.sel{border-color:rgba(0,255,136,0.15);background:rgba(0,255,136,0.03)}
+.c4-line{width:3px;height:28px;border-radius:2px;flex-shrink:0}
+.c4-lg{background:#00ff88}.c4-lb{background:#00aaff}.c4-lp{background:#ff0088}.c4-la{background:#ffaa00}
+.c4-sname{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.c4-sdesc{font-size:10px;color:#444}
+.c4-icons{display:flex;justify-content:center;gap:20px;padding-top:12px}
+.c4-icon{color:#222;font-size:16px}
+
+.c4-setup{background:#050510;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c4-setup-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.c4-setup-back{color:#333;font-size:14px}
+.c4-setup-title{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff}
+.c4-hero-label{font-size:10px;color:#444;text-align:center;text-transform:uppercase;letter-spacing:1.5px}
+.c4-hero-val{font-family:'Outfit';font-size:64px;font-weight:900;color:#fff;letter-spacing:-3px;text-align:center;margin:10px 0 4px}
+.c4-adj{display:flex;justify-content:center;gap:10px;margin:10px 0}
+.c4-adj-btn{width:40px;height:40px;border-radius:12px;border:1px solid #1a1a1a;display:flex;align-items:center;justify-content:center;color:#666;font-size:18px}
+.c4-seg{display:flex;gap:8px;margin-bottom:10px}
+.c4-seg-btn{flex:1;text-align:center;padding:8px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid #1a1a1a;color:#444}
+.c4-seg-btn.sel{border-color:#00ff88;color:#00ff88}
+.c4-prep{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #0e0e0e}
+.c4-prep-text{font-size:12px;color:#777}
+.c4-summary{background:rgba(0,255,136,0.03);border:1px solid rgba(0,255,136,0.1);border-radius:12px;padding:12px;margin:10px 0;display:flex;justify-content:space-around;text-align:center}
+.c4-ss-label{font-size:9px;color:#333;text-transform:uppercase;letter-spacing:1px}
+.c4-ss-val{font-family:'Outfit';font-size:15px;font-weight:700;color:#00ff88;margin-top:2px}
+.c4-go{margin-top:auto;background:#00ff88;color:#000;font-family:'Outfit';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c4-active{background:#050510;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c4-active-pill{position:absolute;top:44px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:999px;background:rgba(0,255,136,0.08);color:#00ff88}
+.c4-active-time{font-family:'Outfit';font-size:96px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-4px;line-height:1;z-index:1}
+.c4-active-sub{font-size:12px;color:#333;margin-top:8px;z-index:1}
+.c4-active-glow{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,0.06) 0%,transparent 70%)}
+.c4-active-bar{position:absolute;bottom:90px;left:18px;right:18px;height:3px;background:#0e0e0e;border-radius:2px;z-index:1}
+.c4-active-bar-fill{height:100%;width:72%;background:#00ff88;border-radius:2px;box-shadow:0 0 8px rgba(0,255,136,0.3)}
+.c4-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c4-complete{background:#050510;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c4-cpl-icon{font-size:40px;color:#00ff88;margin-bottom:10px}
+.c4-cpl-title{font-family:'Outfit';font-size:24px;font-weight:800;color:#fff}
+.c4-cpl-stat{font-size:13px;color:#444;margin-top:4px}
+.c4-cpl-btns{display:flex;gap:14px;margin-top:28px}
+.c4-cpl-btn{padding:11px 22px;border-radius:12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c4-cpl-again{border:1px solid #1a1a1a;color:#666}
+.c4-cpl-done{background:#00ff88;color:#000}
+
+/* ================================================ */
+/* CONCEPT 5: SPECTRUM                              */
+/* ================================================ */
+.c5-home{background:#080808;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c5-brand{font-family:'Space Grotesk';font-size:16px;font-weight:700;color:#fff;margin-bottom:20px}
+.c5-brand span{background:linear-gradient(90deg,#00ff88,#00aaff,#ff0088);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.c5-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:center}
+.c5-card{border-radius:16px;padding:18px 14px;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:1}
+.c5-c1{background:linear-gradient(150deg,rgba(0,255,136,0.08),rgba(0,255,136,0.02));border:1px solid rgba(0,255,136,0.12)}
+.c5-c2{background:linear-gradient(150deg,rgba(0,170,255,0.08),rgba(0,170,255,0.02));border:1px solid rgba(0,170,255,0.12)}
+.c5-c3{background:linear-gradient(150deg,rgba(255,0,136,0.08),rgba(255,0,136,0.02));border:1px solid rgba(255,0,136,0.12)}
+.c5-c4{background:linear-gradient(150deg,rgba(255,170,0,0.08),rgba(255,170,0,0.02));border:1px solid rgba(255,170,0,0.12)}
+.c5-cname{font-family:'Space Grotesk';font-size:17px;font-weight:700;color:#fff}
+.c5-cdesc{font-size:9px;color:#555}
+.c5-carrow{font-size:14px;color:#333;align-self:flex-end}
+
+.c5-setup{background:#080808;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c5-setup-hdr{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.c5-setup-back{color:#333;font-size:14px}
+.c5-setup-title{font-family:'Space Grotesk';font-size:18px;font-weight:700;color:#fff}
+.c5-field{background:#0c0c0c;border:1px solid #161616;border-radius:14px;padding:16px;margin-bottom:10px;text-align:center}
+.c5-fl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#444;margin-bottom:4px}
+.c5-fv{font-family:'Space Grotesk';font-size:38px;font-weight:700;color:#fff}
+.c5-fh{font-size:10px;color:#333;margin-top:2px}
+.c5-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.c5-toggle-text{font-size:11px;color:#777}
+.c5-go{margin-top:auto;background:linear-gradient(90deg,#00ff88,#00aaff);color:#000;font-family:'Space Grotesk';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c5-active{background:#080808;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c5-active-label{position:absolute;top:44px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.c5-active-time{font-family:'Space Grotesk';font-size:90px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-2px;z-index:1}
+.c5-active-info{font-size:11px;color:#333;margin-top:6px;z-index:1}
+.c5-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:230px;height:230px;border-radius:50%;border:2px solid #111}
+.c5-ring-fill{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-90deg);width:230px;height:230px;border-radius:50%;border:2px solid transparent;border-top-color:#00ff88;border-right-color:#00aaff}
+.c5-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c5-complete{background:#080808;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c5-cpl-check{font-size:30px;background:linear-gradient(135deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px}
+.c5-cpl-title{font-family:'Space Grotesk';font-size:22px;font-weight:700;color:#fff}
+.c5-cpl-stat{font-size:13px;color:#444;margin-top:4px}
+.c5-cpl-btns{display:flex;gap:12px;margin-top:28px}
+.c5-cpl-btn{padding:11px 22px;border-radius:12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c5-cpl-again{border:1px solid #1a1a1a;color:#666}
+.c5-cpl-done{background:linear-gradient(90deg,#00ff88,#00aaff);color:#000}
+
+/* ================================================ */
+/* CONCEPT 6: BLACKOUT                              */
+/* ================================================ */
+.c6-home{background:#000;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c6-htitle{font-family:'Outfit';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#333;text-align:center;margin-bottom:20px}
+.c6-hlist{flex:1;display:flex;flex-direction:column;justify-content:center}
+.c6-hitem{padding:18px 0;border-bottom:1px solid #0a0a0a;display:flex;align-items:center;justify-content:space-between}
+.c6-hname{font-family:'Outfit';font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.c6-htag{font-family:'JetBrains Mono';font-size:9px;color:#222;text-transform:uppercase;letter-spacing:1px}
+.c6-hbar{margin-top:auto;display:flex;justify-content:center;gap:24px;padding-top:12px}
+.c6-hbar-btn{color:#222;font-size:14px}
+
+.c6-setup{background:#000;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c6-setup-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.c6-setup-back{color:#333;font-size:14px}
+.c6-setup-name{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff}
+.c6-vblock{text-align:center;margin:16px 0}
+.c6-vb-label{font-family:'JetBrains Mono';font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#333;margin-bottom:4px}
+.c6-vb-val{font-family:'JetBrains Mono';font-size:54px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.c6-vb-ctrls{display:flex;justify-content:center;gap:12px;margin-top:8px}
+.c6-vb-btn{width:36px;height:36px;border-radius:8px;border:1px solid #1a1a1a;display:flex;align-items:center;justify-content:center;color:#555;font-size:16px}
+.c6-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #0a0a0a}
+.c6-toggle-text{font-size:11px;color:#666}
+.c6-sw{width:34px;height:19px;border-radius:10px;background:#fff;position:relative;flex-shrink:0}
+.c6-sw::after{content:'';position:absolute;top:2.5px;right:2.5px;width:14px;height:14px;border-radius:50%;background:#000}
+.c6-go{margin-top:auto;background:#fff;color:#000;font-family:'Outfit';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:12px;text-transform:uppercase;letter-spacing:1px}
+
+.c6-active{background:#000;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c6-active-type{position:absolute;top:44px;font-family:'JetBrains Mono';font-size:10px;font-weight:500;letter-spacing:3px;color:#222;text-transform:uppercase}
+.c6-active-time{font-family:'JetBrains Mono';font-size:90px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;z-index:1}
+.c6-active-round{font-family:'JetBrains Mono';font-size:11px;color:#222;margin-top:4px;z-index:1}
+.c6-active-edge{position:absolute;left:0;bottom:0;width:65%;height:3px;background:#fff;z-index:1}
+.c6-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c6-complete{background:#000;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c6-cpl-text{font-family:'Outfit';font-size:50px;font-weight:900;color:#fff;letter-spacing:-2px}
+.c6-cpl-stat{font-family:'JetBrains Mono';font-size:11px;color:#333;margin-top:8px}
+.c6-cpl-btns{display:flex;gap:14px;margin-top:28px}
+.c6-cpl-btn{padding:11px 22px;border-radius:10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c6-cpl-again{border:1px solid #1a1a1a;color:#555}
+.c6-cpl-done{background:#fff;color:#000}
+
+/* ================================================ */
+/* CONCEPT 7: ORBITRON                              */
+/* ================================================ */
+.c7-home{background:#060612;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c7-brand{font-family:'Orbitron';font-size:16px;font-weight:700;color:#00ff88;text-align:center;letter-spacing:4px;margin-bottom:24px}
+.c7-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:center}
+.c7-card{border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:1;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)}
+.c7-cname{font-family:'Orbitron';font-size:12px;font-weight:700;color:#fff;letter-spacing:2px}
+.c7-csub{font-size:9px;color:#333}
+.c7-nav{display:flex;justify-content:center;gap:20px;padding-top:12px}
+.c7-nav-btn{color:#222;font-size:14px}
+
+.c7-setup{background:#060612;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c7-setup-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.c7-setup-back{color:#333;font-size:14px}
+.c7-setup-title{font-family:'Orbitron';font-size:13px;font-weight:700;color:#fff;letter-spacing:2px}
+.c7-block{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:16px;margin-bottom:10px;text-align:center}
+.c7-bl{font-family:'Orbitron';font-size:8px;font-weight:600;letter-spacing:2px;color:#444;margin-bottom:4px;text-transform:uppercase}
+.c7-bv{font-family:'Orbitron';font-size:34px;font-weight:700;color:#00ff88;letter-spacing:2px}
+.c7-bh{font-size:9px;color:#333;margin-top:2px}
+.c7-blocks-row{display:flex;gap:10px}
+.c7-blocks-row .c7-block{flex:1}
+.c7-blocks-row .c7-bv{font-size:24px}
+.c7-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.c7-toggle-text{font-size:11px;color:#777}
+.c7-go{margin-top:auto;background:#00ff88;color:#000;font-family:'Orbitron';font-size:10px;font-weight:700;text-align:center;padding:14px;border-radius:12px;text-transform:uppercase;letter-spacing:2px}
+
+.c7-active{background:#060612;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c7-active::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:240px;height:240px;border-radius:50%;border:1px solid rgba(0,255,136,0.08)}
+.c7-active::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:50%;border:1px solid rgba(0,255,136,0.05)}
+.c7-active-type{position:absolute;top:44px;font-family:'Orbitron';font-size:9px;font-weight:600;letter-spacing:3px;color:#333;text-transform:uppercase}
+.c7-active-time{font-family:'Orbitron';font-size:58px;font-weight:700;color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,0.2);z-index:1;letter-spacing:2px;font-variant-numeric:tabular-nums}
+.c7-active-info{font-family:'Orbitron';font-size:9px;color:#333;margin-top:8px;z-index:1;letter-spacing:2px}
+.c7-active-bar{position:absolute;bottom:90px;left:18px;right:18px;height:2px;background:#0e0e0e;border-radius:1px;z-index:1}
+.c7-active-bar-fill{height:100%;width:65%;background:#00ff88;border-radius:1px;box-shadow:0 0 6px rgba(0,255,136,0.3)}
+.c7-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c7-complete{background:#060612;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c7-cpl-icon{font-size:36px;color:#00ff88;margin-bottom:12px}
+.c7-cpl-title{font-family:'Orbitron';font-size:14px;font-weight:700;color:#fff;letter-spacing:2px}
+.c7-cpl-stat{font-family:'Orbitron';font-size:9px;color:#444;margin-top:6px;letter-spacing:1px}
+.c7-cpl-btns{display:flex;gap:12px;margin-top:28px}
+.c7-cpl-btn{padding:10px 18px;border-radius:10px;font-family:'Orbitron';font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.c7-cpl-again{border:1px solid #1a1a1a;color:#666}
+.c7-cpl-done{background:#00ff88;color:#000}
+
+/* ================================================ */
+/* CONCEPT 8: EDGE                                  */
+/* ================================================ */
+.c8-home{background:#0a0a0a;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c8-htop{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.c8-hbrand{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff}
+.c8-hicons{display:flex;gap:12px}
+.c8-hicon{color:#333;font-size:14px}
+.c8-hcards{flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center}
+.c8-hcard{border-radius:0;padding:14px;display:flex;align-items:center;gap:12px;border-left:3px solid}
+.c8-hc1{border-color:#00ff88}.c8-hc2{border-color:#00aaff}.c8-hc3{border-color:#ff0088}.c8-hc4{border-color:#ffaa00}
+.c8-hcname{font-family:'Outfit';font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.c8-hcdesc{font-size:10px;color:#444;margin-top:1px}
+
+.c8-setup{background:#0a0a0a;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c8-setup-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.c8-setup-back{color:#333;font-size:14px}
+.c8-setup-title{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff}
+.c8-field{border-left:3px solid #00ff88;padding:14px 16px;margin-bottom:12px}
+.c8-fl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#444;margin-bottom:4px}
+.c8-fv{font-family:'Outfit';font-size:42px;font-weight:800;color:#fff;letter-spacing:-1px}
+.c8-fh{font-size:9px;color:#333;margin-top:2px}
+.c8-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.c8-toggle-text{font-size:11px;color:#777}
+.c8-go{margin-top:auto;background:transparent;color:#00ff88;font-family:'Outfit';font-size:14px;font-weight:700;text-align:center;padding:14px;border:2px solid #00ff88;text-transform:uppercase;letter-spacing:1px}
+
+.c8-active{background:#0a0a0a;height:100%;display:flex;flex-direction:column;position:relative}
+.c8-phase-bar{height:4px;width:100%;background:#00ff88;flex-shrink:0}
+.c8-active-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c8-active-type{font-family:'Outfit';font-size:10px;font-weight:700;letter-spacing:3px;color:#333;text-transform:uppercase;margin-bottom:8px}
+.c8-active-time{font-family:'Outfit';font-size:96px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-4px;line-height:1}
+.c8-active-info{font-size:11px;color:#333;margin-top:8px}
+.c8-active-ctrls{display:flex;gap:18px;padding:20px 0 32px;justify-content:center}
+
+.c8-complete{background:#0a0a0a;height:100%;display:flex;flex-direction:column;position:relative}
+.c8-cpl-bar{height:4px;background:#00ff88;width:100%;flex-shrink:0}
+.c8-cpl-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c8-cpl-title{font-family:'Outfit';font-size:32px;font-weight:900;color:#fff;letter-spacing:-1px}
+.c8-cpl-stat{font-size:13px;color:#444;margin-top:6px}
+.c8-cpl-btns{display:flex;gap:14px;margin-top:28px}
+.c8-cpl-btn{padding:11px 22px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c8-cpl-again{border:1px solid #1a1a1a;color:#555}
+.c8-cpl-done{border:2px solid #00ff88;color:#00ff88}
+
+/* ================================================ */
+/* CONCEPT 9: DUAL TONE                             */
+/* ================================================ */
+.c9-home{background:#000;height:100%;display:flex;flex-direction:column}
+.c9-htop{background:#00ff88;padding:40px 18px 18px}
+.c9-hbrand{font-family:'Outfit';font-size:28px;font-weight:900;color:#000;letter-spacing:-1px}
+.c9-hsub{font-size:11px;color:rgba(0,0,0,0.4);margin-top:2px}
+.c9-hbottom{flex:1;padding:14px 18px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.c9-hcard{padding:16px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0a0a0a}
+.c9-hcname{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff}
+.c9-hcarrow{color:#333;font-size:14px}
+.c9-hbar{display:flex;justify-content:center;gap:20px;padding:10px 0}
+.c9-hbar-btn{color:#222;font-size:14px}
+
+.c9-setup{background:#000;height:100%;display:flex;flex-direction:column}
+.c9-setup-accent{background:#00ff88;padding:40px 16px 14px}
+.c9-sa-hdr{display:flex;align-items:center;gap:8px}
+.c9-sa-back{color:rgba(0,0,0,0.4);font-size:14px}
+.c9-sa-title{font-family:'Outfit';font-size:20px;font-weight:800;color:#000}
+.c9-setup-body{flex:1;padding:14px 16px;display:flex;flex-direction:column}
+.c9-sf{text-align:center;margin-bottom:14px}
+.c9-sf-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#444;margin-bottom:4px}
+.c9-sf-val{font-family:'Outfit';font-size:46px;font-weight:900;color:#fff;letter-spacing:-2px}
+.c9-sf-hint{font-size:9px;color:#333;margin-top:2px}
+.c9-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.c9-toggle-text{font-size:11px;color:#777}
+.c9-go{margin-top:auto;background:#00ff88;color:#000;font-family:'Outfit';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c9-active{background:#000;height:100%;display:flex;flex-direction:column;position:relative}
+.c9-active-accent{background:#00ff88;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.c9-aa-type{font-family:'Outfit';font-size:12px;font-weight:800;color:#000;text-transform:uppercase;letter-spacing:1px}
+.c9-aa-phase{font-family:'Outfit';font-size:10px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:1px}
+.c9-active-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c9-active-time{font-family:'Outfit';font-size:96px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-4px;line-height:1}
+.c9-active-info{font-size:11px;color:#333;margin-top:8px}
+.c9-active-ctrls{display:flex;gap:18px;padding:20px 0 32px;justify-content:center}
+.c9-ac-main{width:52px;height:52px;border-radius:50%;background:#00ff88;border:none;display:flex;align-items:center;justify-content:center;color:#000;font-size:18px}
+
+.c9-settings{background:#000;height:100%;display:flex;flex-direction:column}
+.c9-settings-accent{background:#00ff88;padding:40px 16px 14px}
+.c9-settings-body{flex:1;padding:14px 16px}
+
+.c9-complete{background:#000;height:100%;display:flex;flex-direction:column}
+.c9-cpl-accent{background:#00ff88;padding:20px 18px;text-align:center}
+.c9-cpl-title{font-family:'Outfit';font-size:24px;font-weight:900;color:#000}
+.c9-cpl-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.c9-cpl-stat{font-size:14px;color:#555}
+.c9-cpl-btns{display:flex;gap:14px;margin-top:28px}
+.c9-cpl-btn{padding:11px 22px;border-radius:12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c9-cpl-again{border:1px solid #1a1a1a;color:#555}
+.c9-cpl-done{background:#00ff88;color:#000}
+
+/* ================================================ */
+/* CONCEPT 10: EMBER                                */
+/* ================================================ */
+.c10-home{background:#080406;height:100%;display:flex;flex-direction:column;padding:40px 18px 20px}
+.c10-brand{font-family:'Outfit';font-size:22px;font-weight:800;color:#FF6B35;margin-bottom:24px}
+.c10-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center}
+.c10-card{border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:1;background:rgba(255,107,53,0.04);border:1px solid rgba(255,107,53,0.1)}
+.c10-cname{font-family:'Outfit';font-size:16px;font-weight:800;color:#fff}
+.c10-csub{font-size:9px;color:#444}
+.c10-nav{display:flex;justify-content:center;gap:20px;padding-top:12px}
+.c10-nav-btn{color:#222;font-size:14px}
+
+.c10-setup{background:#080406;height:100%;display:flex;flex-direction:column;padding:40px 16px 18px}
+.c10-setup-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.c10-setup-back{color:#333;font-size:14px}
+.c10-setup-title{font-family:'Outfit';font-size:20px;font-weight:800;color:#fff}
+.c10-field{background:rgba(255,107,53,0.04);border:1px solid rgba(255,107,53,0.1);border-radius:14px;padding:16px;margin-bottom:10px;text-align:center}
+.c10-fl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#FF6B35;opacity:0.5;margin-bottom:4px}
+.c10-fv{font-family:'Outfit';font-size:38px;font-weight:800;color:#fff}
+.c10-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.c10-toggle-text{font-size:11px;color:#777}
+.c10-go{margin-top:auto;background:#FF6B35;color:#fff;font-family:'Outfit';font-size:14px;font-weight:700;text-align:center;padding:14px;border-radius:14px;text-transform:uppercase;letter-spacing:1px}
+
+.c10-active{background:#080406;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c10-active::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%)}
+.c10-active-type{position:absolute;top:44px;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(255,107,53,0.4);text-transform:uppercase}
+.c10-active-time{font-family:'Outfit';font-size:90px;font-weight:900;color:#FF6B35;text-shadow:0 0 30px rgba(255,107,53,0.2);z-index:1;font-variant-numeric:tabular-nums;letter-spacing:-3px}
+.c10-active-info{font-size:11px;color:#333;margin-top:6px;z-index:1}
+.c10-active-bar{position:absolute;bottom:90px;left:18px;right:18px;height:3px;background:#111;border-radius:2px;z-index:1}
+.c10-active-bar-fill{height:100%;width:65%;background:#FF6B35;border-radius:2px;box-shadow:0 0 8px rgba(255,107,53,0.3)}
+.c10-active-ctrls{position:absolute;bottom:36px;display:flex;gap:18px;z-index:1}
+
+.c10-complete{background:#080406;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.c10-complete::before{content:'';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,53,0.08) 0%,transparent 70%)}
+.c10-cpl-icon{font-size:40px;color:#FF6B35;margin-bottom:10px;z-index:1}
+.c10-cpl-title{font-family:'Outfit';font-size:24px;font-weight:800;color:#fff;z-index:1}
+.c10-cpl-stat{font-size:13px;color:#444;margin-top:4px;z-index:1}
+.c10-cpl-btns{display:flex;gap:14px;margin-top:28px;z-index:1}
+.c10-cpl-btn{padding:11px 22px;border-radius:12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.c10-cpl-again{border:1px solid #1a1a1a;color:#666}
+.c10-cpl-done{background:#FF6B35;color:#fff}
+
+/* Summary */
+.summary{max-width:1100px;margin:60px auto;padding:40px 24px 80px}
+.summary h2{font-size:28px;font-weight:700;text-align:center;margin-bottom:20px}
+.summary table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
+.summary th{padding:12px 8px;color:#666;font-weight:600;border-bottom:2px solid #1a1a1a}
+.summary td{padding:10px 8px;border-bottom:1px solid #111}
+.lo{color:#00ff88}
+.md{color:#ffaa00}
+
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Neon × Oversized — Round 2</h1>
+  <p>10 variations blending Neon Pulse energy with Oversized typography. Every screen: Home, Setup, Active Timer, Settings, and Complete.</p>
+</div>
+
+<!-- ====================== CONCEPT 1 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">01 / 10</span>
+    <h2>Neon Forge</h2>
+    <p class="philosophy">Neon Pulse's grid layout + glow aesthetic, refined. Each timer type in a softly-bordered neon card. Active timer uses a radial glow behind oversized digits. Green is the hero color.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#06060F Dark Ink</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Space Grotesk 700</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">76px neon green glow</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#00FF88 / per-type neons</div></div>
+    <div class="spec-item"><div class="label">Cards</div><div class="value">Neon-border, 4% fill</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Glow bar bottom</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c1-home">
+          <div class="c1-brand">WOD<span>.</span></div>
+          <div class="c1-grid">
+            <div class="c1-card c1-hc1"><div class="c1-hc-name" style="color:#00ff88">AMRAP</div><div class="c1-hc-sub">Max rounds</div></div>
+            <div class="c1-card c1-hc2"><div class="c1-hc-name" style="color:#00aaff">FOR TIME</div><div class="c1-hc-sub">Race clock</div></div>
+            <div class="c1-card c1-hc3"><div class="c1-hc-name" style="color:#ff0088">EMOM</div><div class="c1-hc-sub">Every minute</div></div>
+            <div class="c1-card c1-hc4"><div class="c1-hc-name" style="color:#ffaa00">TABATA</div><div class="c1-hc-sub">Work / Rest</div></div>
+          </div>
+          <div class="c1-bottom"><span class="c1-bottom-btn">⚙</span><span class="c1-bottom-btn">★</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (AMRAP)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c1-setup">
+          <div class="c1-setup-top"><span class="c1-setup-back">‹</span><span class="c1-setup-title">AMRAP</span></div>
+          <div class="c1-setup-desc">Max rounds within the time cap</div>
+          <div class="c1-picker">
+            <div class="c1-picker-label">Duration</div>
+            <div class="c1-picker-val">20:00</div>
+            <div class="c1-picker-unit">minutes</div>
+          </div>
+          <div class="c1-toggle">
+            <span class="c1-toggle-label">Prep Countdown</span>
+            <div class="sw-on"></div>
+          </div>
+          <div class="c1-chips">
+            <div class="c1-chip">3s</div><div class="c1-chip">5s</div><div class="c1-chip sel">10s</div><div class="c1-chip">15s</div><div class="c1-chip">20s</div><div class="c1-chip">30s</div>
+          </div>
+          <div class="c1-start">▶ Start Workout</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c1-active">
+          <div class="c1-active-type">AMRAP</div>
+          <div class="c1-active-time">12:47</div>
+          <div class="c1-active-round">Round 4</div>
+          <div class="c1-active-bar"><div class="c1-active-bar-fill"></div></div>
+          <div class="c1-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-color:#00ff88;color:#00ff88">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c1-settings">
+          <div class="c1-setup-top"><span class="c1-setup-back">‹</span><span class="c1-setup-title">Settings</span></div>
+          <div class="c1-s-row"><span class="c1-s-label">Orientation Lock</span><span class="c1-s-val">Auto ›</span></div>
+          <div class="c1-s-row"><span class="c1-s-label">Keep Screen On</span><div class="sw-on"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Sound Effects</span><div class="sw-on"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Haptic Feedback</span><div class="sw-off"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0 (42)</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c1-complete">
+          <div class="c1-cpl-check">✓</div>
+          <div class="c1-cpl-title">Workout Complete</div>
+          <div class="c1-cpl-stat">Total: 20:00 · 7 Rounds</div>
+          <div class="c1-cpl-btns">
+            <div class="c1-cpl-btn c1-cpl-again">Repeat</div>
+            <div class="c1-cpl-btn c1-cpl-done">Done</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 2 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">02 / 10</span>
+    <h2>Neon Titan</h2>
+    <p class="philosophy">Oversized stacked text for home — the selected item blazes white, others fade. Active timer goes to 104px. Setup uses enormous inline numbers. Maximum type scale, minimum UI furniture.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#08080E Ink</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 800-900</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">104px / 900 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">Colored dots per type</div></div>
+    <div class="spec-item"><div class="label">Navigation</div><div class="value">Giant stacked text</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Phase pill badge</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c2-home">
+          <div class="c2-title">WOD</div>
+          <div class="c2-sub">Select your timer</div>
+          <div class="c2-list">
+            <div class="c2-item act"><div class="c2-dot" style="background:#00ff88"></div><div class="c2-item-name">AMRAP</div></div>
+            <div class="c2-item"><div class="c2-dot" style="background:#00aaff"></div><div class="c2-item-name">FOR TIME</div></div>
+            <div class="c2-item"><div class="c2-dot" style="background:#ff0088"></div><div class="c2-item-name">EMOM</div></div>
+            <div class="c2-item"><div class="c2-dot" style="background:#ffaa00"></div><div class="c2-item-name">TABATA</div></div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (EMOM)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c2-setup">
+          <div class="c2-setup-head"><span class="c2-setup-back">‹</span><span class="c2-setup-title">EMOM</span></div>
+          <div class="c2-block">
+            <div class="c2-block-label">Interval</div>
+            <div class="c2-block-val">1:00</div>
+            <div class="c2-block-ctrls"><div class="c2-inc">−</div><div class="c2-inc">+</div></div>
+          </div>
+          <div class="c2-block">
+            <div class="c2-block-label">Rounds</div>
+            <div class="c2-block-val">10</div>
+            <div class="c2-block-ctrls"><div class="c2-inc">−</div><div class="c2-inc">+</div></div>
+          </div>
+          <div class="c2-toggle-row"><span class="c2-toggle-text">Prep Countdown (10s)</span><div class="sw-on" style="background:#00aaff"></div></div>
+          <div class="c2-start">Start</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c2-active">
+          <div class="c2-active-type">EMOM</div>
+          <div class="c2-active-time">0:42</div>
+          <div class="c2-active-phase c2-phase-work">WORK</div>
+          <div class="c2-active-round">Round 3 of 10</div>
+          <div class="c2-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-color:#fff;color:#fff">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c2-settings">
+          <div class="c2-setup-head"><span class="c2-setup-back">‹</span></div>
+          <div class="c2-settings-title">Settings</div>
+          <div class="c1-s-row"><span class="c1-s-label">Orientation Lock</span><span class="c1-s-val">Auto ›</span></div>
+          <div class="c1-s-row"><span class="c1-s-label">Keep Screen On</span><div class="sw-on"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Sound Effects</span><div class="sw-on"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Haptic Feedback</span><div class="sw-off"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0 (42)</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c2-complete">
+          <div class="c2-cpl-icon">🏁</div>
+          <div class="c2-cpl-title">Done.</div>
+          <div class="c2-cpl-stat">10 rounds · 10:00</div>
+          <div class="c2-cpl-btns">
+            <div class="c2-cpl-btn c2-cpl-again">Again</div>
+            <div class="c2-cpl-btn c2-cpl-done">Finish</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 3 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">03 / 10</span>
+    <h2>Electric Minimal</h2>
+    <p class="philosophy">Neon accents on pure black with card-based list navigation. Each timer type gets a small colored icon badge. Gradient glow bar (green→blue) for progress. The quietest neon variant.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#000000 Pure Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 700-800</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">82px / 800 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">Gradient #00FF88 → #00AAFF</div></div>
+    <div class="spec-item"><div class="label">Cards</div><div class="value">Dark fill, subtle border</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Gradient bar</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c3-home">
+          <div class="c3-label">Workout</div>
+          <div class="c3-htitle">Choose timer</div>
+          <div class="c3-cards">
+            <div class="c3-card"><div class="c3-dot c3-d1">⟳</div><div><div class="c3-cname">AMRAP</div><div class="c3-cdesc">Max rounds in time</div></div></div>
+            <div class="c3-card"><div class="c3-dot c3-d2">⏱</div><div><div class="c3-cname">FOR TIME</div><div class="c3-cdesc">Finish as fast as possible</div></div></div>
+            <div class="c3-card"><div class="c3-dot c3-d3">◷</div><div><div class="c3-cname">EMOM</div><div class="c3-cdesc">Every minute on the minute</div></div></div>
+            <div class="c3-card"><div class="c3-dot c3-d4">⚡</div><div><div class="c3-cname">TABATA</div><div class="c3-cdesc">Work / Rest intervals</div></div></div>
+          </div>
+          <div class="c3-footer"><span class="c3-footer-btn">⚙</span><span class="c3-footer-btn">★</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (Tabata)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c3-setup">
+          <div class="c3-setup-top"><span class="c3-setup-back">‹</span><span class="c3-setup-title">Tabata</span></div>
+          <div class="c3-fields-row">
+            <div class="c3-field"><div class="c3-field-label">Work</div><div class="c3-field-val" style="color:#00ff88">0:20</div></div>
+            <div class="c3-field"><div class="c3-field-label">Rest</div><div class="c3-field-val" style="color:#00aaff">0:10</div></div>
+          </div>
+          <div class="c3-field"><div class="c3-field-label">Rounds</div><div class="c3-field-val">8</div><div class="c3-field-hint">Total: 4:00</div></div>
+          <div class="c3-toggle"><span class="c3-toggle-text">Prep Countdown (10s)</span><div class="sw-on"></div></div>
+          <div class="c3-start">▶ Start</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c3-active">
+          <div class="c3-active-type">TABATA · WORK</div>
+          <div class="c3-active-glow"></div>
+          <div class="c3-active-time">0:14</div>
+          <div class="c3-active-info">Round 5 of 8</div>
+          <div class="c3-active-bar"><div class="c3-active-bar-fill"></div></div>
+          <div class="c3-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-color:#00ff88;color:#00ff88">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c3-settings">
+          <div class="c3-setup-top"><span class="c3-setup-back">‹</span></div>
+          <div class="c3-stitle">Settings</div>
+          <div class="c3-sgroup">Display</div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Orientation</span><span class="c3-sitem-val">Auto ›</span></div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Keep Screen On</span><div class="sw-on"></div></div>
+          <div class="c3-sgroup">Feedback</div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Sound Effects</span><div class="sw-on"></div></div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Haptic Feedback</span><div class="sw-off"></div></div>
+          <div class="c3-sgroup">About</div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Version</span><span class="c3-sitem-val">1.0.0 (42)</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c3-complete">
+          <div class="c3-cpl-check">✓</div>
+          <div class="c3-cpl-title">Complete!</div>
+          <div class="c3-cpl-stat">8 rounds · 4:00 total</div>
+          <div class="c3-cpl-btns">
+            <div class="c3-cpl-btn c3-cpl-again">Repeat</div>
+            <div class="c3-cpl-btn c3-cpl-done">Done</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 4 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">04 / 10</span>
+    <h2>Signal</h2>
+    <p class="philosophy">Oversized hero title on home with colored sidebar lines next to each timer type. Setup shows a massive number with +/- buttons. Active timer: 96px digits with pill phase badge and radial glow.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#050510 Deep Ink</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 800-900</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">96px / 900 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#00FF88 + sidebar lines</div></div>
+    <div class="spec-item"><div class="label">Navigation</div><div class="value">Color sidebar-line list</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Glow bar + pill badge</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c4-home">
+          <div class="c4-hero">WOD<span>.</span></div>
+          <div class="c4-strip">
+            <div class="c4-strip-item sel"><div class="c4-line c4-lg"></div><div><div class="c4-sname">AMRAP</div><div class="c4-sdesc">Max rounds in time</div></div></div>
+            <div class="c4-strip-item"><div class="c4-line c4-lb"></div><div><div class="c4-sname">FOR TIME</div><div class="c4-sdesc">Race the clock</div></div></div>
+            <div class="c4-strip-item"><div class="c4-line c4-lp"></div><div><div class="c4-sname">EMOM</div><div class="c4-sdesc">Every minute</div></div></div>
+            <div class="c4-strip-item"><div class="c4-line c4-la"></div><div><div class="c4-sname">TABATA</div><div class="c4-sdesc">Work / Rest</div></div></div>
+          </div>
+          <div class="c4-icons"><span class="c4-icon">⚙</span><span class="c4-icon">★</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (For Time)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c4-setup">
+          <div class="c4-setup-hdr"><span class="c4-setup-back">‹</span><span class="c4-setup-title">For Time</span></div>
+          <div class="c4-hero-label">Time Cap</div>
+          <div class="c4-hero-val">20:00</div>
+          <div class="c4-adj"><div class="c4-adj-btn">−</div><div class="c4-adj-btn">+</div></div>
+          <div class="c4-seg">
+            <div class="c4-seg-btn sel">Count Up</div>
+            <div class="c4-seg-btn">Count Down</div>
+          </div>
+          <div class="c4-prep"><span class="c4-prep-text">Prep Countdown</span><div class="sw-on"></div></div>
+          <div class="c4-summary">
+            <div><div class="c4-ss-label">Cap</div><div class="c4-ss-val">20:00</div></div>
+            <div><div class="c4-ss-label">Direction</div><div class="c4-ss-val">Up</div></div>
+            <div><div class="c4-ss-label">Prep</div><div class="c4-ss-val">10s</div></div>
+          </div>
+          <div class="c4-go">▶ Start</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c4-active">
+          <div class="c4-active-pill">FOR TIME · WORK</div>
+          <div class="c4-active-glow"></div>
+          <div class="c4-active-time">07:23</div>
+          <div class="c4-active-sub">Elapsed</div>
+          <div class="c4-active-bar"><div class="c4-active-bar-fill"></div></div>
+          <div class="c4-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-color:#00ff88;color:#00ff88">⏸</div>
+            <div class="cb" style="border-color:#222;color:#888">🏁</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c1-settings" style="background:#050510">
+          <div class="c4-setup-hdr"><span class="c4-setup-back">‹</span><span class="c4-setup-title">Settings</span></div>
+          <div class="c1-s-row"><span class="c1-s-label">Orientation Lock</span><span class="c1-s-val">Auto ›</span></div>
+          <div class="c1-s-row"><span class="c1-s-label">Keep Screen On</span><div class="sw-on"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Sound Effects</span><div class="sw-on"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Haptic Feedback</span><div class="sw-off"></div></div>
+          <div class="c1-s-row"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0 (42)</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c4-complete">
+          <div class="c4-cpl-icon">✓</div>
+          <div class="c4-cpl-title">Finished!</div>
+          <div class="c4-cpl-stat">Completed in 14:32 / 20:00 cap</div>
+          <div class="c4-cpl-btns">
+            <div class="c4-cpl-btn c4-cpl-again">Again</div>
+            <div class="c4-cpl-btn c4-cpl-done">Done</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 5 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">05 / 10</span>
+    <h2>Spectrum</h2>
+    <p class="philosophy">Multi-color gradient identity — green→blue→pink flows through brand, buttons, and ring. Grid cards use directional gradient fills. Active timer has a two-tone ring progress. Premium, colorful, modern.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#080808 Charcoal</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Space Grotesk 700</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">90px / 700 weight, white</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">Gradient #00FF88→#00AAFF→#FF0088</div></div>
+    <div class="spec-item"><div class="label">Cards</div><div class="value">Gradient fills, colored borders</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Two-tone ring</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c5-home">
+          <div class="c5-brand">WOD <span>Timer</span></div>
+          <div class="c5-grid">
+            <div class="c5-card c5-c1"><div><div class="c5-cname">AMRAP</div><div class="c5-cdesc">Max rounds</div></div><div class="c5-carrow">→</div></div>
+            <div class="c5-card c5-c2"><div><div class="c5-cname">FOR TIME</div><div class="c5-cdesc">Race clock</div></div><div class="c5-carrow">→</div></div>
+            <div class="c5-card c5-c3"><div><div class="c5-cname">EMOM</div><div class="c5-cdesc">Every minute</div></div><div class="c5-carrow">→</div></div>
+            <div class="c5-card c5-c4"><div><div class="c5-cname">TABATA</div><div class="c5-cdesc">Work / Rest</div></div><div class="c5-carrow">→</div></div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (EMOM)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c5-setup">
+          <div class="c5-setup-hdr"><span class="c5-setup-back">‹</span><span class="c5-setup-title">EMOM</span></div>
+          <div class="c5-field"><div class="c5-fl">Interval</div><div class="c5-fv">1:00</div></div>
+          <div class="c5-field"><div class="c5-fl">Rounds</div><div class="c5-fv">10</div><div class="c5-fh">Total: 10:00</div></div>
+          <div class="c5-toggle"><span class="c5-toggle-text">Prep Countdown (10s)</span><div class="sw-on" style="background:linear-gradient(90deg,#00ff88,#00aaff)"></div></div>
+          <div class="c5-go">▶ Start</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c5-active">
+          <div class="c5-active-label">EMOM</div>
+          <div class="c5-ring"></div>
+          <div class="c5-ring-fill"></div>
+          <div class="c5-active-time">0:34</div>
+          <div class="c5-active-info">Round 6 of 10</div>
+          <div class="c5-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-color:#00aaff;color:#00aaff">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c3-settings" style="background:#080808">
+          <div class="c5-setup-hdr"><span class="c5-setup-back">‹</span></div>
+          <div class="c3-stitle">Settings</div>
+          <div class="c3-sgroup">Display</div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Orientation</span><span class="c3-sitem-val">Auto ›</span></div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Keep Screen On</span><div class="sw-on" style="background:linear-gradient(90deg,#00ff88,#00aaff)"></div></div>
+          <div class="c3-sgroup">Feedback</div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Sound Effects</span><div class="sw-on" style="background:linear-gradient(90deg,#00ff88,#00aaff)"></div></div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Haptic Feedback</span><div class="sw-off"></div></div>
+          <div class="c3-sgroup">About</div>
+          <div class="c3-sitem"><span class="c3-sitem-label">Version</span><span class="c3-sitem-val">1.0.0 (42)</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c5-complete">
+          <div class="c5-cpl-check">✓</div>
+          <div class="c5-cpl-title">Complete!</div>
+          <div class="c5-cpl-stat">10 rounds · 10:00</div>
+          <div class="c5-cpl-btns">
+            <div class="c5-cpl-btn c5-cpl-again">Repeat</div>
+            <div class="c5-cpl-btn c5-cpl-done">Done</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 6 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">06 / 10</span>
+    <h2>Blackout</h2>
+    <p class="philosophy">Pure black + pure white. No color at all. JetBrains Mono for the timer. Progress is a white edge-bar from the left. The entire app is a study in contrast without hue.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#000000 Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 800 + JetBrains Mono</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">90px JetBrains Mono, white</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#FFFFFF only</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Hairline dividers, text-only</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">White left-edge bar</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c6-home">
+          <div class="c6-htitle">WOD Timer</div>
+          <div class="c6-hlist">
+            <div class="c6-hitem"><span class="c6-hname">AMRAP</span><span class="c6-htag">Rounds</span></div>
+            <div class="c6-hitem"><span class="c6-hname">FOR TIME</span><span class="c6-htag">Speed</span></div>
+            <div class="c6-hitem"><span class="c6-hname">EMOM</span><span class="c6-htag">Interval</span></div>
+            <div class="c6-hitem"><span class="c6-hname">TABATA</span><span class="c6-htag">HIIT</span></div>
+          </div>
+          <div class="c6-hbar"><span class="c6-hbar-btn">⚙</span><span class="c6-hbar-btn">★</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (AMRAP)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c6-setup">
+          <div class="c6-setup-hdr"><span class="c6-setup-back">‹</span><span class="c6-setup-name">AMRAP</span></div>
+          <div class="c6-vblock">
+            <div class="c6-vb-label">Duration</div>
+            <div class="c6-vb-val">20:00</div>
+            <div class="c6-vb-ctrls"><div class="c6-vb-btn">−</div><div class="c6-vb-btn">+</div></div>
+          </div>
+          <div class="c6-toggle"><span class="c6-toggle-text">Prep Countdown (10s)</span><div class="c6-sw"></div></div>
+          <div class="c6-go">Start</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c6-active">
+          <div class="c6-active-type">AMRAP</div>
+          <div class="c6-active-time">12:47</div>
+          <div class="c6-active-round">Round 4</div>
+          <div class="c6-active-edge"></div>
+          <div class="c6-active-ctrls">
+            <div class="cb" style="border-color:#333;color:#999">■</div>
+            <div class="cb lg" style="border-color:#fff;color:#fff">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c6-setup">
+          <div class="c6-setup-hdr"><span class="c6-setup-back">‹</span><span class="c6-setup-name">Settings</span></div>
+          <div class="c6-toggle"><span class="c6-toggle-text">Orientation Lock</span><span style="font-size:11px;color:#444">Auto</span></div>
+          <div class="c6-toggle"><span class="c6-toggle-text">Keep Screen On</span><div class="c6-sw"></div></div>
+          <div class="c6-toggle"><span class="c6-toggle-text">Sound Effects</span><div class="c6-sw"></div></div>
+          <div class="c6-toggle"><span class="c6-toggle-text">Haptic Feedback</span><div class="sw-off"></div></div>
+          <div class="c6-toggle"><span class="c6-toggle-text">Version</span><span style="font-size:11px;color:#333">1.0.0</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c6-complete">
+          <div class="c6-cpl-text">DONE.</div>
+          <div class="c6-cpl-stat">20:00 · 7 rounds</div>
+          <div class="c6-cpl-btns">
+            <div class="c6-cpl-btn c6-cpl-again">Again</div>
+            <div class="c6-cpl-btn c6-cpl-done">Finish</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 7 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">07 / 10</span>
+    <h2>Orbitron</h2>
+    <p class="philosophy">Sci-fi display font (Orbitron) for everything. Concentric circle rings behind the active timer. Setup values in neon green. Feels like a spaceship console. The most "gaming" variant.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#060612 Space Blue</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Orbitron 700</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">58px Orbitron, green glow</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#00FF88 Neon Green</div></div>
+    <div class="spec-item"><div class="label">UI Chrome</div><div class="value">Concentric rings, glass cards</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Glow bar + rings</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c7-home">
+          <div class="c7-brand">WOD TIMER</div>
+          <div class="c7-grid">
+            <div class="c7-card"><div class="c7-cname">AMRAP</div><div class="c7-csub">Max rounds</div></div>
+            <div class="c7-card"><div class="c7-cname">FOR TIME</div><div class="c7-csub">Race clock</div></div>
+            <div class="c7-card"><div class="c7-cname">EMOM</div><div class="c7-csub">Every min</div></div>
+            <div class="c7-card"><div class="c7-cname">TABATA</div><div class="c7-csub">Work / Rest</div></div>
+          </div>
+          <div class="c7-nav"><span class="c7-nav-btn">⚙</span><span class="c7-nav-btn">★</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (Tabata)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c7-setup">
+          <div class="c7-setup-hdr"><span class="c7-setup-back">‹</span><span class="c7-setup-title">TABATA</span></div>
+          <div class="c7-blocks-row">
+            <div class="c7-block"><div class="c7-bl">Work</div><div class="c7-bv">0:20</div></div>
+            <div class="c7-block"><div class="c7-bl">Rest</div><div class="c7-bv" style="color:#00aaff">0:10</div></div>
+          </div>
+          <div class="c7-block"><div class="c7-bl">Rounds</div><div class="c7-bv">8</div><div class="c7-bh">Total: 4:00</div></div>
+          <div class="c7-toggle"><span class="c7-toggle-text">Prep (10s)</span><div class="sw-on"></div></div>
+          <div class="c7-go">Launch</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c7-active">
+          <div class="c7-active-type">TABATA · WORK</div>
+          <div class="c7-active-time">0:14</div>
+          <div class="c7-active-info">Round 5 of 8</div>
+          <div class="c7-active-bar"><div class="c7-active-bar-fill"></div></div>
+          <div class="c7-active-ctrls">
+            <div class="cb" style="border-color:#1a1a2e;color:#444">■</div>
+            <div class="cb lg" style="border-color:#00ff88;color:#00ff88">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c7-setup" style="padding-top:40px">
+          <div class="c7-setup-hdr"><span class="c7-setup-back">‹</span><span class="c7-setup-title">SETTINGS</span></div>
+          <div class="c1-s-row" style="border-color:#0a0a14"><span class="c1-s-label">Orientation</span><span class="c1-s-val">Auto</span></div>
+          <div class="c1-s-row" style="border-color:#0a0a14"><span class="c1-s-label">Screen On</span><div class="sw-on"></div></div>
+          <div class="c1-s-row" style="border-color:#0a0a14"><span class="c1-s-label">Sound</span><div class="sw-on"></div></div>
+          <div class="c1-s-row" style="border-color:#0a0a14"><span class="c1-s-label">Haptics</span><div class="sw-off"></div></div>
+          <div class="c1-s-row" style="border-color:#0a0a14"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c7-complete">
+          <div class="c7-cpl-icon">✓</div>
+          <div class="c7-cpl-title">MISSION COMPLETE</div>
+          <div class="c7-cpl-stat">8 ROUNDS · 04:00</div>
+          <div class="c7-cpl-btns">
+            <div class="c7-cpl-btn c7-cpl-again">Retry</div>
+            <div class="c7-cpl-btn c7-cpl-done">Exit</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 8 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">08 / 10</span>
+    <h2>Edge</h2>
+    <p class="philosophy">Left-edge color bars instead of cards. Zero border-radius anywhere — all sharp rectangles. Active timer uses a top phase-color bar spanning full width. Industrial, angular, sharp.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#0A0A0A Charcoal</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 800</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">96px / 900 weight</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">Left-edge bars; full-width phase bar</div></div>
+    <div class="spec-item"><div class="label">Borders</div><div class="value">Zero radius — all square</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Top full-width phase bar</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c8-home">
+          <div class="c8-htop"><span class="c8-hbrand">WOD</span><div class="c8-hicons"><span class="c8-hicon">⚙</span><span class="c8-hicon">★</span></div></div>
+          <div class="c8-hcards">
+            <div class="c8-hcard c8-hc1"><div><div class="c8-hcname">AMRAP</div><div class="c8-hcdesc">Max rounds in time</div></div></div>
+            <div class="c8-hcard c8-hc2"><div><div class="c8-hcname">FOR TIME</div><div class="c8-hcdesc">Race the clock</div></div></div>
+            <div class="c8-hcard c8-hc3"><div><div class="c8-hcname">EMOM</div><div class="c8-hcdesc">Every minute on the minute</div></div></div>
+            <div class="c8-hcard c8-hc4"><div><div class="c8-hcname">TABATA</div><div class="c8-hcdesc">Work / Rest intervals</div></div></div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (AMRAP)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c8-setup">
+          <div class="c8-setup-hdr"><span class="c8-setup-back">‹</span><span class="c8-setup-title">AMRAP</span></div>
+          <div class="c8-field"><div class="c8-fl">Duration</div><div class="c8-fv">20:00</div></div>
+          <div class="c8-toggle"><span class="c8-toggle-text">Prep Countdown (10s)</span><div class="sw-on"></div></div>
+          <div class="c8-go">▶ Start</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c8-active">
+          <div class="c8-phase-bar"></div>
+          <div class="c8-active-main">
+            <div class="c8-active-type">AMRAP</div>
+            <div class="c8-active-time">12:47</div>
+            <div class="c8-active-info">Round 4</div>
+          </div>
+          <div class="c8-active-ctrls">
+            <div class="cb" style="border-radius:0;border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-radius:0;border-color:#00ff88;color:#00ff88">⏸</div>
+            <div class="cb" style="opacity:0;border-radius:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c8-setup" style="padding-top:40px">
+          <div class="c8-setup-hdr"><span class="c8-setup-back">‹</span><span class="c8-setup-title">Settings</span></div>
+          <div class="c1-s-row" style="border-color:#111"><span class="c1-s-label">Orientation</span><span class="c1-s-val">Auto</span></div>
+          <div class="c1-s-row" style="border-color:#111"><span class="c1-s-label">Screen On</span><div class="sw-on"></div></div>
+          <div class="c1-s-row" style="border-color:#111"><span class="c1-s-label">Sound</span><div class="sw-on"></div></div>
+          <div class="c1-s-row" style="border-color:#111"><span class="c1-s-label">Haptics</span><div class="sw-off"></div></div>
+          <div class="c1-s-row" style="border-color:#111"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c8-complete">
+          <div class="c8-cpl-bar"></div>
+          <div class="c8-cpl-main">
+            <div class="c8-cpl-title">Complete</div>
+            <div class="c8-cpl-stat">20:00 · 7 rounds</div>
+            <div class="c8-cpl-btns">
+              <div class="c8-cpl-btn c8-cpl-again">Again</div>
+              <div class="c8-cpl-btn c8-cpl-done">Done</div>
+            </div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 9 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">09 / 10</span>
+    <h2>Dual Tone</h2>
+    <p class="philosophy">Two-color system: neon green header zone on black body. Home splits with green top panel. Active timer has green status bar showing type + phase. High contrast split identity.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#000 + #00FF88 zones</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 800-900</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">96px / 900 weight, white</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#00FF88 solid panels</div></div>
+    <div class="spec-item"><div class="label">Layout</div><div class="value">Split green-header / black-body</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Green status bar top</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c9-home">
+          <div class="c9-htop"><div class="c9-hbrand">WOD Timer</div><div class="c9-hsub">Choose your workout</div></div>
+          <div class="c9-hbottom">
+            <div class="c9-hcard"><span class="c9-hcname">AMRAP</span><span class="c9-hcarrow">→</span></div>
+            <div class="c9-hcard"><span class="c9-hcname">FOR TIME</span><span class="c9-hcarrow">→</span></div>
+            <div class="c9-hcard"><span class="c9-hcname">EMOM</span><span class="c9-hcarrow">→</span></div>
+            <div class="c9-hcard"><span class="c9-hcname">TABATA</span><span class="c9-hcarrow">→</span></div>
+            <div class="c9-hbar"><span class="c9-hbar-btn">⚙</span><span class="c9-hbar-btn">★</span></div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (EMOM)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c9-setup">
+          <div class="c9-setup-accent"><div class="c9-sa-hdr"><span class="c9-sa-back">‹</span><span class="c9-sa-title">EMOM</span></div></div>
+          <div class="c9-setup-body">
+            <div class="c9-sf"><div class="c9-sf-label">Interval</div><div class="c9-sf-val">1:00</div></div>
+            <div class="c9-sf"><div class="c9-sf-label">Rounds</div><div class="c9-sf-val">10</div><div class="c9-sf-hint">Total: 10:00</div></div>
+            <div class="c9-toggle"><span class="c9-toggle-text">Prep (10s)</span><div class="sw-on"></div></div>
+            <div class="c9-go">▶ Start</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c9-active">
+          <div class="c9-active-accent"><span class="c9-aa-type">EMOM</span><span class="c9-aa-phase">Work</span></div>
+          <div class="c9-active-main">
+            <div class="c9-active-time">0:42</div>
+            <div class="c9-active-info">Round 3 of 10</div>
+          </div>
+          <div class="c9-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="c9-ac-main">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c9-settings">
+          <div class="c9-settings-accent"><div class="c9-sa-hdr"><span class="c9-sa-back">‹</span><span class="c9-sa-title">Settings</span></div></div>
+          <div class="c9-settings-body">
+            <div class="c1-s-row"><span class="c1-s-label">Orientation</span><span class="c1-s-val">Auto</span></div>
+            <div class="c1-s-row"><span class="c1-s-label">Screen On</span><div class="sw-on"></div></div>
+            <div class="c1-s-row"><span class="c1-s-label">Sound</span><div class="sw-on"></div></div>
+            <div class="c1-s-row"><span class="c1-s-label">Haptics</span><div class="sw-off"></div></div>
+            <div class="c1-s-row"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0</span></div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c9-complete">
+          <div class="c9-cpl-accent"><div class="c9-cpl-title">Complete!</div></div>
+          <div class="c9-cpl-main">
+            <div class="c9-cpl-stat">10 rounds · 10:00</div>
+            <div class="c9-cpl-btns">
+              <div class="c9-cpl-btn c9-cpl-again">Again</div>
+              <div class="c9-cpl-btn c9-cpl-done">Done</div>
+            </div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CONCEPT 10 ====================== -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <span class="mockup-number">10 / 10</span>
+    <h2>Ember</h2>
+    <p class="philosophy">Your original orange (#FF6B35) as the hero neon color. Same glow aesthetic but warm orange radial glows, orange progress bars, orange-tinted cards. Familiar brand color, fresh execution.</p>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-item"><div class="label">Background</div><div class="value">#080406 Warm Black</div></div>
+    <div class="spec-item"><div class="label">Font</div><div class="value">Outfit 800</div></div>
+    <div class="spec-item"><div class="label">Timer</div><div class="value">90px #FF6B35 orange glow</div></div>
+    <div class="spec-item"><div class="label">Accent</div><div class="value">#FF6B35 (current primary)</div></div>
+    <div class="spec-item"><div class="label">Cards</div><div class="value">Orange-tint fill + border</div></div>
+    <div class="spec-item"><div class="label">Progress</div><div class="value">Orange glow bar</div></div>
+  </div>
+  <div class="phones-row">
+    <div class="phone-wrapper"><div class="phone-label">Home</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c10-home">
+          <div class="c10-brand">WOD.</div>
+          <div class="c10-grid">
+            <div class="c10-card"><div class="c10-cname">AMRAP</div><div class="c10-csub">Max rounds</div></div>
+            <div class="c10-card"><div class="c10-cname">FOR TIME</div><div class="c10-csub">Race clock</div></div>
+            <div class="c10-card"><div class="c10-cname">EMOM</div><div class="c10-csub">Every minute</div></div>
+            <div class="c10-card"><div class="c10-cname">TABATA</div><div class="c10-csub">Work / Rest</div></div>
+          </div>
+          <div class="c10-nav"><span class="c10-nav-btn">⚙</span><span class="c10-nav-btn">★</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Setup (AMRAP)</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c10-setup">
+          <div class="c10-setup-hdr"><span class="c10-setup-back">‹</span><span class="c10-setup-title">AMRAP</span></div>
+          <div class="c10-field"><div class="c10-fl">Duration</div><div class="c10-fv">20:00</div></div>
+          <div class="c10-toggle"><span class="c10-toggle-text">Prep Countdown (10s)</span><div class="sw-on" style="background:#FF6B35"></div></div>
+          <div class="c10-go">▶ Start Workout</div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Active Timer</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c10-active">
+          <div class="c10-active-type">AMRAP</div>
+          <div class="c10-active-time">12:47</div>
+          <div class="c10-active-info">Round 4</div>
+          <div class="c10-active-bar"><div class="c10-active-bar-fill"></div></div>
+          <div class="c10-active-ctrls">
+            <div class="cb" style="border-color:#331111;color:#ff4444">■</div>
+            <div class="cb lg" style="border-color:#FF6B35;color:#FF6B35">⏸</div>
+            <div class="cb" style="opacity:0">.</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Settings</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c10-setup" style="padding-top:40px">
+          <div class="c10-setup-hdr"><span class="c10-setup-back">‹</span><span class="c10-setup-title">Settings</span></div>
+          <div class="c1-s-row" style="border-color:#100a06"><span class="c1-s-label">Orientation</span><span class="c1-s-val">Auto</span></div>
+          <div class="c1-s-row" style="border-color:#100a06"><span class="c1-s-label">Screen On</span><div class="sw-on" style="background:#FF6B35"></div></div>
+          <div class="c1-s-row" style="border-color:#100a06"><span class="c1-s-label">Sound</span><div class="sw-on" style="background:#FF6B35"></div></div>
+          <div class="c1-s-row" style="border-color:#100a06"><span class="c1-s-label">Haptics</span><div class="sw-off"></div></div>
+          <div class="c1-s-row" style="border-color:#100a06"><span class="c1-s-label">Version</span><span class="c1-s-val">1.0.0</span></div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+    <div class="phone-wrapper"><div class="phone-label">Complete</div>
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="c10-complete">
+          <div class="c10-cpl-icon">✓</div>
+          <div class="c10-cpl-title">Workout Complete</div>
+          <div class="c10-cpl-stat">20:00 · 7 rounds</div>
+          <div class="c10-cpl-btns">
+            <div class="c10-cpl-btn c10-cpl-again">Repeat</div>
+            <div class="c10-cpl-btn c10-cpl-done">Done</div>
+          </div>
+        </div>
+      </div><div class="home-indicator"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== COMPARISON ====================== -->
+<div class="summary">
+  <h2>Comparison Summary</h2>
+  <table>
+    <thead><tr><th>#</th><th>Concept</th><th>Home Nav</th><th>Timer Font</th><th>Key Differentiator</th><th>Busyness</th></tr></thead>
+    <tbody>
+      <tr><td style="color:#444">01</td><td style="font-weight:600">Neon Forge</td><td style="color:#888">2×2 neon-border grid</td><td style="color:#888">Space Grotesk 76px</td><td style="color:#888">Radial glow, per-type neon borders</td><td class="lo">Low</td></tr>
+      <tr><td style="color:#444">02</td><td style="font-weight:600">Neon Titan</td><td style="color:#888">Giant stacked text</td><td style="color:#888">Outfit 104px</td><td style="color:#888">Oversized nav, colored dot indicators</td><td class="lo">Very Low</td></tr>
+      <tr><td style="color:#444">03</td><td style="font-weight:600">Electric Minimal</td><td style="color:#888">Card list + icon badges</td><td style="color:#888">Outfit 82px</td><td style="color:#888">Gradient glow bar (green→blue)</td><td class="lo">Low</td></tr>
+      <tr><td style="color:#444">04</td><td style="font-weight:600">Signal</td><td style="color:#888">Sidebar-line list + hero</td><td style="color:#888">Outfit 96px</td><td style="color:#888">Color sidebar lines, pill phase badge</td><td class="lo">Low</td></tr>
+      <tr><td style="color:#444">05</td><td style="font-weight:600">Spectrum</td><td style="color:#888">Gradient-fill 2×2 grid</td><td style="color:#888">Space Grotesk 90px</td><td style="color:#888">Multi-color gradient, ring progress</td><td class="md">Medium</td></tr>
+      <tr><td style="color:#444">06</td><td style="font-weight:600">Blackout</td><td style="color:#888">Text list, no color</td><td style="color:#888">JetBrains Mono 90px</td><td style="color:#888">Pure B&W monochrome, edge-bar</td><td class="lo">Very Low</td></tr>
+      <tr><td style="color:#444">07</td><td style="font-weight:600">Orbitron</td><td style="color:#888">Glass-border 2×2 grid</td><td style="color:#888">Orbitron 58px</td><td style="color:#888">Sci-fi font, concentric rings</td><td class="md">Medium</td></tr>
+      <tr><td style="color:#444">08</td><td style="font-weight:600">Edge</td><td style="color:#888">Left-edge color bars</td><td style="color:#888">Outfit 96px</td><td style="color:#888">Zero radius, full-width phase bar</td><td class="lo">Low</td></tr>
+      <tr><td style="color:#444">09</td><td style="font-weight:600">Dual Tone</td><td style="color:#888">Green header / black body</td><td style="color:#888">Outfit 96px</td><td style="color:#888">Split color zones, solid panels</td><td class="lo">Low</td></tr>
+      <tr><td style="color:#444">10</td><td style="font-weight:600">Ember</td><td style="color:#888">Orange-tint 2×2 grid</td><td style="color:#888">Outfit 90px</td><td style="color:#888">Original #FF6B35 with neon glow</td><td class="lo">Low</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

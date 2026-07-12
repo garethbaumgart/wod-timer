@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/injection.dart';
 
@@ -118,6 +119,9 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
 
       // Sync haptic setting with service
       _syncHapticService(hapticEnabled);
+
+      // Sync sound setting with the audio service
+      _syncAudioService(soundEnabled);
     } catch (e) {
       // Use defaults on error
     }
@@ -183,7 +187,16 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   /// Toggle sound.
   Future<void> setSoundEnabled({required bool enabled}) async {
     state = state.copyWith(soundEnabled: enabled);
+    _syncAudioService(enabled);
     await _saveSettings();
+  }
+
+  void _syncAudioService(bool enabled) {
+    try {
+      getIt<IAudioService>().setMuted(muted: !enabled);
+    } catch (_) {
+      // Ignore if service not available (e.g., in tests)
+    }
   }
 
   /// Toggle keep screen on.

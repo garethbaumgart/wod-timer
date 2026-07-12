@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOD Timer — UX Tighten Mockups (Before → After)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #050510;
+    --surface: #0A0A1A;
+    --card: #0E0E1E;
+    --primary: #00FF88;
+    --primary-08: rgba(0,255,136,0.08);
+    --primary-03: rgba(0,255,136,0.03);
+    --primary-10: rgba(0,255,136,0.10);
+    --primary-15: rgba(0,255,136,0.15);
+    --primary-05: rgba(0,255,136,0.05);
+    --blue: #00AAFF;
+    --pink: #FF0088;
+    --orange: #FFAA00;
+    --red: #FF4444;
+    --text-primary: #FFFFFF;
+    --text-secondary: #666666;
+    --text-disabled: #333333;
+    --border: #1A1A1A;
+    --divider: #0E0E0E;
+  }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: #111;
+    color: #fff;
+    padding: 40px 20px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+  h1 span { color: var(--primary); }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 16px;
+    margin-bottom: 60px;
+  }
+
+  .mockup-section {
+    max-width: 1100px;
+    margin: 0 auto 80px;
+  }
+
+  .mockup-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .mockup-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .mockup-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 32px;
+    max-width: 700px;
+  }
+
+  .phones {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone-wrapper {
+    text-align: center;
+  }
+  .phone-wrapper .phone-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .phone-wrapper .phone-label.before { color: #555; }
+  .phone-wrapper .phone-label.after { color: var(--primary); }
+
+  .phone {
+    width: 320px;
+    height: 640px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 3px solid #222;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone .notch {
+    width: 120px;
+    height: 28px;
+    background: #000;
+    border-radius: 0 0 16px 16px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+  }
+
+  .phone .screen {
+    flex: 1;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Change annotations */
+  .changes {
+    max-width: 1100px;
+    margin: -16px auto 0;
+    padding: 20px 24px;
+    background: rgba(0,255,136,0.03);
+    border: 1px solid rgba(0,255,136,0.08);
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+  }
+  .change-item {
+    font-size: 13px;
+    color: #888;
+  }
+  .change-item strong {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* Reusable components */
+  .strip {
+    display: flex;
+    align-items: center;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .strip .sidebar {
+    width: 3px;
+    border-radius: 2px;
+  }
+  .strip .strip-text { flex: 1; }
+  .strip .strip-name {
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .strip .strip-desc {
+    color: var(--text-secondary);
+  }
+  .strip .chevron {
+    color: var(--text-disabled);
+    font-size: 18px;
+    font-weight: 300;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .back-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+
+  .start-btn {
+    width: 100%;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #000;
+    background: var(--primary);
+    cursor: pointer;
+  }
+
+  .pill-badge {
+    display: inline-block;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-align: center;
+    border-radius: 999px;
+  }
+
+  .circle-btn {
+    border-radius: 50%;
+    border: 1.5px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .section-divider {
+    height: 1px;
+    background: var(--divider);
+    width: 100%;
+  }
+
+  .settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0;
+  }
+  .settings-label { font-weight: 400; }
+  .settings-value { font-weight: 400; }
+
+  .switch-track {
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    position: relative;
+    display: inline-block;
+  }
+  .switch-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+  }
+  .switch-on .switch-track { background: rgba(0,255,136,0.4); }
+  .switch-on .switch-thumb { background: var(--primary); right: 2px; }
+  .switch-off .switch-track { background: var(--border); }
+  .switch-off .switch-thumb { background: #555; left: 2px; }
+
+  /* Summary card */
+  .summary-card {
+    background: var(--primary-03);
+    border: 1px solid var(--primary-10);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .summary-header {
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: var(--text-disabled);
+    margin-bottom: 10px;
+  }
+  .summary-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+  }
+  .summary-item-label {
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: var(--text-disabled);
+  }
+  .summary-item-value {
+    font-weight: 700;
+    color: var(--primary);
+  }
+</style>
+</head>
+<body>
+
+<h1>WOD<span>.</span> UX Tighten Mockups</h1>
+<p class="subtitle">Before → After · 10 screens showing emphasis on important actions & info</p>
+
+<!-- ============================================ -->
+<!-- MOCKUP 1: HOME PAGE -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 1 of 10</div>
+  <div class="mockup-title">Home Page — Bigger strips, chevrons, more breathing room</div>
+  <p class="mockup-desc">Strip names too small (20px). No affordance showing items are tappable. Gaps between strips are tight (8px). The selected state on AMRAP is misleading since there's no selection concept.</p>
+
+  <div class="phones">
+    <!-- BEFORE -->
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div style="margin-top: 30px;">
+            <span style="font-size:44px;font-weight:900;letter-spacing:-2px;color:#fff;">WOD</span><span style="font-size:44px;font-weight:900;letter-spacing:-2px;color:var(--primary);">.</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;">
+            <!-- AMRAP (selected) -->
+            <div class="strip" style="padding:12px;border:1px solid rgba(0,255,136,0.15);background:rgba(0,255,136,0.03);border-radius:12px;">
+              <div class="sidebar" style="height:28px;background:var(--primary);"></div>
+              <div style="width:12px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:20px;">AMRAP</div>
+                <div style="height:2px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Max rounds in time</div>
+              </div>
+            </div>
+            <!-- FOR TIME -->
+            <div class="strip" style="padding:12px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:28px;background:var(--blue);"></div>
+              <div style="width:12px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:20px;">FOR TIME</div>
+                <div style="height:2px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Race the clock</div>
+              </div>
+            </div>
+            <!-- EMOM -->
+            <div class="strip" style="padding:12px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:28px;background:var(--pink);"></div>
+              <div style="width:12px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:20px;">EMOM</div>
+                <div style="height:2px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Every minute on the minute</div>
+              </div>
+            </div>
+            <!-- TABATA -->
+            <div class="strip" style="padding:12px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:28px;background:var(--orange);"></div>
+              <div style="width:12px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:20px;">TABATA</div>
+                <div style="height:2px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Work / Rest intervals</div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom -->
+          <div style="text-align:center;padding:8px 0;">
+            <span style="color:var(--text-disabled);font-size:26px;">⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div style="margin-top: 30px;">
+            <span style="font-size:44px;font-weight:900;letter-spacing:-2px;color:#fff;">WOD</span><span style="font-size:44px;font-weight:900;letter-spacing:-2px;color:var(--primary);">.</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;">
+            <!-- AMRAP (no selection) -->
+            <div class="strip" style="padding:14px 14px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:36px;background:var(--primary);"></div>
+              <div style="width:14px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:24px;">AMRAP</div>
+                <div style="height:3px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Max rounds in time</div>
+              </div>
+              <div class="chevron">›</div>
+            </div>
+            <!-- FOR TIME -->
+            <div class="strip" style="padding:14px 14px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:36px;background:var(--blue);"></div>
+              <div style="width:14px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:24px;">FOR TIME</div>
+                <div style="height:3px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Race the clock</div>
+              </div>
+              <div class="chevron">›</div>
+            </div>
+            <!-- EMOM -->
+            <div class="strip" style="padding:14px 14px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:36px;background:var(--pink);"></div>
+              <div style="width:14px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:24px;">EMOM</div>
+                <div style="height:3px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Every minute on the minute</div>
+              </div>
+              <div class="chevron">›</div>
+            </div>
+            <!-- TABATA -->
+            <div class="strip" style="padding:14px 14px;border:1px solid transparent;border-radius:12px;">
+              <div class="sidebar" style="height:36px;background:var(--orange);"></div>
+              <div style="width:14px;"></div>
+              <div class="strip-text">
+                <div class="strip-name" style="font-size:24px;">TABATA</div>
+                <div style="height:3px;"></div>
+                <div class="strip-desc" style="font-size:13px;">Work / Rest intervals</div>
+              </div>
+              <div class="chevron">›</div>
+            </div>
+          </div>
+          <!-- Bottom -->
+          <div style="text-align:center;padding:8px 0;">
+            <span style="color:var(--text-disabled);font-size:26px;">⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Strip name:</strong> 20 → 24px</div>
+    <div class="change-item"><strong>Sidebar height:</strong> 28 → 36px</div>
+    <div class="change-item"><strong>Strip padding:</strong> 12 → 14/18px</div>
+    <div class="change-item"><strong>Gap:</strong> 8 → 12px</div>
+    <div class="change-item"><strong>Added:</strong> Trailing chevron ›</div>
+    <div class="change-item"><strong>Removed:</strong> AMRAP selected state</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 2: SETUP HEADERS -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 2 of 10</div>
+  <div class="mockup-title">Setup Headers — Icon back button, larger title</div>
+  <p class="mockup-desc">The Unicode ‹ character looks thin and inconsistent. Title at 20px feels small next to the 44px hero. Applies to all 4 setup pages + settings.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone" style="height:180px;border-radius:24px;">
+        <div class="screen" style="padding-top:16px;">
+          <div class="header-row">
+            <div class="back-btn" style="font-size:32px;height:1;">‹</div>
+            <div style="width:4px;"></div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;">Tabata</div>
+          </div>
+          <div class="section-divider" style="margin-top:8px;"></div>
+          <div style="padding:16px 0;color:var(--text-disabled);font-size:12px;">← Unicode char, thin, 20px title</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone" style="height:180px;border-radius:24px;">
+        <div class="screen" style="padding-top:16px;">
+          <div class="header-row">
+            <div class="back-btn" style="font-size:20px;">‹</div>
+            <div style="width:8px;"></div>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-0.5px;">Tabata</div>
+          </div>
+          <div class="section-divider" style="margin-top:8px;"></div>
+          <div style="padding:16px 0;color:var(--text-disabled);font-size:12px;">← Icon(arrow_back_ios_new, 22px), 24px title</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Back button:</strong> Unicode ‹ → Icons.arrow_back_ios_new (22px)</div>
+    <div class="change-item"><strong>Title:</strong> 20 → 24px</div>
+    <div class="change-item"><strong>Applies to:</strong> All 4 setup pages + settings</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 3: DURATION PICKER LABEL -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 3 of 10</div>
+  <div class="mockup-title">Duration Picker — Brighter labels with tighter letter-spacing</div>
+  <p class="mockup-desc">Labels like "WORKOUT DURATION" at #333 are nearly invisible against the dark background. The label needs to be visible without competing with the value.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone" style="height:340px;border-radius:32px;">
+        <div class="screen" style="justify-content:center;align-items:center;">
+          <div style="text-align:center;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:#333;text-transform:uppercase;">Workout Duration</div>
+            <div style="height:10px;"></div>
+            <div style="font-size:48px;font-weight:800;letter-spacing:-1px;color:#fff;">10:00</div>
+            <div style="height:16px;"></div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+              <div style="width:48px;height:48px;border-radius:50%;border:1.5px solid #222;display:flex;align-items:center;justify-content:center;color:#666;font-size:20px;">−</div>
+              <span style="font-size:12px;color:#444;font-weight:600;">1 min</span>
+              <div style="width:48px;height:48px;border-radius:50%;border:1.5px solid #222;display:flex;align-items:center;justify-content:center;color:#666;font-size:20px;">+</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;color:#333;font-size:11px;">Label at #333 — barely visible ↑</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone" style="height:340px;border-radius:32px;">
+        <div class="screen" style="justify-content:center;align-items:center;">
+          <div style="text-align:center;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:#555;text-transform:uppercase;">Workout Duration</div>
+            <div style="height:10px;"></div>
+            <div style="font-size:48px;font-weight:800;letter-spacing:-1px;color:#fff;">10:00</div>
+            <div style="height:16px;"></div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+              <div style="width:48px;height:48px;border-radius:50%;border:1.5px solid #222;display:flex;align-items:center;justify-content:center;color:#666;font-size:20px;">−</div>
+              <span style="font-size:12px;color:#444;font-weight:600;">1 min</span>
+              <div style="width:48px;height:48px;border-radius:50%;border:1.5px solid #222;display:flex;align-items:center;justify-content:center;color:#666;font-size:20px;">+</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;color:#555;font-size:11px;">Label at #555 — readable now ↑</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Label color:</strong> #333 → #555</div>
+    <div class="change-item"><strong>Letter-spacing:</strong> 2px (consistent uppercase treatment)</div>
+    <div class="change-item"><strong>Applies to:</strong> All duration/round picker labels</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 4: SUMMARY CARD -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 4 of 10</div>
+  <div class="mockup-title">Summary Card — Hero total duration row</div>
+  <p class="mockup-desc">All summary values are 15px green with equal weight. Total duration is the most important number but doesn't stand out from TYPE, ROUNDS, WORK, REST.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone" style="height:280px;border-radius:28px;">
+        <div class="screen" style="justify-content:center;">
+          <div class="summary-card">
+            <div class="summary-header" style="font-size:11px;">SUMMARY</div>
+            <div class="summary-grid">
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">TYPE</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">TABATA</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">TOTAL</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">4m 10s</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">ROUNDS</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">8</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">WORK</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">20s</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">REST</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">10s</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;color:#333;font-size:11px;">All values same size — no hierarchy</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone" style="height:280px;border-radius:28px;">
+        <div class="screen" style="justify-content:center;">
+          <div class="summary-card">
+            <div class="summary-header" style="font-size:11px;">SUMMARY</div>
+            <!-- Hero total row -->
+            <div style="text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(0,255,136,0.06);">
+              <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">4m 10s</div>
+              <div style="font-size:10px;font-weight:500;color:#555;letter-spacing:1px;margin-top:2px;">TOTAL DURATION</div>
+            </div>
+            <!-- Other items -->
+            <div class="summary-grid">
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">TYPE</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">TABATA</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">ROUNDS</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">8</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">WORK</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">20s</div>
+              </div>
+              <div>
+                <div class="summary-item-label" style="font-size:11px;">REST</div>
+                <div style="height:2px;"></div>
+                <div class="summary-item-value" style="font-size:15px;">10s</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;color:#555;font-size:11px;">Total duration promoted to hero row ↑</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Total duration:</strong> 15px green → 22px white hero row</div>
+    <div class="change-item"><strong>Added:</strong> Separator line below total</div>
+    <div class="change-item"><strong>Moved:</strong> TOTAL out of wrap into dedicated row</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 5: START BUTTON -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 5 of 10</div>
+  <div class="mockup-title">START Button — More vertical weight, bolder presence</div>
+  <p class="mockup-desc">The single most important action on setup pages has only 14px vertical padding (~48px total). It should command more attention as the primary CTA.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone" style="height:200px;border-radius:24px;">
+        <div class="screen" style="justify-content:center;">
+          <div style="padding:0 16px;">
+            <div class="start-btn" style="padding:14px 0;border-radius:14px;font-size:14px;letter-spacing:1px;">
+              START WORKOUT
+            </div>
+            <div style="margin-top:12px;color:#333;font-size:11px;text-align:center;">48px height · 14px font · 14px radius</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone" style="height:200px;border-radius:24px;">
+        <div class="screen" style="justify-content:center;">
+          <div style="padding:0 16px;">
+            <div class="start-btn" style="padding:20px 0;border-radius:16px;font-size:16px;letter-spacing:1px;">
+              START WORKOUT
+            </div>
+            <div style="margin-top:12px;color:#555;font-size:11px;text-align:center;">56px height · 16px font · 16px radius</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Padding:</strong> 14 → 20px vertical</div>
+    <div class="change-item"><strong>Font:</strong> 14 → 16px</div>
+    <div class="change-item"><strong>Border radius:</strong> 14 → 16px</div>
+    <div class="change-item"><strong>Total height:</strong> ~48 → ~56px</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 6: ACTIVE TIMER -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 6 of 10</div>
+  <div class="mockup-title">Active Timer — Larger pill badge, bolder context info</div>
+  <p class="mockup-desc">The pill badge ("EMOM · REST") at 10px is nearly invisible from gym distance. Phase context and round info are critical during a workout.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen" style="align-items:center;">
+          <div style="flex:1;"></div>
+          <!-- Pill -->
+          <div class="pill-badge" style="font-size:10px;letter-spacing:2px;padding:8px 16px;color:var(--blue);background:rgba(0,170,255,0.08);">
+            EMOM  ·  REST
+          </div>
+          <div style="flex:0.5;"></div>
+          <!-- Timer -->
+          <div style="position:relative;">
+            <div style="width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,170,255,0.06) 0%,transparent 70%);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+            <div style="font-size:80px;font-weight:900;letter-spacing:-3px;color:#fff;position:relative;">00:42</div>
+          </div>
+          <div style="height:8px;"></div>
+          <div style="font-size:12px;color:#333;">Round 3/10</div>
+          <div style="flex:1;"></div>
+          <!-- Progress -->
+          <div style="width:100%;height:5px;background:var(--divider);border-radius:2.5px;position:relative;overflow:hidden;">
+            <div style="width:30%;height:100%;background:var(--blue);border-radius:2.5px;box-shadow:0 0 8px rgba(0,170,255,0.3);"></div>
+          </div>
+          <div style="height:24px;"></div>
+          <!-- Controls -->
+          <div style="display:flex;gap:24px;align-items:center;justify-content:center;">
+            <div class="circle-btn" style="width:64px;height:64px;border-color:#331111;color:var(--red);">■</div>
+            <div class="circle-btn" style="width:72px;height:72px;border-color:var(--primary);color:var(--primary);">❚❚</div>
+            <div style="width:64px;"></div>
+          </div>
+          <div style="height:24px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen" style="align-items:center;">
+          <div style="flex:1;"></div>
+          <!-- Pill - BIGGER -->
+          <div class="pill-badge" style="font-size:13px;letter-spacing:2px;padding:10px 20px;color:var(--blue);background:rgba(0,170,255,0.08);">
+            EMOM  ·  REST
+          </div>
+          <div style="flex:0.5;"></div>
+          <!-- Timer -->
+          <div style="position:relative;">
+            <div style="width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,170,255,0.06) 0%,transparent 70%);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+            <div style="font-size:80px;font-weight:900;letter-spacing:-3px;color:#fff;position:relative;">00:42</div>
+          </div>
+          <div style="height:8px;"></div>
+          <div style="font-size:14px;color:#555;font-weight:500;">Round 3/10</div>
+          <div style="flex:1;"></div>
+          <!-- Progress -->
+          <div style="width:100%;height:5px;background:var(--divider);border-radius:2.5px;position:relative;overflow:hidden;">
+            <div style="width:30%;height:100%;background:var(--blue);border-radius:2.5px;box-shadow:0 0 8px rgba(0,170,255,0.3);"></div>
+          </div>
+          <div style="height:24px;"></div>
+          <!-- Controls -->
+          <div style="display:flex;gap:24px;align-items:center;justify-content:center;">
+            <div class="circle-btn" style="width:64px;height:64px;border-color:#331111;color:var(--red);">■</div>
+            <div class="circle-btn" style="width:72px;height:72px;border-color:var(--primary);color:var(--primary);">❚❚</div>
+            <div style="width:64px;"></div>
+          </div>
+          <div style="height:24px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Pill badge:</strong> 10 → 13px font</div>
+    <div class="change-item"><strong>Pill padding:</strong> 16h/8v → 20h/10v</div>
+    <div class="change-item"><strong>Round info:</strong> 12 → 14px, #333 → #555</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 7: COMPLETED SCREEN -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 7 of 10</div>
+  <div class="mockup-title">Completed Screen — Celebrate harder, show stats clearly</div>
+  <p class="mockup-desc">After a hard workout, the completion screen feels flat: small check (40px), modest title (24px), and stats at 13px in #444 are nearly invisible. Time to celebrate!</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen" style="align-items:center;">
+          <div style="flex:2;"></div>
+          <!-- Small check -->
+          <div style="font-size:40px;color:var(--primary);">✓</div>
+          <div style="height:16px;"></div>
+          <div style="font-size:24px;font-weight:800;color:#fff;">Finished!</div>
+          <div style="height:8px;"></div>
+          <div style="font-size:13px;color:#444;">Total: 04:10</div>
+          <div style="height:4px;"></div>
+          <div style="font-size:13px;color:#444;">Rounds: 8/8</div>
+          <div style="flex:2;"></div>
+          <!-- Progress -->
+          <div style="width:100%;height:5px;background:var(--primary);border-radius:2.5px;box-shadow:0 0 8px rgba(0,255,136,0.3);"></div>
+          <div style="height:24px;"></div>
+          <!-- Buttons -->
+          <div style="display:flex;gap:12px;width:100%;padding:0 16px;">
+            <div style="flex:1;height:52px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:12px;font-weight:700;color:#666;letter-spacing:0.5px;">Again</span>
+            </div>
+            <div style="flex:1;height:52px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:12px;font-weight:700;color:#000;letter-spacing:0.5px;">Done</span>
+            </div>
+          </div>
+          <div style="height:24px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen" style="align-items:center;">
+          <div style="flex:2;"></div>
+          <!-- Bigger check -->
+          <div style="font-size:56px;color:var(--primary);">✓</div>
+          <div style="height:16px;"></div>
+          <div style="font-size:28px;font-weight:800;color:#fff;">Finished!</div>
+          <div style="height:20px;"></div>
+          <!-- Stats cards -->
+          <div style="display:flex;gap:16px;width:100%;padding:0 8px;">
+            <div style="flex:1;text-align:center;padding:16px 8px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.05);">
+              <div style="font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px;">04:10</div>
+              <div style="font-size:10px;color:#555;letter-spacing:1px;font-weight:500;margin-top:4px;">TOTAL TIME</div>
+            </div>
+            <div style="flex:1;text-align:center;padding:16px 8px;background:rgba(0,255,136,0.03);border-radius:12px;border:1px solid rgba(0,255,136,0.06);">
+              <div style="font-size:24px;font-weight:800;color:var(--primary);letter-spacing:-0.5px;">8/8</div>
+              <div style="font-size:10px;color:#555;letter-spacing:1px;font-weight:500;margin-top:4px;">ROUNDS</div>
+            </div>
+          </div>
+          <div style="flex:2;"></div>
+          <!-- Progress -->
+          <div style="width:100%;height:5px;background:var(--primary);border-radius:2.5px;box-shadow:0 0 8px rgba(0,255,136,0.3);"></div>
+          <div style="height:24px;"></div>
+          <!-- Buttons -->
+          <div style="display:flex;gap:12px;width:100%;padding:0 16px;">
+            <div style="flex:1;height:56px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:14px;font-weight:700;color:#666;letter-spacing:0.5px;">Again</span>
+            </div>
+            <div style="flex:1;height:56px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:14px;font-weight:700;color:#000;letter-spacing:0.5px;">Done</span>
+            </div>
+          </div>
+          <div style="height:24px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Check icon:</strong> 40 → 56px</div>
+    <div class="change-item"><strong>Title:</strong> 24 → 28px</div>
+    <div class="change-item"><strong>Stats:</strong> 13px text → 24px stat cards with labels</div>
+    <div class="change-item"><strong>Buttons:</strong> 52 → 56px height, 12 → 14px font</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 8: FOR TIME TOGGLE -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 8 of 10</div>
+  <div class="mockup-title">For Time — Count direction toggle with clear active state</div>
+  <p class="mockup-desc">The selected segment only changes border color from #1A to green — hard to tell which is active. Needs a filled background on the selected state.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone" style="height:220px;border-radius:24px;">
+        <div class="screen" style="justify-content:center;align-items:center;">
+          <div style="display:flex;gap:8px;">
+            <div style="padding:8px 16px;border-radius:10px;border:1px solid var(--primary);font-size:11px;font-weight:600;color:var(--primary);letter-spacing:0.5px;">COUNT UP</div>
+            <div style="padding:8px 16px;border-radius:10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:#666;letter-spacing:0.5px;">COUNT DOWN</div>
+          </div>
+          <div style="margin-top:16px;color:#333;font-size:11px;">Border-only selected state — subtle</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone" style="height:220px;border-radius:24px;">
+        <div class="screen" style="justify-content:center;align-items:center;">
+          <div style="display:flex;gap:8px;">
+            <div style="padding:8px 16px;border-radius:10px;border:1px solid var(--primary);background:rgba(0,255,136,0.08);font-size:12px;font-weight:600;color:var(--primary);letter-spacing:0.5px;">COUNT UP</div>
+            <div style="padding:8px 16px;border-radius:10px;border:1px solid #333;font-size:12px;font-weight:600;color:#666;letter-spacing:0.5px;">COUNT DOWN</div>
+          </div>
+          <div style="margin-top:16px;color:#555;font-size:11px;">Filled bg + brighter border on unselected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Selected fill:</strong> transparent → primary at 8% opacity</div>
+    <div class="change-item"><strong>Font:</strong> 11 → 12px</div>
+    <div class="change-item"><strong>Unselected border:</strong> #1A1A1A → #333</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 9: CLASSIC TABATA -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 9 of 10</div>
+  <div class="mockup-title">Tabata — Classic Tabata shortcut button stands out</div>
+  <p class="mockup-desc">The "CLASSIC TABATA (20/10 x 8)" quick-action button blends into the background with a barely-visible 1px border. It's a great UX shortcut that deserves more presence.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone" style="height:220px;border-radius:24px;">
+        <div class="screen" style="justify-content:center;align-items:center;">
+          <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1px solid var(--border);">
+            <span style="font-size:14px;color:var(--primary);">⚡</span>
+            <span style="font-size:11px;font-weight:600;color:var(--primary);">CLASSIC TABATA (20/10 x 8)</span>
+          </div>
+          <div style="margin-top:16px;color:#333;font-size:11px;">Subtle border, easy to miss</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone" style="height:220px;border-radius:24px;">
+        <div class="screen" style="justify-content:center;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;border:1px solid rgba(0,255,136,0.15);background:rgba(0,255,136,0.05);">
+            <span style="font-size:16px;color:var(--primary);">⚡</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--primary);letter-spacing:0.5px;">CLASSIC TABATA</div>
+              <div style="font-size:11px;font-weight:500;color:#555;margin-top:1px;">20s work / 10s rest × 8 rounds</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;color:#555;font-size:11px;">Green fill + 2-line layout + bigger text</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Font:</strong> 11 → 13px title + 11px subtitle</div>
+    <div class="change-item"><strong>Background:</strong> transparent → primary at 5%</div>
+    <div class="change-item"><strong>Border:</strong> #1A → primary at 15%</div>
+    <div class="change-item"><strong>Padding:</strong> 8/16 → 12/20</div>
+    <div class="change-item"><strong>Layout:</strong> Single line → 2 lines</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MOCKUP 10: SETTINGS -->
+<!-- ============================================ -->
+<div class="mockup-section">
+  <div class="mockup-label">Mockup 10 of 10</div>
+  <div class="mockup-title">Settings — Section group headers for scannability</div>
+  <p class="mockup-desc">Settings is a flat list of identical-looking rows. No grouping or hierarchy. Adding section headers makes it instantly scannable.</p>
+
+  <div class="phones">
+    <div class="phone-wrapper">
+      <div class="phone-label before">Before</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <!-- Header -->
+          <div class="header-row" style="margin-bottom:8px;">
+            <div class="back-btn" style="font-size:28px;">‹</div>
+            <div style="width:12px;"></div>
+            <div style="font-size:20px;font-weight:800;">Settings</div>
+          </div>
+          <!-- Flat list -->
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Orientation Lock</span>
+            <span class="settings-value" style="font-size:14px;color:#666;">Auto ></span>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Keep Screen On</span>
+            <div class="switch-on"><div class="switch-track"><div class="switch-thumb"></div></div></div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Sound Effects</span>
+            <div class="switch-on"><div class="switch-track"><div class="switch-thumb"></div></div></div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Haptic Feedback</span>
+            <div class="switch-on"><div class="switch-track"><div class="switch-thumb"></div></div></div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Version</span>
+            <span class="settings-value" style="font-size:14px;color:#666;">1.0.0 (1)</span>
+          </div>
+          <div class="section-divider"></div>
+          <div style="margin-top:16px;color:#333;font-size:11px;">Flat list, all rows identical — no grouping</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrapper">
+      <div class="phone-label after">After</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <!-- Header -->
+          <div class="header-row" style="margin-bottom:8px;">
+            <div class="back-btn" style="font-size:20px;">‹</div>
+            <div style="width:8px;"></div>
+            <div style="font-size:24px;font-weight:800;">Settings</div>
+          </div>
+          <!-- DISPLAY section -->
+          <div style="margin-top:20px;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:500;letter-spacing:1px;color:#555;text-transform:uppercase;">Display</span>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Orientation Lock</span>
+            <span class="settings-value" style="font-size:14px;color:#666;">Auto ></span>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Keep Screen On</span>
+            <div class="switch-on"><div class="switch-track"><div class="switch-thumb"></div></div></div>
+          </div>
+          <!-- AUDIO section -->
+          <div style="margin-top:24px;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:500;letter-spacing:1px;color:#555;text-transform:uppercase;">Audio</span>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Sound Effects</span>
+            <div class="switch-on"><div class="switch-track"><div class="switch-thumb"></div></div></div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Haptic Feedback</span>
+            <div class="switch-on"><div class="switch-track"><div class="switch-thumb"></div></div></div>
+          </div>
+          <!-- ABOUT section -->
+          <div style="margin-top:24px;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:500;letter-spacing:1px;color:#555;text-transform:uppercase;">About</span>
+          </div>
+          <div class="section-divider"></div>
+          <div class="settings-row" style="padding:14px 0;">
+            <span class="settings-label" style="font-size:14px;color:#777;">Version</span>
+            <span class="settings-value" style="font-size:14px;color:#666;">1.0.0 (1)</span>
+          </div>
+          <div class="section-divider"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+  <div class="changes">
+    <div class="change-item"><strong>Added:</strong> Section headers (DISPLAY, AUDIO, ABOUT)</div>
+    <div class="change-item"><strong>Header style:</strong> 11px, uppercase, #555, 1px letter-spacing</div>
+    <div class="change-item"><strong>Section gap:</strong> 24px top margin before each group</div>
+    <div class="change-item"><strong>Title:</strong> 20 → 24px (from Mockup 2)</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:40px 0 60px;max-width:700px;margin:0 auto;">
+  <div style="height:1px;background:var(--divider);margin-bottom:40px;"></div>
+  <div style="font-size:20px;font-weight:800;margin-bottom:12px;">Summary of All Changes</div>
+  <div style="color:var(--text-secondary);font-size:14px;line-height:1.8;">
+    These 10 mockups tighten the app by:<br>
+    <strong style="color:#fff;">1.</strong> Increasing size of primary actions (START button, strip items)<br>
+    <strong style="color:#fff;">2.</strong> Promoting key info to hero positions (total duration, pill badge, stats)<br>
+    <strong style="color:#fff;">3.</strong> Improving contrast on labels (#333 → #555) so they're actually readable<br>
+    <strong style="color:#fff;">4.</strong> Adding visual affordances (chevrons, filled selected states)<br>
+    <strong style="color:#fff;">5.</strong> Grouping related items (settings sections) for scannability<br>
+    <strong style="color:#fff;">6.</strong> Celebrating completion with bigger elements and stat cards
+  </div>
+</div>
+
+</body>
+</html>

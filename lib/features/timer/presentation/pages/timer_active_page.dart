@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
@@ -11,6 +12,7 @@ import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 
 /// Active timer display page - Signal design.
 ///
@@ -30,8 +32,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
   @override
   void initState() {
     super.initState();
-    // Keep screen on during workout
-    WakelockPlus.enable();
+    // Keep screen on during workout (honours the settings toggle)
+    if (ref.read(appSettingsNotifierProvider).keepScreenOn) {
+      WakelockPlus.enable();
+    }
     // Hide system UI for immersive experience
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -126,6 +130,18 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
   Widget build(BuildContext context) {
     final timerState = ref.watch(timerNotifierProvider);
 
+    // React to the Keep Screen On setting changing mid-workout
+    ref.listen(appSettingsNotifierProvider.select((s) => s.keepScreenOn), (
+      previous,
+      keepScreenOn,
+    ) {
+      if (keepScreenOn) {
+        WakelockPlus.enable();
+      } else {
+        WakelockPlus.disable();
+      }
+    });
+
     // Show placeholder when timer is not configured yet
     if (timerState is TimerInitial) {
       return _buildNotConfiguredState();
@@ -171,13 +187,27 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     );
   }
 
+  /// Whether this session's For Time timer counts up from zero.
+  bool _isCountUpForTime(TimerSession? session) {
+    final type = session?.workout.timerType;
+    return type is ForTimeTimer && type.countUp;
+  }
+
+  /// The seconds shown on the giant display: elapsed for a count-up
+  /// For Time, otherwise the remaining time in the current phase.
+  int _displaySeconds(TimerSession? session) {
+    if (session == null) return 0;
+    if (_isCountUpForTime(session)) return session.elapsed.seconds;
+    return session.timeRemaining.seconds;
+  }
+
   String _buildTimerAccessibilityLabel(TimerNotifierState state) {
     final session = state.sessionOrNull;
     if (session == null) return 'Timer not started';
 
-    final timeRemaining = session.timeRemaining.seconds;
-    final minutes = timeRemaining ~/ 60;
-    final secs = timeRemaining % 60;
+    final displaySeconds = _displaySeconds(session);
+    final minutes = displaySeconds ~/ 60;
+    final secs = displaySeconds % 60;
 
     final phase = state.maybeMap(
       preparing: (_) => 'Get Ready',
@@ -197,7 +227,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         ? '. Double tap to pause or resume. Swipe up to pause, swipe down to resume.'
         : '';
 
-    return '$phase, $minutes minutes $secs seconds remaining$roundInfo$controlsHint';
+    final direction = _isCountUpForTime(session) ? 'elapsed' : 'remaining';
+    return '$phase, $minutes minutes $secs seconds $direction$roundInfo$controlsHint';
   }
 
   Widget _buildNotConfiguredState() {
@@ -294,7 +325,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     }
 
     final session = state.sessionOrNull;
-    final timeRemaining = session?.timeRemaining.seconds ?? 0;
+    final displaySeconds = _displaySeconds(session);
     final phaseColor = _getPhaseColor(state);
 
     return Column(
@@ -307,7 +338,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
         const Spacer(),
 
         // Giant time with radial glow behind
-        _buildTimerWithGlow(timeRemaining, state, phaseColor),
+        _buildTimerWithGlow(displaySeconds, state, phaseColor),
 
         const SizedBox(height: AppSpacing.sm),
 
@@ -339,7 +370,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
     }
 
     final session = state.sessionOrNull;
-    final timeRemaining = session?.timeRemaining.seconds ?? 0;
+    final displaySeconds = _displaySeconds(session);
     final phaseColor = _getPhaseColor(state);
 
     return Row(
@@ -352,7 +383,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
             children: [
               _buildPillBadge(state, phaseColor),
               const SizedBox(height: AppSpacing.md),
-              _buildTimerWithGlow(timeRemaining, state, phaseColor),
+              _buildTimerWithGlow(displaySeconds, state, phaseColor),
               const SizedBox(height: AppSpacing.sm),
               _buildSubLabel(state, session),
               const SizedBox(height: AppSpacing.lg),
@@ -439,7 +470,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
             fit: BoxFit.scaleDown,
             child: Text(
               timeString,
-              semanticsLabel: '$minutes minutes $secs seconds remaining',
+              semanticsLabel:
+                  '$minutes minutes $secs seconds '
+                  '${_isCountUpForTime(state.sessionOrNull) ? 'elapsed' : 'remaining'}',
             ),
           ),
         ),
@@ -465,10 +498,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage> {
       );
     }
 
-    // Show "Elapsed" for For Time
+    // Label the For Time display with its actual count direction
     if (widget.timerType == TimerTypes.forTime) {
       return Text(
-        'Elapsed',
+        _isCountUpForTime(session) ? 'Elapsed' : 'Remaining',
         style: AppTypography.bodyMedium.copyWith(
           color: AppColors.textHintDark,
           fontWeight: FontWeight.w500,
