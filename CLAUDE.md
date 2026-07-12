@@ -1,26 +1,37 @@
 # Claude Code Instructions
 
 ## Project Overview
-WOD (Workout of the Day) Timer app built with Flutter using Domain-Driven Design (DDD) architecture.
 
-## Workflow Rules
+Gazza WOD (formerly "WOD Timer") — a CrossFit-style workout timer (AMRAP /
+For Time / EMOM / Tabata) with voice cues and a watchOS companion app.
+Flutter + Domain-Driven Design. Part of the Mentalmetal portfolio
+(bundle id `app.mentalmetal.gazzawod`, free app, no IAP in v1).
 
-### Always Create PR After Completing Issues
-When finishing work on any GitHub issue or sprint:
-1. Create a feature branch if not already on one
-2. Commit all changes with a descriptive message
-3. Push to remote
-4. **Run `/pr` skill** to create the pull request, run tests, monitor CI, and merge
+## Toolchain
 
-Never leave completed work uncommitted or without a PR.
+Pinned via FVM — always use `fvm flutter` / `fvm dart`. Version bumps go
+through the `mentalmetal-flutter-upgrade` skill only.
+
+## Workflow
+
+- Branch per change, merge to `main` with `--no-ff`, push, delete the branch
+  (portfolio convention).
+- `fvm flutter analyze` (0 errors/warnings) and `fvm flutter test` must be
+  green before merging.
+- Timer correctness is sacred: any change to `TimerSession.tick` or
+  `TimerNotifier` needs regression tests, including the large-delta
+  (app-suspension) cases.
 
 ## Architecture
-See `ARCHITECTURE.md` for DDD patterns, layer responsibilities, and coding conventions.
 
-## GitHub Issues
-See `GITHUB_ISSUES.md` for the project backlog organized by sprint.
+See `ARCHITECTURE.md` for DDD patterns, layer responsibilities, and coding
+conventions. v1 has no persistence layer beyond SharedPreferences for
+settings — presets/history were cut; don't resurrect dead code without a
+feature decision.
 
-## Testing
-- Run `flutter test` for unit tests
-- Run `flutter analyze` for static analysis
-- All tests must pass before creating PRs
+## Portfolio context
+
+- Telemetry: Sentry + Aptabase, keys via Doppler project `gazzawod`
+  (`scripts/with-secrets.sh`), release-mode gated, no PII.
+- Store state of record: `mentalmetal-app-bootstrap/state/apps/gazzawod.yaml`.
+- Ship via the `mentalmetal-ship` skill once setup-deploy has been run.

@@ -24,7 +24,6 @@ dependencies:
   json_annotation: ^4.9.0
   meta: ^1.16.0
   package_info_plus: ^8.3.0
-  path_provider: ^2.1.5
   riverpod_annotation: ^2.6.1
   sentry_flutter: ^9.20.0
   shared_preferences: ^2.3.5

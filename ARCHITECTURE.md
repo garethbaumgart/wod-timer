@@ -53,17 +53,8 @@ lib/
 │   │       ├── pages/              # TimerPage, TimerSetupPage
 │   │       └── widgets/            # TimerDisplay, RoundCounter
 │   │
-│   ├── presets/                    # Saved workout presets
-│   │   ├── domain/
-│   │   ├── application/
-│   │   ├── infrastructure/
-│   │   └── presentation/
-│   │
-│   └── voice_packs/                # Custom voice cues (future)
-│       ├── domain/
-│       ├── application/
-│       ├── infrastructure/
-│       └── presentation/
+│   └── (future features — presets, custom voice packs — get their own
+│        vertical slice here when they're actually built; cut from v1)
 │
 ├── injection.dart                  # DI configuration
 └── main.dart                       # App entry point
@@ -269,23 +260,17 @@ class CustomTimer extends TimerType {
 
 ### Repository Interface
 
-Define contracts in domain layer:
+Define contracts in the domain layer when a feature needs persistence
+(v1 has none — settings go through SharedPreferences directly). Shape:
 
 ```dart
 // domain/repositories/i_workout_repository.dart
 import 'package:fpdart/fpdart.dart';
 
 abstract class IWorkoutRepository {
-  /// Get all saved workout presets
   Future<Either<WorkoutFailure, List<Workout>>> getPresets();
-
-  /// Save a workout preset
   Future<Either<WorkoutFailure, Unit>> savePreset(Workout workout);
-
-  /// Delete a workout preset
   Future<Either<WorkoutFailure, Unit>> deletePreset(UniqueId id);
-
-  /// Watch presets for real-time updates
   Stream<Either<WorkoutFailure, List<Workout>>> watchPresets();
 }
 ```

@@ -1,93 +1,67 @@
-# WOD Timer
+# Gazza WOD
 
-A workout timer app for functional fitness, built with Flutter following Domain-Driven Design (DDD) principles.
+A no-fuss workout timer for functional fitness — AMRAP, For Time, EMOM and
+Tabata, with voice cues loud enough to hear across a garage gym. Part of the
+[Mentalmetal](https://mentalmetal.app) indie portfolio.
 
-## Features (Planned)
+Formerly "WOD Timer"; renamed and adopted into the portfolio July 2026
+(bundle id `app.mentalmetal.gazzawod`).
 
-- **AMRAP Timer** - As Many Rounds As Possible
-- **For Time Timer** - Countdown/count-up timer
-- **EMOM Timer** - Every Minute On the Minute
-- **Tabata Timer** - 20/10 high-intensity intervals
-- **Custom Voice Cues** - Use friend's voices as workout cues (future)
-- **Preset Management** - Save and reuse workout configurations
+## What's built (v1)
+
+- **AMRAP** — max rounds in a time cap, counts down
+- **For Time** — race the clock, count-up (stopwatch) or count-down
+- **EMOM** — every minute (or custom interval) on the minute
+- **Tabata** — work/rest intervals with phase previews ("REST in 3s")
+- **Voice cues** — 3 recorded voice packs (Major, Liam, Holly) + random mode:
+  countdowns, GO, halfway, last round, ten seconds, final 5-4-3-2-1,
+  encouragement. Plays through the silent switch (playback audio session).
+- **Suspension-proof timing** — wall-clock catch-up: backgrounding the app
+  mid-workout can't desync EMOM/Tabata rounds
+- **Gym-visible UI** — the "Signal" dark design system, giant timer text,
+  explicit landscape layouts, wakelock (honours the setting)
+- **watchOS companion app** — standalone timer on the wrist
+- Anonymous telemetry: Sentry crash reporting + Aptabase funnel events
+  (release builds only, keys via Doppler; no PII, see
+  [privacy](https://mentalmetal.app/gazza-wod/privacy))
+
+Deliberately cut from v1: workout presets, recent-workout history, custom
+prep countdown (fixed at 10s). The friend's-voice recording/cloning idea is
+the future differentiator.
+
+## Development
+
+Toolchain is pinned via FVM (`.fvmrc`) — currently Flutter 3.44.6.
+
+```bash
+fvm flutter pub get
+fvm dart run build_runner build --delete-conflicting-outputs
+fvm flutter run                       # dev: telemetry off (no keys)
+
+# With real telemetry keys (Doppler project `gazzawod`):
+scripts/with-secrets.sh dev run
+
+fvm flutter test                      # full suite
+fvm flutter analyze                   # very_good_analysis, strict
+```
 
 ## Architecture
 
-This project follows Domain-Driven Design (DDD) with a feature-first structure. See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed guidelines.
+Domain-Driven Design with vertical feature slices — see
+[ARCHITECTURE.md](./ARCHITECTURE.md). The heart is
+`TimerSession` ([lib/features/timer/domain/entities/timer_session.dart]),
+an immutable aggregate whose `tick(delta)` consumes any size of time delta
+(multi-interval catch-up after app suspension included), returning
+`Either<TimerFailure, TimerSession>`.
 
-```
-lib/
-├── core/                    # Shared kernel
-│   ├── domain/              # Core domain concepts
-│   ├── infrastructure/      # Core infrastructure
-│   └── presentation/        # Shared UI
-├── features/                # Feature modules
-│   ├── timer/               # Timer feature (DDD layers)
-│   └── presets/             # Presets feature (DDD layers)
-├── injection.dart           # DI configuration
-└── main.dart                # App entry point
-```
+Stack: Riverpod (codegen), fpdart, freezed, get_it + injectable, go_router,
+audioplayers + audio_session, wakelock_plus, sentry_flutter, aptabase_flutter.
 
-## Getting Started
+## Release
 
-### Prerequisites
-
-- Flutter SDK ^3.8.1
-- Dart SDK ^3.8.1
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/garethbaumgart/wod-timer.git
-cd wod-timer
-
-# Install dependencies
-flutter pub get
-
-# Run code generation
-dart run build_runner build --delete-conflicting-outputs
-
-# Run the app
-flutter run
-```
-
-### Development Commands
-
-```bash
-# Run code generation (watch mode)
-dart run build_runner watch --delete-conflicting-outputs
-
-# Run tests
-flutter test
-
-# Run analysis
-flutter analyze
-
-# Build for Android
-flutter build apk
-
-# Build for iOS
-flutter build ios
-```
-
-## Tech Stack
-
-- **State Management**: Riverpod
-- **Functional Programming**: fpdart (Either, Option)
-- **Code Generation**: freezed, json_serializable, injectable
-- **Dependency Injection**: get_it + injectable
-- **Routing**: go_router
-- **Storage**: shared_preferences
-- **Audio**: audioplayers
-- **Linting**: very_good_analysis
-
-## Contributing
-
-1. Check [GITHUB_ISSUES.md](./GITHUB_ISSUES.md) for available tasks
-2. Follow the patterns in [ARCHITECTURE.md](./ARCHITECTURE.md)
-3. Run `flutter analyze` before committing
-4. Write tests for new features
+Wired to the shared `mentalmetal-fastlane` lanes (see the portfolio's
+setup-deploy / ship skills). Store state is tracked in the portfolio's
+`state/apps/gazzawod.yaml`.
 
 ## License
 
