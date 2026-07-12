@@ -145,12 +145,18 @@ class TimerSession with _$TimerSession {
     // Handle preparation phase
     if (state == TimerState.preparing) {
       if (newIntervalElapsed.seconds >= workout.prepCountdown.seconds) {
-        // Prep is done, start the workout
+        // Prep is done, start the workout. Carry any overshoot past the
+        // prep boundary into the workout so a large delta (e.g. the app
+        // was suspended) doesn't silently lose time.
+        final overflowSeconds =
+            newIntervalElapsed.seconds - workout.prepCountdown.seconds;
+        final overflow = TimerDuration.fromSeconds(overflowSeconds);
         return right(
           copyWith(
             state: TimerState.running,
-            currentIntervalElapsed: TimerDuration.zero,
-            intervalElapsedMillis: 0,
+            elapsed: overflow,
+            currentIntervalElapsed: overflow,
+            intervalElapsedMillis: newIntervalMillisRemainder,
             elapsedMillis: newElapsedMillisRemainder,
           ),
         );
@@ -193,7 +199,7 @@ class TimerSession with _$TimerSession {
     int newElapsedMillis,
   ) {
     if (newElapsed.seconds >= timer.duration.seconds) {
-      return right(_complete());
+      return right(_complete(elapsedAtCompletion: timer.duration));
     }
     return right(
       copyWith(elapsed: newElapsed, elapsedMillis: newElapsedMillis),
@@ -206,7 +212,7 @@ class TimerSession with _$TimerSession {
     int newElapsedMillis,
   ) {
     if (newElapsed.seconds >= timer.timeCap.seconds) {
-      return right(_complete());
+      return right(_complete(elapsedAtCompletion: timer.timeCap));
     }
     return right(
       copyWith(elapsed: newElapsed, elapsedMillis: newElapsedMillis),
@@ -222,29 +228,36 @@ class TimerSession with _$TimerSession {
   ) {
     final intervalSeconds = timer.intervalDuration.seconds;
 
-    // Check if current interval is complete
-    if (newIntervalElapsed.seconds >= intervalSeconds) {
-      // Move to next round
-      if (currentRound >= timer.rounds.value) {
-        return right(_complete());
+    // Consume as many complete intervals as the delta covers. A single tick
+    // normally crosses at most one boundary, but after the app is suspended
+    // (backgrounded on iOS) the catch-up tick can span several rounds —
+    // advancing only one interval per tick would silently discard the rest
+    // and desync the session from wall-clock time.
+    var intervalElapsedSeconds = newIntervalElapsed.seconds;
+    var round = currentRound;
+    while (intervalSeconds > 0 && intervalElapsedSeconds >= intervalSeconds) {
+      if (round >= timer.rounds.value) {
+        return right(
+          _complete(
+            elapsedAtCompletion: TimerDuration.fromSeconds(
+              intervalSeconds * timer.rounds.value,
+            ),
+          ),
+        );
       }
-      return right(
-        copyWith(
-          elapsed: newElapsed,
-          elapsedMillis: newElapsedMillis,
-          currentIntervalElapsed: TimerDuration.zero,
-          intervalElapsedMillis: 0,
-          currentRound: currentRound + 1,
-        ),
-      );
+      intervalElapsedSeconds -= intervalSeconds;
+      round++;
     }
 
     return right(
       copyWith(
         elapsed: newElapsed,
         elapsedMillis: newElapsedMillis,
-        currentIntervalElapsed: newIntervalElapsed,
+        currentIntervalElapsed: TimerDuration.fromSeconds(
+          intervalElapsedSeconds,
+        ),
         intervalElapsedMillis: newIntervalMillis,
+        currentRound: round,
       ),
     );
   }
@@ -259,48 +272,46 @@ class TimerSession with _$TimerSession {
     final workSeconds = timer.workDuration.seconds;
     final restSeconds = timer.restDuration.seconds;
 
-    // Determine if we're in work or rest phase
-    final isWorkPhase = state == TimerState.running;
-    final phaseSeconds = isWorkPhase ? workSeconds : restSeconds;
-
-    // Check if current phase is complete
-    if (newIntervalElapsed.seconds >= phaseSeconds) {
+    // Consume as many complete work/rest phases as the delta covers (see
+    // _tickEmom — a catch-up tick after suspension can span several phases).
+    var isWorkPhase = state == TimerState.running;
+    var intervalElapsedSeconds = newIntervalElapsed.seconds;
+    var round = currentRound;
+    var phaseSeconds = isWorkPhase ? workSeconds : restSeconds;
+    while (workSeconds + restSeconds > 0 &&
+        intervalElapsedSeconds >= phaseSeconds) {
+      intervalElapsedSeconds -= phaseSeconds;
       if (isWorkPhase) {
         // Work done, start rest
-        return right(
-          copyWith(
-            state: TimerState.resting,
-            elapsed: newElapsed,
-            elapsedMillis: newElapsedMillis,
-            currentIntervalElapsed: TimerDuration.zero,
-            intervalElapsedMillis: 0,
-          ),
-        );
+        isWorkPhase = false;
       } else {
         // Rest done, check if workout is complete
-        if (currentRound >= timer.rounds.value) {
-          return right(_complete());
+        if (round >= timer.rounds.value) {
+          return right(
+            _complete(
+              elapsedAtCompletion: TimerDuration.fromSeconds(
+                (workSeconds + restSeconds) * timer.rounds.value,
+              ),
+            ),
+          );
         }
         // Start next round's work phase
-        return right(
-          copyWith(
-            state: TimerState.running,
-            elapsed: newElapsed,
-            elapsedMillis: newElapsedMillis,
-            currentIntervalElapsed: TimerDuration.zero,
-            intervalElapsedMillis: 0,
-            currentRound: currentRound + 1,
-          ),
-        );
+        round++;
+        isWorkPhase = true;
       }
+      phaseSeconds = isWorkPhase ? workSeconds : restSeconds;
     }
 
     return right(
       copyWith(
+        state: isWorkPhase ? TimerState.running : TimerState.resting,
         elapsed: newElapsed,
         elapsedMillis: newElapsedMillis,
-        currentIntervalElapsed: newIntervalElapsed,
+        currentIntervalElapsed: TimerDuration.fromSeconds(
+          intervalElapsedSeconds,
+        ),
         intervalElapsedMillis: newIntervalMillis,
+        currentRound: round,
       ),
     );
   }
@@ -321,8 +332,15 @@ class TimerSession with _$TimerSession {
     return right(_complete());
   }
 
-  TimerSession _complete() =>
-      copyWith(state: TimerState.completed, completedAt: DateTime.now());
+  /// [elapsedAtCompletion] pins the final elapsed time to the workout's
+  /// exact boundary (e.g. 10:00 for a 10-minute AMRAP) — without it the
+  /// summary shows the previous tick's value, one tick short.
+  TimerSession _complete({TimerDuration? elapsedAtCompletion}) => copyWith(
+    state: TimerState.completed,
+    completedAt: DateTime.now(),
+    elapsed: elapsedAtCompletion ?? elapsed,
+    elapsedMillis: elapsedAtCompletion != null ? 0 : elapsedMillis,
+  );
 
   // Computed properties
 

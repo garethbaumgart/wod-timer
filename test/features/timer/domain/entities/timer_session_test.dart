@@ -198,7 +198,10 @@ void main() {
           expect(result.isRight(), true);
           result.fold((failure) => fail('Should not fail'), (ticked) {
             expect(ticked.state, TimerState.running);
-            expect(ticked.currentIntervalElapsed.seconds, 0);
+            // The 1s overshoot past the prep boundary carries into the
+            // workout instead of being discarded.
+            expect(ticked.currentIntervalElapsed.seconds, 1);
+            expect(ticked.elapsed.seconds, 1);
           });
         },
       );
@@ -292,7 +295,9 @@ void main() {
         expect(result.isRight(), true);
         result.fold((failure) => fail('Should not fail'), (ticked) {
           expect(ticked.currentRound, 2);
-          expect(ticked.currentIntervalElapsed.seconds, 0);
+          // The 1s overshoot past the interval boundary carries into the
+          // next round instead of being discarded.
+          expect(ticked.currentIntervalElapsed.seconds, 1);
         });
       });
 
@@ -323,6 +328,171 @@ void main() {
           (failure) => fail('Should not fail'),
           (ticked) => expect(ticked.state, TimerState.completed),
         );
+      });
+    });
+
+    // Regression tests for the backgrounding desync: when the app is
+    // suspended (iOS) the catch-up tick carries a very large delta, which
+    // must advance MULTIPLE intervals/phases, not just one.
+    group('large-delta catch-up (app suspension)', () {
+      Workout emomWorkout({int intervalSeconds = 60, int rounds = 10}) =>
+          Workout(
+            id: UniqueId(),
+            name: WorkoutName.defaultEmom,
+            timerType: EmomTimer(
+              intervalDuration: TimerDuration.fromSeconds(intervalSeconds),
+              rounds: RoundCount.fromInt(rounds),
+            ),
+            prepCountdown: TimerDuration.zero,
+            createdAt: DateTime.now(),
+          );
+
+      Workout tabataWorkout({
+        int workSeconds = 20,
+        int restSeconds = 10,
+        int rounds = 8,
+      }) => Workout(
+        id: UniqueId(),
+        name: WorkoutName.defaultTabata,
+        timerType: TabataTimer(
+          workDuration: TimerDuration.fromSeconds(workSeconds),
+          restDuration: TimerDuration.fromSeconds(restSeconds),
+          rounds: RoundCount.fromInt(rounds),
+        ),
+        prepCountdown: TimerDuration.zero,
+        createdAt: DateTime.now(),
+      );
+
+      test('EMOM consumes multiple whole intervals in one tick', () {
+        var session = TimerSession.fromWorkout(emomWorkout());
+        session = session.start().getOrElse((f) => session);
+
+        // 150s delta on 60s intervals: rounds 1 and 2 fully consumed,
+        // 30s into round 3.
+        final result = session.tick(const Duration(seconds: 150));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.currentRound, 3);
+          expect(ticked.currentIntervalElapsed.seconds, 30);
+          expect(ticked.elapsed.seconds, 150);
+          expect(ticked.state, TimerState.running);
+        });
+      });
+
+      test('EMOM completes when the delta overshoots the whole workout', () {
+        var session = TimerSession.fromWorkout(
+          emomWorkout(intervalSeconds: 10, rounds: 3),
+        );
+        session = session.start().getOrElse((f) => session);
+
+        final result = session.tick(const Duration(seconds: 500));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.state, TimerState.completed);
+          // Elapsed pinned to the workout boundary, not the raw delta.
+          expect(ticked.elapsed.seconds, 30);
+        });
+      });
+
+      test('Tabata consumes multiple work/rest phases in one tick', () {
+        var session = TimerSession.fromWorkout(tabataWorkout());
+        session = session.start().getOrElse((f) => session);
+
+        // The reviewer's failure case: backgrounded ~150s at the start.
+        // 150s on 20/10 x8 is exactly five full 30s rounds, landing at the
+        // start of round 6's work phase.
+        final result = session.tick(const Duration(seconds: 150));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.currentRound, 6);
+          expect(ticked.state, TimerState.running);
+          expect(ticked.currentIntervalElapsed.seconds, 0);
+          expect(ticked.elapsed.seconds, 150);
+        });
+      });
+
+      test('Tabata lands mid-phase after a partial-round delta', () {
+        var session = TimerSession.fromWorkout(tabataWorkout());
+        session = session.start().getOrElse((f) => session);
+
+        // 65s: two full rounds (60s), 5s into round 3's work phase.
+        final result = session.tick(const Duration(seconds: 65));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.currentRound, 3);
+          expect(ticked.state, TimerState.running);
+          expect(ticked.currentIntervalElapsed.seconds, 5);
+        });
+      });
+
+      test('Tabata completes when the delta overshoots the workout', () {
+        var session = TimerSession.fromWorkout(
+          tabataWorkout(rounds: 2),
+        );
+        session = session.start().getOrElse((f) => session);
+
+        final result = session.tick(const Duration(seconds: 500));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.state, TimerState.completed);
+          expect(ticked.elapsed.seconds, 60); // 2 x (20 + 10), pinned
+        });
+      });
+
+      test('prep overshoot carries into the workout across intervals', () {
+        final workout = Workout(
+          id: UniqueId(),
+          name: WorkoutName.defaultEmom,
+          timerType: EmomTimer(
+            intervalDuration: TimerDuration.fromSeconds(10),
+            rounds: RoundCount.fromInt(5),
+          ),
+          prepCountdown: TimerDuration.fromSeconds(10),
+          createdAt: DateTime.now(),
+        );
+        var session = TimerSession.fromWorkout(workout);
+        session = session.start().getOrElse((f) => session);
+        expect(session.state, TimerState.preparing);
+
+        // 17s covers the 10s prep + 7s of round 1.
+        var result = session.tick(const Duration(seconds: 17));
+        session = result.getOrElse((f) => fail('Should not fail'));
+        expect(session.state, TimerState.running);
+        expect(session.elapsed.seconds, 7);
+        expect(session.currentIntervalElapsed.seconds, 7);
+
+        // The next tick crosses the first interval boundary on time.
+        result = session.tick(const Duration(seconds: 3));
+        session = result.getOrElse((f) => fail('Should not fail'));
+        expect(session.currentRound, 2);
+        expect(session.currentIntervalElapsed.seconds, 0);
+      });
+    });
+
+    group('completion pins elapsed to the boundary', () {
+      test('AMRAP cap completion reports the full duration', () {
+        final workout = Workout(
+          id: UniqueId(),
+          name: WorkoutName.defaultAmrap,
+          timerType: AmrapTimer(duration: TimerDuration.fromSeconds(600)),
+          prepCountdown: TimerDuration.zero,
+          createdAt: DateTime.now(),
+        );
+        var session = TimerSession.fromWorkout(workout);
+        session = session.start().getOrElse((f) => session);
+        // 599 one-second ticks, then the boundary tick.
+        session = session
+            .tick(const Duration(seconds: 599))
+            .getOrElse((f) => session);
+        expect(session.elapsed.seconds, 599);
+
+        final result = session.tick(const Duration(seconds: 1));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.state, TimerState.completed);
+          // Was 599 before the fix (summary showed 09:59 for a 10:00 AMRAP).
+          expect(ticked.elapsed.seconds, 600);
+        });
       });
     });
 
