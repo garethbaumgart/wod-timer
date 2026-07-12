@@ -1,4 +1,4 @@
-package app.mentalmetal.gazzawod
+package app.mentalmetal.wharfwod
 
 import io.flutter.embedding.android.FlutterActivity
 
