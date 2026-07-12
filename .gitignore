@@ -75,3 +75,6 @@ ios/fastlane/test_output/
 .fvm/
 # Android build output
 android/build/
+
+# Doppler-materialised secrets (template dart_defines.example.json IS committed)
+dart_defines.json

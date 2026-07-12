@@ -1,2 +1,2 @@
-app_identifier(["com.wodtimer.wodTimer", "com.wodtimer.wodTimer.watchkitapp"])
+app_identifier(["app.mentalmetal.gazzawod", "app.mentalmetal.gazzawod.watchkitapp"])
 team_id("G9NY882LMJ")

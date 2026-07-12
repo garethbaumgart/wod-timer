@@ -4,8 +4,10 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDisplayName</key>
-	<string>WOD Timer</string>
+	<string>Gazza WOD</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -25,6 +27,6 @@
 	<key>WKWatchOnly</key>
 	<false/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.wodtimer.wodTimer</string>
+	<string>app.mentalmetal.gazzawod</string>
 </dict>
 </plist>

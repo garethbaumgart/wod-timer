@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
+import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/usecases/pause_timer.dart';
@@ -104,6 +105,9 @@ class TimerNotifier extends _$TimerNotifier {
       (failure) => state = TimerNotifierState.error(failure: failure),
       (session) {
         state = _stateFromSession(session);
+        trackEvent('workout_started', {
+          'type': session.workout.timerType.typeCode,
+        });
         // With no prep countdown the session starts directly in running —
         // there is no preparing→running tick transition to catch, so play
         // the GO cue here.
@@ -183,6 +187,10 @@ class TimerNotifier extends _$TimerNotifier {
       (session) {
         state = TimerNotifierState.completed(session: session);
         _stopTicking();
+        trackEvent('workout_completed', {
+          'type': session.workout.timerType.typeCode,
+          'ended_by': 'user',
+        });
         // Play only the encouragement cue (e.g. "Good job" or "That's it,
         // you're done") — not playComplete() as well, to avoid overlap.
         _playCompletionEncouragement();
@@ -277,6 +285,10 @@ class TimerNotifier extends _$TimerNotifier {
         if (session.state == domain.TimerState.completed) {
           state = TimerNotifierState.completed(session: session);
           _stopTicking();
+          trackEvent('workout_completed', {
+            'type': session.workout.timerType.typeCode,
+            'ended_by': 'timer',
+          });
           _playCompletionEncouragement();
           _hapticService.success(); // Haptic success for natural completion
         } else {

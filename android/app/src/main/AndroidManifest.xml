@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Sentry crash reporting + Aptabase analytics in release builds
+         (the Flutter template only grants INTERNET in debug/profile manifests). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="wod_timer"
+        android:label="Gazza WOD"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
