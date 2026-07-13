@@ -1,0 +1,8 @@
+Music: "Phonk Gym - Phonk" by MondaMusic
+Source: https://pixabay.com/music/search/gym%20phonk/ (cdn audio_c231ebac03)
+License: Pixabay Content License — free for commercial use, no attribution required.
+(Attribution given anyway because the track slaps.)
+
+Footage: iPhone 16 Pro Max simulator, driven by integration_test/promo_tour_test.dart,
+recorded with `xcrun simctl io recordVideo`. Overlays: mktext.py (SVG -> rsvg-convert).
+Build: build.sh (segment cuts from work/raw.mov -> xfade -> phonk bed).
