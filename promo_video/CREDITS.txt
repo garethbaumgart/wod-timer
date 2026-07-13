@@ -1,12 +1,16 @@
-Music: "Phonk Gym - Phonk" by MondaMusic
-Source: https://pixabay.com/music/search/gym%20phonk/ (cdn audio_c231ebac03)
+Music: "Motivation Epic Rock" by AlexGrohl — music/motivation_epic_rock_alexgrohl.mp3
+Source: https://pixabay.com/music/rock-motivation-epic-rock-111444/ (cdn audio_407815a564)
 License: Pixabay Content License — free for commercial use, no attribution required.
-(Attribution given anyway because the track slaps.)
+(The bed hard-cuts from the intro riff to the ~16s drop on the GO frame.)
 
-Music library (downloaded, not yet used in a cut):
-- "Motivation Epic Rock" by AlexGrohl — music/motivation_epic_rock_alexgrohl.mp3
-  Source: https://pixabay.com/music/rock-motivation-epic-rock-111444/ (cdn audio_407815a564)
+Voice cues: the app's own "Major" coach pack (assets/audio/major) — 3, 2, 1, GO,
+rest, good job, that's it — laid onto the timeline at the on-screen moments.
+
+Music library (downloaded, not currently in the cut):
+- "Phonk Gym - Phonk" by MondaMusic — music/phonk_gym_mondamusic.mp3
+  Source: https://pixabay.com/music/search/gym%20phonk/ (cdn audio_c231ebac03)
   License: Pixabay Content License — free for commercial use, no attribution required.
+  (Used in the v1 promo; still slaps.)
 
 Footage: iPhone 16 Pro Max simulator, driven by integration_test/promo_tour_test.dart,
 recorded with `xcrun simctl io recordVideo`. Overlays: mktext.py (SVG -> rsvg-convert).
