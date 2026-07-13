@@ -3,6 +3,11 @@ Source: https://pixabay.com/music/search/gym%20phonk/ (cdn audio_c231ebac03)
 License: Pixabay Content License — free for commercial use, no attribution required.
 (Attribution given anyway because the track slaps.)
 
+Music library (downloaded, not yet used in a cut):
+- "Motivation Epic Rock" by AlexGrohl — music/motivation_epic_rock_alexgrohl.mp3
+  Source: https://pixabay.com/music/rock-motivation-epic-rock-111444/ (cdn audio_407815a564)
+  License: Pixabay Content License — free for commercial use, no attribution required.
+
 Footage: iPhone 16 Pro Max simulator, driven by integration_test/promo_tour_test.dart,
 recorded with `xcrun simctl io recordVideo`. Overlays: mktext.py (SVG -> rsvg-convert).
 Build: build.sh (segment cuts from work/raw.mov -> xfade -> phonk bed).
