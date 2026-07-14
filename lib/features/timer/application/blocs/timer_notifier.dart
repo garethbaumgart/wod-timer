@@ -17,6 +17,7 @@ import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
     as domain;
 import 'package:wod_timer/features/timer/domain/entities/workout.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/infrastructure/services/i_timer_engine.dart';
 
 part 'timer_notifier.g.dart';
@@ -75,6 +76,7 @@ class TimerNotifier extends _$TimerNotifier {
   /// voice cue picks a different voice pack at random.
   void _configureVoice() {
     final voice = ref.read(appSettingsNotifierProvider).voice;
+    _audioService.setVoiceMuted(muted: voice == VoiceOption.off);
     switch (voice) {
       case VoiceOption.major:
         _audioService
@@ -90,6 +92,8 @@ class TimerNotifier extends _$TimerNotifier {
           ..setVoicePack('holly');
       case VoiceOption.random:
         _audioService.setRandomizePerCue(enabled: true);
+      case VoiceOption.off:
+        break;
     }
   }
 
@@ -172,8 +176,39 @@ class TimerNotifier extends _$TimerNotifier {
     );
   }
 
-  /// Stop the timer and mark as completed.
+  /// Stop the timer early — an abort, not an achievement.
+  ///
+  /// Lands on the completed state flagged [TimerCompleted.endedEarly] so
+  /// the UI reports "Stopped" honestly instead of "Finished!". No
+  /// celebration cues.
   void stop() {
+    final currentSession = state.sessionOrNull;
+    if (currentSession == null) return;
+
+    final result = _stopTimer(currentSession);
+
+    result.fold(
+      (failure) => state = TimerNotifierState.error(
+        failure: failure,
+        session: currentSession,
+      ),
+      (session) {
+        state = TimerNotifierState.completed(session: session, endedEarly: true);
+        _stopTicking();
+        trackEvent('workout_completed', {
+          'type': session.workout.timerType.typeCode,
+          'ended_by': 'user',
+        });
+        _hapticService.mediumImpact();
+      },
+    );
+  }
+
+  /// Finish the workout deliberately — For Time's success action.
+  ///
+  /// Same transition as [stop] but this IS the achievement (the athlete
+  /// logging their time), so it completes normally with celebration cues.
+  void finish() {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
 
@@ -189,12 +224,49 @@ class TimerNotifier extends _$TimerNotifier {
         _stopTicking();
         trackEvent('workout_completed', {
           'type': session.workout.timerType.typeCode,
-          'ended_by': 'user',
+          'ended_by': 'user_finish',
         });
         // Play only the encouragement cue (e.g. "Good job" or "That's it,
         // you're done") — not playComplete() as well, to avoid overlap.
         _playCompletionEncouragement();
         _hapticService.success();
+      },
+    );
+  }
+
+  /// Count a completed round during an AMRAP (tap-to-count).
+  ///
+  /// AMRAP sessions start at round 1 and the domain never advances them,
+  /// so [TimerSession.currentRound] doubles as the manual tally:
+  /// completed rounds = currentRound - 1.
+  void countRound() {
+    final current = state;
+    if (current is! TimerRunning) return;
+    final session = current.session;
+    if (session.workout.timerType is! AmrapTimer) return;
+
+    state = TimerNotifierState.running(
+      session: session.copyWith(currentRound: session.currentRound + 1),
+    );
+    _hapticService.mediumImpact();
+  }
+
+  /// Skip the remaining get-ready countdown and start the work phase now.
+  ///
+  /// Consumes the remaining prep through the domain's catch-up tick so the
+  /// preparing→running transition (and its GO cue) fires normally.
+  void skipPrep() {
+    final current = state;
+    if (current is! TimerPreparing) return;
+    final session = current.session;
+
+    final remaining = session.timeRemaining.seconds;
+    final result = _tickTimer(session, Duration(seconds: remaining));
+    result.fold(
+      (_) {},
+      (newSession) {
+        _handleAudioCues(session, newSession);
+        state = _stateFromSession(newSession);
       },
     );
   }
@@ -343,8 +415,12 @@ class TimerNotifier extends _$TimerNotifier {
     // For Tabata, rest + round change can happen on the same tick.
     // Prefer the round cue (more informative) — only play rest if no
     // round transition occurred.
+    // Interval-based only: AMRAP's currentRound is the user's manual
+    // tap-to-count tally, which shouldn't fire round voice cues.
     final bool roundChanged =
-        newSession.currentRound != _lastRound && _lastRound != 0;
+        newSession.isIntervalBased &&
+        newSession.currentRound != _lastRound &&
+        _lastRound != 0;
 
     if (oldSession.state == domain.TimerState.running &&
         newSession.state == domain.TimerState.resting &&

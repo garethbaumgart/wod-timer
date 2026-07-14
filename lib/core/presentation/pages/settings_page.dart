@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/package_info_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
 /// Settings page with Signal-inspired minimal design.
@@ -35,7 +37,7 @@ class SettingsPage extends ConsumerWidget {
                     child: GestureDetector(
                       onTap: () => context.go(AppRoutes.home),
                       behavior: HitTestBehavior.opaque,
-                      child: SizedBox(
+                      child: const SizedBox(
                         width: 48,
                         height: 48,
                         child: Center(
@@ -69,7 +71,7 @@ class SettingsPage extends ConsumerWidget {
                   _buildSectionHeader('Display'),
                   _buildDivider(),
                   _buildTapRow(
-                    label: 'Orientation Lock',
+                    label: 'Orientation',
                     value: _getOrientationShortLabel(settings.orientationLock),
                     onTap: () => _showOrientationPicker(context, ref, settings),
                   ),
@@ -100,8 +102,18 @@ class SettingsPage extends ConsumerWidget {
                   _buildDivider(),
                   _buildTapRow(
                     label: 'Voice',
-                    value: _getVoiceShortLabel(settings.voice),
-                    onTap: () => _showVoicePicker(context, ref, settings),
+                    value: voiceShortLabel(settings.voice),
+                    onTap: () => showVoicePickerSheet(context, ref),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                    child: Text(
+                      'Voice cues play through the silent switch.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textHintDark,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                   _buildDivider(),
                   _buildSwitchRow(
@@ -116,6 +128,26 @@ class SettingsPage extends ConsumerWidget {
                   ),
                   // ABOUT section
                   _buildSectionHeader('About'),
+                  _buildDivider(),
+                  _buildTapRow(
+                    label: 'Send Feedback',
+                    value: '',
+                    onTap: () => launchUrl(
+                      Uri.parse(
+                        'mailto:support@mentalmetal.app'
+                        '?subject=Wharf%20WOD%20feedback',
+                      ),
+                    ),
+                  ),
+                  _buildDivider(),
+                  _buildTapRow(
+                    label: 'Privacy Policy',
+                    value: '',
+                    onTap: () => launchUrl(
+                      Uri.parse('https://mentalmetal.app/wharf-wod/privacy'),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
                   _buildDivider(),
                   _buildVersionRow(ref),
                   _buildDivider(),
@@ -164,7 +196,7 @@ class SettingsPage extends ConsumerWidget {
               style: AppTypography.bodyMedium.copyWith(color: _labelColor),
             ),
             Text(
-              '$value >',
+              value.isEmpty ? '>' : '$value >',
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondaryDark,
               ),
@@ -235,98 +267,6 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  String _getVoiceShortLabel(VoiceOption voice) {
-    switch (voice) {
-      case VoiceOption.major:
-        return 'Major';
-      case VoiceOption.liam:
-        return 'Liam';
-      case VoiceOption.holly:
-        return 'Holly';
-      case VoiceOption.random:
-        return 'Random';
-    }
-  }
-
-  String _getVoiceLabel(VoiceOption voice) {
-    switch (voice) {
-      case VoiceOption.major:
-        return 'Major (CrossFit Coach)';
-      case VoiceOption.liam:
-        return 'Liam (Old British Man)';
-      case VoiceOption.holly:
-        return 'Holly';
-      case VoiceOption.random:
-        return 'Random (mix it up each cue)';
-    }
-  }
-
-  IconData _getVoiceIcon(VoiceOption voice) {
-    switch (voice) {
-      case VoiceOption.major:
-        return Icons.record_voice_over;
-      case VoiceOption.liam:
-        return Icons.record_voice_over_outlined;
-      case VoiceOption.holly:
-        return Icons.face;
-      case VoiceOption.random:
-        return Icons.shuffle;
-    }
-  }
-
-  void _showVoicePicker(
-    BuildContext context,
-    WidgetRef ref,
-    AppSettings settings,
-  ) {
-    ref.read(hapticServiceProvider).selectionClick();
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surfaceDark,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Voice',
-                style: AppTypography.sectionHeader.copyWith(
-                  color: AppColors.textPrimaryDark,
-                ),
-              ),
-            ),
-            ...VoiceOption.values.map(
-              (voice) => ListTile(
-                leading: Icon(
-                  _getVoiceIcon(voice),
-                  color: AppColors.textPrimaryDark,
-                ),
-                title: Text(
-                  _getVoiceLabel(voice),
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.textPrimaryDark,
-                  ),
-                ),
-                trailing: settings.voice == voice
-                    ? const Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  ref.read(hapticServiceProvider).selectionClick();
-                  ref
-                      .read(appSettingsNotifierProvider.notifier)
-                      .setVoice(voice);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _getOrientationShortLabel(OrientationLockMode mode) {
     switch (mode) {
       case OrientationLockMode.auto:
@@ -369,14 +309,16 @@ class SettingsPage extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surfaceDark,
+      showDragHandle: true,
       builder: (context) => SafeArea(
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Orientation Lock',
+                'Orientation',
                 style: AppTypography.sectionHeader.copyWith(
                   color: AppColors.textPrimaryDark,
                 ),
@@ -408,6 +350,7 @@ class SettingsPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
           ],
+          ),
         ),
       ),
     );

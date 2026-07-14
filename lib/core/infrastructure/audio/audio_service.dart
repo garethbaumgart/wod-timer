@@ -112,6 +112,24 @@ class AudioService implements IAudioService {
   /// Beep is shared across all voice packs.
   static const _beepSound = 'audio/major/beep.m4a';
 
+  /// Whether spoken voice cues are muted (beeps-only mode).
+  bool _voiceMuted = false;
+
+  /// Play a voice cue, honouring beeps-only mode.
+  ///
+  /// With the voice muted, timing-critical cues ([beepFallback] true) fall
+  /// back to a beep so countdowns and transitions stay audible; the
+  /// encouragement cues go silent.
+  Future<Either<AudioFailure, Unit>> _playVoice(
+    String filename, {
+    bool beepFallback = false,
+  }) async {
+    if (_voiceMuted) {
+      return beepFallback ? _play(_beepSound) : right(unit);
+    }
+    return _play(_voicePath(filename));
+  }
+
   @override
   bool get isMuted => _isMuted;
 
@@ -122,98 +140,93 @@ class AudioService implements IAudioService {
 
   @override
   Future<Either<AudioFailure, Unit>> playCountdown(int number) async {
-    final soundPath = switch (number) {
-      3 => _voicePath('countdown_3.mp3'),
-      2 => _voicePath('countdown_2.mp3'),
-      1 => _voicePath('countdown_1.mp3'),
-      _ => _beepSound,
-    };
-    return _play(soundPath);
+    if (number > 3 || number < 1) return _play(_beepSound);
+    return _playVoice('countdown_$number.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playGo() async {
-    return _play(_voicePath('countdown_go.mp3'));
+    return _playVoice('countdown_go.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playRest() async {
-    return _play(_voicePath('rest.mp3'));
+    return _playVoice('rest.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playComplete() async {
-    return _play(_voicePath('complete.mp3'));
+    return _playVoice('complete.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playHalfway() async {
-    return _play(_voicePath('halfway.mp3'));
+    return _playVoice('halfway.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playIntervalStart() async {
-    return _play(_voicePath('interval.mp3'));
+    return _playVoice('interval.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playGetReady() async {
-    return _play(_voicePath('get_ready.mp3'));
+    return _playVoice('get_ready.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playTenSeconds() async {
-    return _play(_voicePath('ten_seconds.mp3'));
+    return _playVoice('ten_seconds.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playLastRound() async {
-    return _play(_voicePath('last_round.mp3'));
+    return _playVoice('last_round.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playKeepGoing() async {
-    return _play(_voicePath('keep_going.mp3'));
+    return _playVoice('keep_going.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playGoodJob() async {
-    return _play(_voicePath('good_job.mp3'));
+    return _playVoice('good_job.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playNextRound() async {
-    return _play(_voicePath('next_round.mp3'));
+    return _playVoice('next_round.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playFinalCountdown() async {
-    return _play(_voicePath('final_countdown.mp3'));
+    return _playVoice('final_countdown.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playLetsGo() async {
-    return _play(_voicePath('lets_go.mp3'));
+    return _playVoice('lets_go.mp3', beepFallback: true);
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playComeOn() async {
-    return _play(_voicePath('come_on.mp3'));
+    return _playVoice('come_on.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playAlmostThere() async {
-    return _play(_voicePath('almost_there.mp3'));
+    return _playVoice('almost_there.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playThatsIt() async {
-    return _play(_voicePath('thats_it.mp3'));
+    return _playVoice('thats_it.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playNoRep() async {
-    return _play(_voicePath('no_rep.mp3'));
+    return _playVoice('no_rep.mp3');
   }
 
   Future<Either<AudioFailure, Unit>> _play(String assetPath) async {
@@ -277,5 +290,21 @@ class AudioService implements IAudioService {
   @override
   void setRandomizePerCue({required bool enabled}) {
     _randomizePerCue = enabled;
+  }
+
+  @override
+  void setVoiceMuted({required bool muted}) {
+    _voiceMuted = muted;
+  }
+
+  @override
+  Future<Either<AudioFailure, Unit>> playVoicePreview(String voicePack) async {
+    final pack = _validVoicePacks.contains(voicePack)
+        ? voicePack
+        : _validVoicePacks.elementAt(_random.nextInt(_validVoicePacks.length));
+    // Deliberate user action: previews bypass mute/voice-off so the picker
+    // is always auditionable.
+    unawaited(_playAsync('audio/$pack/countdown_go.mp3'));
+    return right(unit);
   }
 }

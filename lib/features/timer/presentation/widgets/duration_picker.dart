@@ -117,12 +117,12 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   String _formatValue() {
-    final m = _minutes.toString().padLeft(2, '0');
+    // Clock format, unpadded minutes — matches summaries and results.
     if (!widget.showSeconds) {
-      return '$m:00';
+      return '$_minutes:00';
     }
     final s = _seconds.toString().padLeft(2, '0');
-    return '$m:$s';
+    return '$_minutes:$s';
   }
 
   @override
@@ -164,7 +164,7 @@ class _DurationPickerState extends State<DurationPicker> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
-                'MIN',
+                'MIN \u00B1${widget.minuteInterval}',
                 style: GoogleFonts.outfit(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -191,7 +191,7 @@ class _DurationPickerState extends State<DurationPicker> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  'SEC',
+                  'SEC \u00B1${widget.secondInterval}',
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -209,6 +209,15 @@ class _DurationPickerState extends State<DurationPicker> {
               ),
             ],
           ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'hold to repeat',
+          style: GoogleFonts.outfit(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textDisabledDark,
+          ),
         ),
       ],
     );

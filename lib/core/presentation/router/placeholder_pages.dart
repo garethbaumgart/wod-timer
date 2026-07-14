@@ -78,98 +78,168 @@ class PlaceholderHomePage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            if (orientation == Orientation.landscape) {
+              return _buildLandscape(context, ref);
+            }
+            return _buildPortrait(context, ref);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHero() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
             children: [
-              // Hero title "WOD."
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'WOD',
-                      style: AppTypography.heroTitle.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    TextSpan(
-                      text: '.',
-                      style: AppTypography.heroTitle.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+              TextSpan(
+                text: 'WOD',
+                style: AppTypography.heroTitle.copyWith(color: Colors.white),
               ),
-              const SizedBox(height: 20),
-
-              // Timer type strip list
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _SignalStripItem(
-                      name: 'AMRAP',
-                      description: 'Max rounds in time',
-                      accentColor: AppColors.amrapAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('amrap');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _SignalStripItem(
-                      name: 'FOR TIME',
-                      description: 'Race the clock',
-                      accentColor: AppColors.forTimeAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('fortime');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _SignalStripItem(
-                      name: 'EMOM',
-                      description: 'Every minute on the minute',
-                      accentColor: AppColors.emomAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('emom');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _SignalStripItem(
-                      name: 'TABATA',
-                      description: 'Work / Rest intervals',
-                      accentColor: AppColors.tabataAccent,
-                      onTap: () {
-                        ref.read(hapticServiceProvider).lightImpact();
-                        onTimerSelected('tabata');
-                      },
-                    ),
-                  ],
+              TextSpan(
+                text: '.',
+                style: AppTypography.heroTitle.copyWith(
+                  color: AppColors.primary,
                 ),
-              ),
-
-              // Bottom icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.settings_outlined,
-                      color: AppColors.textDisabledDark,
-                      size: 26,
-                    ),
-                    onPressed: () => context.go(AppRoutes.settings),
-                    tooltip: 'Settings',
-                  ),
-                ],
               ),
             ],
           ),
         ),
+        const SizedBox(height: 6),
+        Text(
+          'Voice-coached gym timer',
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.textSecondaryDark,
+            fontSize: 15,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildStrips(BuildContext context, WidgetRef ref) {
+    return [
+      _SignalStripItem(
+        name: 'AMRAP',
+        description: 'Max rounds in time',
+        accentColor: AppColors.amrapAccent,
+        onTap: () {
+          ref.read(hapticServiceProvider).lightImpact();
+          onTimerSelected('amrap');
+        },
+      ),
+      const SizedBox(height: 12),
+      _SignalStripItem(
+        name: 'FOR TIME',
+        description: 'Race the clock',
+        accentColor: AppColors.forTimeAccent,
+        onTap: () {
+          ref.read(hapticServiceProvider).lightImpact();
+          onTimerSelected('fortime');
+        },
+      ),
+      const SizedBox(height: 12),
+      _SignalStripItem(
+        name: 'EMOM',
+        description: 'Every minute on the minute',
+        accentColor: AppColors.emomAccent,
+        onTap: () {
+          ref.read(hapticServiceProvider).lightImpact();
+          onTimerSelected('emom');
+        },
+      ),
+      const SizedBox(height: 12),
+      _SignalStripItem(
+        name: 'TABATA',
+        description: 'Work / Rest intervals',
+        accentColor: AppColors.tabataAccent,
+        onTap: () {
+          ref.read(hapticServiceProvider).lightImpact();
+          onTimerSelected('tabata');
+        },
+      ),
+    ];
+  }
+
+  Widget _buildSettingsButton(BuildContext context) {
+    return IconButton(
+      icon: const Icon(
+        Icons.settings_outlined,
+        color: AppColors.textSecondaryDark,
+        size: 28,
+      ),
+      onPressed: () => context.go(AppRoutes.settings),
+      tooltip: 'Settings',
+    );
+  }
+
+  Widget _buildPortrait(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHero(),
+          const SizedBox(height: 20),
+
+          // Timer type strip list
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: _buildStrips(context, ref),
+            ),
+          ),
+
+          // Bottom icons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [_buildSettingsButton(context)],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Landscape gets its own layout (hero left, modes right) — the
+  /// portrait column used to overflow here and cut TABATA off entirely.
+  Widget _buildLandscape(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(),
+                _buildHero(),
+                const Spacer(),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _buildSettingsButton(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _buildStrips(context, ref),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -203,8 +273,8 @@ class _SignalStripItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.transparent),
-              color: Colors.transparent,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              color: Colors.white.withValues(alpha: 0.03),
             ),
             child: Row(
               children: [
@@ -246,7 +316,7 @@ class _SignalStripItem extends StatelessWidget {
                   ),
                 ),
                 // Trailing chevron
-                ExcludeSemantics(
+                const ExcludeSemantics(
                   child: Text(
                     '\u203A',
                     style: TextStyle(

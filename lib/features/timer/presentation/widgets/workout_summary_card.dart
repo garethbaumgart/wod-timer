@@ -4,24 +4,35 @@ import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 
 /// A Signal-design summary box showing workout configuration.
 ///
-/// Uses a green-tinted transparent background with green border,
-/// displaying label/value pairs in the Signal design language.
+/// Shows the configured workout time (prep listed separately so the
+/// arithmetic always matches what the user set), plus per-mode values and
+/// the active voice pack (tap to change).
 class WorkoutSummaryCard extends StatelessWidget {
   const WorkoutSummaryCard({
     required this.timerType,
-    required this.totalDuration,
+    required this.workoutDuration,
     super.key,
+    this.prepSeconds = 10,
+    this.isTimeCap = false,
     this.rounds,
     this.workDuration,
     this.restDuration,
     this.intervalDuration,
+    this.voiceLabel,
+    this.onVoiceTap,
   });
 
   /// The type of timer (e.g., "AMRAP", "For Time", "EMOM", "Tabata").
   final String timerType;
 
-  /// Total estimated workout duration.
-  final Duration totalDuration;
+  /// Configured workout duration, excluding the get-ready countdown.
+  final Duration workoutDuration;
+
+  /// Get-ready countdown length, shown as its own line.
+  final int prepSeconds;
+
+  /// Whether [workoutDuration] is a ceiling (For Time cap), not a length.
+  final bool isTimeCap;
 
   /// Number of rounds (for EMOM, Tabata).
   final int? rounds;
@@ -34,6 +45,12 @@ class WorkoutSummaryCard extends StatelessWidget {
 
   /// Interval duration (for EMOM).
   final Duration? intervalDuration;
+
+  /// Currently selected voice pack label (e.g. "Major").
+  final String? voiceLabel;
+
+  /// Opens the voice picker; the wedge feature is choosable at setup.
+  final VoidCallback? onVoiceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -57,16 +74,16 @@ class WorkoutSummaryCard extends StatelessWidget {
             Text(
               'SUMMARY',
               style: AppTypography.summaryLabel.copyWith(
-                color: AppColors.textDisabledDark,
+                color: AppColors.textHintDark,
               ),
             ),
             const SizedBox(height: 12),
-            // Hero total duration row
+            // Hero: the configured workout time (prep NOT folded in)
             Center(
               child: Column(
                 children: [
                   Text(
-                    _formatDuration(totalDuration),
+                    _clock(workoutDuration),
                     style: AppTypography.workoutTitle.copyWith(
                       color: Colors.white,
                       fontSize: 22,
@@ -74,12 +91,22 @@ class WorkoutSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'TOTAL DURATION',
+                    isTimeCap ? 'TIME CAP' : 'WORKOUT TIME',
                     style: AppTypography.summaryLabel.copyWith(
                       color: AppColors.textHintDark,
                       fontSize: 10,
                     ),
                   ),
+                  if (prepSeconds > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '+ 0:${prepSeconds.toString().padLeft(2, '0')} get-ready',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textHintDark,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -94,10 +121,6 @@ class WorkoutSummaryCard extends StatelessWidget {
               spacing: 20,
               runSpacing: 10,
               children: [
-                _buildSummaryItem(
-                  label: 'TYPE',
-                  value: timerType.toUpperCase(),
-                ),
                 if (rounds != null)
                   _buildSummaryItem(label: 'ROUNDS', value: rounds.toString()),
                 if (workDuration != null)
@@ -115,6 +138,7 @@ class WorkoutSummaryCard extends StatelessWidget {
                     label: 'INTERVAL',
                     value: _formatDurationShort(intervalDuration!),
                   ),
+                if (voiceLabel != null) _buildVoiceItem(),
               ],
             ),
           ],
@@ -130,7 +154,7 @@ class WorkoutSummaryCard extends StatelessWidget {
         Text(
           label,
           style: AppTypography.summaryLabel.copyWith(
-            color: AppColors.textDisabledDark,
+            color: AppColors.textHintDark,
           ),
         ),
         const SizedBox(height: 2),
@@ -142,10 +166,55 @@ class WorkoutSummaryCard extends StatelessWidget {
     );
   }
 
+  Widget _buildVoiceItem() {
+    return Semantics(
+      button: true,
+      label: 'Voice: $voiceLabel. Tap to change.',
+      child: GestureDetector(
+        onTap: onVoiceTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'VOICE',
+              style: AppTypography.summaryLabel.copyWith(
+                color: AppColors.textHintDark,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.volume_up_outlined,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$voiceLabel ›',
+                  style: AppTypography.summaryValue.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _buildAccessibilityLabel() {
     final parts = <String>['$timerType workout'];
-    parts.add('Total duration: ${_formatDuration(totalDuration)}');
-
+    parts.add(
+      '${isTimeCap ? 'Time cap' : 'Workout time'}: '
+      '${_clock(workoutDuration)}',
+    );
+    if (prepSeconds > 0) {
+      parts.add('plus $prepSeconds second get-ready countdown');
+    }
     if (rounds != null) {
       parts.add('$rounds rounds');
     }
@@ -158,21 +227,17 @@ class WorkoutSummaryCard extends StatelessWidget {
     if (intervalDuration != null) {
       parts.add('Interval: ${_formatDurationShort(intervalDuration!)}');
     }
+    if (voiceLabel != null) {
+      parts.add('Voice: $voiceLabel');
+    }
     return parts.join(', ');
   }
 
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
+  /// Clock format for stats: "4:00", "10:00", "0:19".
+  String _clock(Duration duration) {
+    final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   String _formatDurationShort(Duration duration) {
