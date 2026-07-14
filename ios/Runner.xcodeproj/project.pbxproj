@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA10EMBEDWATCH0000000001 /* WODTimerWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B4250CE524A45DCF1D4A4BEF /* WODTimerWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		01622E3E9F23251B4F0D371A /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 132E64E7768E363C5BCEDAE8 /* Pods_Runner.framework */; };
 		0AA83DFFE0F067E26335DD9F /* RoundCountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119156B33EE114893DAD865E /* RoundCountTests.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -52,6 +53,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		AA10EMBEDWATCH0000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 31A572DEDEC401EC162B570B;
+			remoteInfo = WODTimerWatch;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -69,6 +77,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		AA10EMBEDWATCH0000000002 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				AA10EMBEDWATCH0000000001 /* WODTimerWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -445,6 +464,7 @@
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
+				AA10EMBEDWATCH0000000002 /* Embed Watch Content */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				016B64D10AB0B4F9604590E2 /* [CP] Embed Pods Frameworks */,
@@ -452,6 +472,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				AA10EMBEDWATCH0000000004 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -713,6 +734,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		AA10EMBEDWATCH0000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 31A572DEDEC401EC162B570B /* WODTimerWatch */;
+			targetProxy = AA10EMBEDWATCH0000000003 /* PBXContainerItemProxy */;
+		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
@@ -883,6 +909,7 @@
 				INFOPLIST_FILE = WODTimerWatch/Info.plist;
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -901,6 +928,7 @@
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp.tests;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SWIFT_VERSION = 5.0;
@@ -919,6 +947,7 @@
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp.tests;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SWIFT_VERSION = 5.0;
@@ -1095,6 +1124,7 @@
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp.tests;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SWIFT_VERSION = 5.0;
@@ -1117,9 +1147,10 @@
 				INFOPLIST_FILE = WODTimerWatch/Info.plist;
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
-				SKIP_INSTALL = NO;
+				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -1141,9 +1172,10 @@
 				INFOPLIST_FILE = WODTimerWatch/Info.plist;
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
-				SKIP_INSTALL = NO;
+				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
