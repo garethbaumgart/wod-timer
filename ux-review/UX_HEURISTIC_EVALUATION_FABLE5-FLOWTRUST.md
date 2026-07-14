@@ -1,0 +1,135 @@
+# UX Heuristic Evaluation — The Wharf WOD Timer
+
+**Reviewer:** FABLE5-FLOWTRUST (independent cold review; primary lens: flows, state transitions, destructive-action safety, and honesty of labels/numbers)
+**Evidence base:** the 21 PNGs in `screens/` plus `REVIEW_REQUEST.md` only. No source code, no other reviews.
+**Capture gap:** the brief's table lists `17_active_tabata_phase_preview.png` ("WORK in Ns" preview), but that file is not in `screens/`; only `17_active_tabata_complete.png` exists. The phase-preview moment is therefore not evaluated and needs its own capture next round. Items a static screenshot cannot prove are marked "verify in build".
+
+---
+
+## 1. Top 5 problems, ranked
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 1 | Critical | 10, 11, 12, 14, 15, 16, 20 (outcome shown on 13) | Stop is a one-tap, zero-confirmation kill switch. The red square sits directly beside Pause (same row, similar size), and per the screen 13 capture note a single press ends the session instantly and permanently. There is no undo, no "resume" from the summary (13 offers only Again and Done, and Again restarts from zero). | The brief's panic moment (dropped barbell, dog, phone call) has the athlete stabbing at Pause with sweaty hands at 170 bpm. A 1 cm miss lands on Stop and destroys 7 minutes of a 10 minute AMRAP. This is the single worst thing the app can do to its user, and it is the least protected action on the screen. Nielsen: error prevention, user control and freedom. | Make Stop hold-to-confirm: press and hold 1 s while a red ring fills around the button, with a haptic tick; a plain tap shows a transient "Hold to end" label. Keep Pause a single tap. Acceptance test: a mis-tap on Stop during a running workout must never end it; a deliberate 1 s hold always must. |
+| 2 | High | 13, 17, 21 (set up by 02–06) | The completion screen misreports what happened, and its numbers are not the athlete's numbers. Stopping at 0:19 of a 10:00 AMRAP still yields a green check, "Finished!", and a full-width 100% green bar (13). TOTAL TIME shifts meaning: elapsed-when-stopped (13: 00:19), work-time-excluding-prep when run to the end (17: 01:00 for 2×30 s rounds), while the setup "TOTAL DURATION" includes the 10 s prep (06: 4m 10s). And for a full AMRAP, TOTAL TIME just echoes the duration the user set, an information-free stat, while the score an AMRAP athlete actually staggers over to get (rounds completed) is nowhere. | Honesty and trust is the app's whole pitch (no fuss, just works). A summary that says "Finished!" after an abort, paints a 3% run as a 100% bar, and defines "total" three different ways teaches the athlete to distrust every number on screen. Nielsen: match between system and real world, visibility of system status. | Split end states: flag/natural completion shows "Finished!" with green check; Stop shows "Stopped" with a neutral grey mark and "0:19 of 10:00", bar drawn at the true fraction. Define TOTAL TIME as work time excluding prep everywhere (make setup read "10:00 work + 0:10 get ready"). On AMRAP completion, make rounds capturable: a +/- rounds stepper on the summary card (or tap-to-count mid-workout later). Test: stop a 10:00 AMRAP at 0:19 and screenshot; the words "Finished" and a full bar must not appear. |
+| 3 | High (Critical for anyone using Orientation Lock = Landscape only) | 18 (with 09) | Landscape Home is broken: content overflows the viewport by 175 px, so the TABATA row and the settings gear are clipped or unreachable, and there is no visible scroll affordance. The layout is the portrait column squeezed sideways, not a landscape design. | The app advertises explicit landscape support and even offers a Landscape-only lock (09). A user who props the phone landscape (the app's own hero scenario) and returns Home loses an entire timer mode and the door to Settings. First impression of rotation is a broken screen. | Make the Home list scroll in landscape, or reflow to a 2×2 mode grid with the gear pinned top-right. Acceptance: on iPhone 16 Pro Max landscape, all four mode rows and the gear are visible and tappable with no overflow warning in debug. |
+| 4 | High | 14 (with 13) | The For Time finish control is a grey, unlabeled flag: the dimmest of the three buttons, visually junior to Pause and even to Stop. Its reported label is "Done", colliding with the completion screen's Done button that means "leave". And since Stop also lands on the same "Finished!" screen (13 note), flag vs Stop have no visibly different outcome at all. | Finishing a For Time WOD is the marquee moment of the mode: the athlete's last rep should map to one unmistakable action that freezes their score. Right now the most important tap in the app is the most muted control, its meaning is guessable only by elimination, and its consequence looks identical to bailing out. Nielsen: recognition over recall, consistency. | Replace the flag with a labeled, high-emphasis FINISH control (filled, mode-blue, text "FINISH" under or inside it), larger than Stop. Route it to "Finished!" with the frozen time; route Stop to the "Stopped" state from fix #2. Rename the summary's Done to "Home" if the flag keeps any "Done" wording. Test: show 5 new users screen 14 and ask "you just finished Fran, record your time"; 5/5 must pick FINISH without hesitation. |
+| 5 | High | 15, 16 (also 11, 12, 20) | At 3 metres, everything except the big digits disappears. "Round 2/10" (15) and "Round 1/2" (16) are roughly 14 pt grey text; the work/rest phase change in Tabata is only a small pill swapping green for blue plus a 2 pt progress bar recolour; the digits stay identical white in every phase. | For EMOM and Tabata the round number and current phase ARE the workout semantics. An athlete glancing between reps in a dim garage cannot read 14 pt grey and cannot rely on a pill the size of a watch band to tell work from rest. The giant time answers "how long", but "which round" and "work or rest" fail the app's own 3 metre bar. Nielsen: visibility of system status. | Promote the round counter to at least 40 pt white directly under the timer ("ROUND 2/10"), and let phase own the screen: tint the digits (or a full background wash) green during WORK and blue during REST, matching the setup screen's dot colours. Test: photograph the screen from 3 m in low light; round and phase must be readable in the photo. |
+
+---
+
+## 2. Full findings (every other issue, grouped by screen)
+
+### Screen 01 — Home
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 1.1 | Medium | 01 | The app's two differentiators (voice packs, suspension-proof timing) are invisible on first run. Home shows only "WOD." and four modes; the voice wedge lives three taps deep behind a small gear. | First workout plays Major unannounced (surprise, not choice), and a skeptical trialist sees nothing here that beats the gym wall clock before committing to a workout. | Add a one-line voice chip on each setup screen above START ("Voice: Major, tap to change") deep-linking to the picker; optionally a single sub-line under the logo: "Voice-coached WOD timers". |
+| 1.2 | Low | 01 | Roughly the top 40% of the screen is empty between the logo and the AMRAP row, while the settings gear is a small, low-contrast icon isolated at the very bottom. | Wasted prime real estate plus a settings entry that is easy to never notice (it is the only path to voices and orientation). | Pull the mode list up, move the gear to the top-right of the logo row at 44 pt tap size. |
+| 1.3 | Low | 01 | Mode accent colours (green/blue/magenta/orange) appear here as 4 px slivers and then, except on Home, never function again (setup and active screens for For Time/EMOM run green, see 4.3, 15.2). | A colour system introduced then abandoned trains no association and spends 4 colours to say nothing. | Either carry the mode colour into its setup header and active pill, or drop the per-mode colours and let phase colours own the palette. |
+
+### Screens 02–06 — Setup (AMRAP, For Time, EMOM, Tabata)
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 2.1 | Medium | 02, 03, 05, 06 | The summary silently adds 10 seconds: set 10:00 and read "10m 10s TOTAL DURATION" (02, 05); set classic Tabata 4:00 and read "4m 10s" (06). Nothing on any screen explains the extra 10 s (it is the prep countdown). | The very first number the app computes for the user appears wrong by mental arithmetic. That plants doubt before the first START, and it contradicts the completion screen's prep-free TOTAL TIME (17). | Show the composition: "10:00 work + 0:10 get ready" or exclude prep from the total. Same rule everywhere (see top-5 #2). |
+| 2.2 | Medium | 02, 03, 05 | Duration steppers put minus/plus around the *label* ("− MIN +", "− SEC +") far below the value they change, while the rounds stepper (05, 06) puts minus/plus around the *value* ("− 10 +"). Two grammars on one screen (05). Step sizes are unlabeled on MIN/SEC but labeled "5s" on Tabata work/rest (06). | Gloved, hurried users need one muscle-memory pattern. With buttons detached from the value, which minus edits minutes vs seconds requires reading; the MIN "+" sits directly beside the SEC "−", a fat-finger pair. | Standardise on value-flanking steppers: "− 10:00 +" per unit row, or one row per unit ("Minutes − 10 +"). Label step size wherever it is not ±1. |
+| 2.3 | Medium | 02, 03, 05 | No fast path for large changes: no visible tap-to-type on the big time, no wheel, and long-press auto-repeat is unverifiable from screenshots (verify in build). 10:00 to 45:00 is 35 taps if repeat is absent. | The 15-second setup bar fails for any non-default duration if every minute costs a tap. | Make the giant time tappable to open a numeric pad, and add press-and-hold auto-repeat on all steppers. Test: set 45:00 from cold start in under 15 s. |
+| 2.4 | Low | 02, 03, 04, 05, 06 | The summary card repeats what the user just entered (TYPE row echoes the screen title; Tabata card re-lists all four values directly below the pickers showing the same numbers). | Duplicate confirmation on a one-screen form is noise pushing START further away on smaller phones. | Keep only the computed line (total duration) and delete the TYPE row; on Tabata keep total + rounds only. |
+| 2.5 | Medium | 03, 04 | "TOTAL DURATION 20m 10s" is the wrong concept for For Time: the cap is a ceiling, not the expected length, and the summary does not change at all between COUNT UP (03) and COUNT DOWN (04), so the direction choice appears consequence-free. | An athlete reads "total duration 20m" as "this will take 20 minutes", which is exactly what For Time is not. | Label the summary "TIME CAP 20:00" and add a direction line: "clock counts up from 0:00" / "counts down from 20:00". |
+| 2.6 | Low | 03, 04 | For Time setup is dressed in green (selected chip, TYPE value, START) though For Time's identity colour is blue on Home; same green-for-everything on EMOM (05) whose colour is magenta. | Reinforces 1.3: the mode colour system exists only on Home. | See 1.3. |
+| 2.7 | Medium-Low | 06 | The CLASSIC TABATA chip's nature is ambiguous: it looks selected (lit green outline) but is it a button, a state, or a badge? What happens to it after the user changes work to 40 s is unknowable here (verify in build): if it stays lit while values read 40/10 it is lying. | A preset that does not visibly engage/disengage undermines the trustworthiness of the whole form. | Make it a real toggle chip: lit only while values match 20/10/8; tapping it restores those values. |
+| 2.8 | Low | 06 | Tabata REST is colour-coded blue while blue is also For Time's brand colour (and GET READY is orange, Tabata's brand colour, see 10.3). | Colour double-duty across the app dilutes the one channel that works at distance. | Resolve as part of 1.3's palette decision (phase colours win). |
+
+### Screens 07–09 — Settings and pickers
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 7.1 | Medium | 07, 08 | The audio model is ambiguous: "Sound Effects" (toggle) vs "Voice" (picker with Major/Liam/Holly/Random and no Off). There is no way to silence the voice while keeping beeps, and whether Sound Effects off also mutes the voice is undiscoverable (verify in build). | A coach voice barking in a quiet home gym at 6 am is a real "turn that off now" moment; right now there is no visible off switch for the app's loudest feature. | Add "Off" to the Voice sheet (or a separate Voice toggle), and add sub-labels: "Sound Effects: beeps and buzzers", "Voice: spoken coach cues". |
+| 7.2 | Medium | 07, 08 | No audition affordance for the wedge feature: neither the Voice row (07) nor the picker rows (08) show any play/speaker control, so the only way to hear Major vs Liam vs Holly is to run a workout. | Choosing a personality blind defeats the point of shipping three personalities; selection may play a sample but nothing advertises that (verify in build). | Add a small speaker icon per row that plays a 2 s sample ("3, 2, 1, GO!") on tap, and play the sample on selection. |
+| 7.3 | Low | 08 | Holly has no descriptor while Major (CrossFit Coach) and Liam (Old British Man) do; Major/Liam share one person-icon style, Holly gets a face glyph, Random gets shuffle arrows. | Inconsistent metadata makes the third voice feel unfinished and unpickable. | Give Holly a persona ("Holly (Aussie spin instructor)" or similar) and use one icon family. |
+| 7.4 | Low | 07, 09 | "Orientation Lock" whose default value is "Auto (follow device)" is self-contradicting: a lock that is not locking. | Small comprehension tax every time settings are scanned. | Rename the row and sheet "Orientation" with values Auto / Portrait / Landscape. |
+| 7.5 | Low | 07 | About contains only a Version row: no support/feedback path, no privacy line, in a free app whose audience (garage-gym owners) skews toward wanting to report issues or request features. | The keep-it-installed loop benefits from a visible feedback channel; silence reads as abandonware risk. | Add "Send feedback" (mailto) and "Privacy" rows. |
+| 7.6 | Low | 08, 09 | The bottom sheets have no explicit close/done control; dismissal relies on scrim-tap or swipe knowledge. | Minor, but this app's demographic includes 50-year-old garage owners, not just sheet-fluent iOS natives. | Add a small "Done"/X in the sheet header. |
+
+### Screen 10 — Get-ready countdown
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 10.1 | Medium-Low | 10 | No visible way to skip the 10 s prep (fixed length is a v1 decision; a skip affordance is not). If a tap-to-skip exists it is undiscoverable (verify in build). | The athlete who set up with 30 s to spare now stands through a forced 10 s; the one who needs longer to walk back to the bar gets no extension either. | Add "tap timer to skip" hint text under the countdown (and consider tap = +10 s vs skip split later). |
+| 10.2 | Low | 10 | Prep shows "00:03" in full MM:SS. A lone giant "3" would be roughly twice the glyph size at distance, and this is the one phase where the user is walking away from the phone. | Weaker glance while positioning at the bar. | Render sub-10 s prep as a single huge digit (keep MM:SS for the workout proper). |
+| 10.3 | Low | 10 | GET READY is orange, which is also Tabata's brand colour (and the prep Stop button carries the same unguarded kill risk as top-5 #1; stopping during prep presumably yields "Finished!" at 0:00, verify in build). | Colour double-duty again; a "Finished 00:00" record would be nonsense output. | Phase palette per 1.3; prep-stop should return to the setup screen, not a summary. |
+
+### Screens 11–12 — AMRAP running and paused
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 11.1 | Medium | 11, 12, 14, 15, 16 | The Stop button's ring is near-black dark red (roughly 1.5:1 against the background); in a dim garage the icon floats as a small dim square. All three active-screen controls are icon-only with no labels. | You should not have to de-emphasise Stop into invisibility to make it safe (that is what hold-to-confirm is for); invisible-but-lethal is the worst combination. | After adding hold-to-stop (top-5 #1), raise Stop to legible secondary contrast and caption all bottom controls in 11 pt caps ("STOP", "PAUSE", "FINISH"). |
+| 11.2 | Medium | 12 | Paused is indistinguishable from running at a glance: digits stay full white; the only tells are the small grey pill and the swapped play glyph. From 3 m a frozen 09:41 looks identical to a live one for the first second or two. | Mid-WOD the athlete needs instant confirmation the clock is actually stopped (or NOT stopped after a bumped phone). Ambiguity here costs either rest time or workout integrity. | Dim digits to ~40% opacity and pulse them while paused, or overlay a large "PAUSED" watermark behind the digits. Test: 3 m photo must reveal paused state. |
+| 11.3 | Low | 11, 15, 16, 20 | The progress bar is ~2 pt tall and dim, invisible at any distance; on 20 it also spans only ~55% of the width, floating unanchored. | It currently communicates nothing while occupying the "how far through am I" job (the only overall-progress channel EMOM/Tabata have). | Make it 6-8 pt, brighter, full-bleed in both orientations, or delete it. |
+| 11.4 | Low | 11 | AMRAP's countdown carries no direction label while For Time shows "Elapsed" (14). A glancer joining mid-workout cannot tell 09:46 remaining from 09:46 elapsed without watching a tick. | Inconsistent labeling of the same giant number across modes. | Add the same small label under the AMRAP timer ("Remaining"), sized per 14.2's fix. |
+
+### Screen 13 — Workout complete (AMRAP)
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 13.1 | Low | 13, 17 | "Again" behaviour is unlabeled (instant restart with same config including 10 s prep? verify in build) and it sits closest to where the thumb naturally rests after a workout. | An accidental Again immediately arms a new countdown the exhausted athlete now has to stop (through the unguarded Stop, compounding top-5 #1). | Label it "Run again" and give it the same hold-or-confirm treatment as Stop, or push it visually further from Done. |
+| 13.2 | Low | 13, 21 | No path from the summary back into setup to tweak the workout ("that should have been 12:00"): the loop is Done, Home, mode, reconfigure. | Four extra taps on the most likely iteration path between attempts. | Add a quiet "Edit workout" text link under Again/Done. |
+| 13.3 | Low | 02–06, 13, 17 | Time formats differ across adjacent surfaces: pickers "10:00", summaries "10m 10s" and "1m", completions "00:19". | Three notations for one quantity in one flow is craft debt that feeds the trust issues above. | Standardise on M:SS everywhere ("10:00", "0:19"), with "+ 0:10 get ready" for prep. |
+
+### Screen 14 — For Time running
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 14.1 | Medium | 14 | The time cap is displayed nowhere during the workout: no "cap 20:00" line, and the only cap channel is the invisible progress bar (11.3). In count-up mode the athlete pacing against the cap is doing blind math. | Beating the cap is the mode's drama; hiding the cap wastes it and forces recall over recognition. | Add "CAP 20:00" in the pill or under the timer at the same size as the round counter fix (top-5 #5). |
+| 14.2 | Low | 14 | "Elapsed" is ~15 pt grey, unreadable beyond arm's length, and its count-down twin label is uncaptured (verify what COUNT DOWN shows). | The one word that disambiguates the giant number is sized for nobody. | Bump to ≥20 pt at 70% white; capture the count-down variant next screenshot round. |
+| 14.3 | Medium | 14 | The flag (finish) button sits directly beside Pause, same row, and if it one-tap-ends the workout it inherits the full mis-tap destructiveness of Stop, with higher likelihood since it neighbours the most-used control (verify tap behaviour in build). | A grazed flag at rep 40 of 50 would log a false finish time. | Whatever fix #4 ships (labeled FINISH), require the same 1 s hold as Stop, or place FINISH alone on the opposite side of the screen from Pause. |
+
+### Screens 15–16 — EMOM and Tabata running
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 15.1 | Medium | 15, 16 | Sub-minute intervals render with a dead "00:" prefix: 00:57, 00:10. Half the horizontal budget of the app's hero element is spent on two zeros and a colon that carry no information in a 1:00/20 s/10 s interval. | Dropping the prefix lets the meaningful digits render roughly 70% larger, a free multiplier on the app's stated killer feature (3 m readability). | When remaining < 1:00 (or interval ≤ 1:00), show "57" / "10" full-size; keep M:SS beyond that. |
+| 15.2 | Low | 15 | Pill reads "EMOM · WORK" in green; EMOM has no rest phase so "WORK" is permanent noise, and magenta (EMOM's colour) never appears. | The pill spends its tiny legibility budget on a word that never changes. | For EMOM, replace the phase word with the round: "EMOM · ROUND 2/10" (complements top-5 #5). |
+
+### Screen 17 — Workout complete (Tabata)
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 17.1 | Medium | 17 vs 02–06 | TOTAL TIME 01:00 excludes the 10 s prep, while every setup summary's TOTAL DURATION includes it (see 2.1): the app's before and after numbers for the identical workout disagree by design. | The athlete comparing plan (4m 10s) to result (4:00) sees the app disagree with itself; arithmetic honesty is the product promise. | One definition of total (work time), everywhere; prep always itemised separately. |
+| 17.2 | Low | 17, 13 | ROUNDS 2/2 (green) is exactly the right stat here, which spotlights that AMRAP's summary (13) has no rounds at all; the two completion screens set different expectations for what the app records. | Inconsistent summaries make the app feel mode-by-mode lucky rather than designed. | Covered by top-5 #2's AMRAP rounds capture; keep card layouts identical across modes. |
+
+### Screens 18–21 — Landscape
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| 18.1 | Low | 19 | CTA reads "START" in landscape but "START WORKOUT" in portrait (02). | Same action, two names, across a rotation of the same screen. | Pick one ("START"). |
+| 18.2 | Medium-Low | 21 | The completion time (00:12 TOTAL TIME) renders smaller in landscape than portrait, centered in a sparse left column with the lower half of the screen empty. This is the number the athlete crosses the room to read. | The summary should be the second-most glanceable screen in the app; landscape demotes it. | Scale TOTAL TIME to fill the left column (≥96 pt) and vertically centre the pair of cards. |
+| 18.3 | Low | 18, 19, 20, 21 | Landscape coverage is AMRAP-only: no landscape captures exist for EMOM/Tabata running, paused, or prep, so parity for the modes with the most on-screen state is unproven (verify with captures). | The landscape promise is only evidenced for the simplest screen. | Capture and review EMOM/Tabata landscape before ship. |
+
+### Cross-cutting
+
+| # | Severity | Screen(s) | Issue | Why it matters | Suggested fix |
+|---|----------|-----------|-------|----------------|---------------|
+| X.1 | Medium-Low | all | Colour double-duty: green = brand + AMRAP + WORK + resume + START + Done + success; blue = For Time + REST; orange = Tabata + GET READY; magenta = EMOM (Home only). | Colour is the only channel that works at 3 m, and it currently means four different things depending on where you stand in the app. | Declare phase colours the master palette in active screens (work green, rest blue, prep orange, paused grey) and remove or subordinate per-mode colours. |
+| X.2 | Low | 01, 02–06, 07 | Small all-caps grey labels (SUMMARY, TOTAL DURATION, section headers) sit around 3:1 contrast on the ink background; body-grey rows on 07 are better but the caps-labels are below WCAG 4.5:1 for their size. | Legibility for the 50-year-old half of the audience, in a dark app used in dark rooms. | Lift micro-label grey to ~#9AA3AD (4.5:1+). |
+| X.3 | Low | 02–06, 11–16 | Dynamic Type behaviour is unverifiable from these captures; the pill, summary rows, and Again/Done row look fixed-size (verify at accessibility text sizes for clipping). | Fixed layouts plus XL text is the classic silent-clip bug for exactly this demographic. | Test at AX3 text size; allow pill and card text to wrap. |
+
+---
+
+## 3. Three pointed questions
+
+**What, if anything, would make you not keep using this app?**
+For the most common WOD format (AMRAP) it cannot hold my result: there is no round counting during the workout and the summary's TOTAL TIME just repeats the duration I set, so the moment after the final rep, the app hands me nothing the wall clock did not. Add the mis-tap fear from the unguarded Stop and the third session is on the gym clock again. (Absence of history is accepted v1 scope, but even a "last result" line on Home would soften the same problem.)
+
+**What would make you stop trusting it mid-workout?**
+The first time a knuckle grazes Stop at minute seven and the app celebrates with a green check, "Finished!", and a 100% bar. Runner-up: the very first setup screen, where I type 10:00 and the summary answers "10m 10s" with no explanation, and later the completion math (17) quietly uses a different rule than the setup math (06). When words and numbers drift from reality in small ways, I assume the timing can too, and timing is the entire product.
+
+**If you could ship only one change before the next release, what is it and why?**
+Guard the stop flow: hold-to-confirm on Stop, and route an early stop to an honest "Stopped, 0:19 of 10:00" state instead of "Finished!". It is one coherent change to one flow, it removes the app's only catastrophic mis-tap, and it converts the biggest trust leak into visible proof that the app respects the athlete's effort.
+
+---
+
+## 4. One genuine strength
+
+The core glance is genuinely right: enormous white timer digits on the deep-ink background, with an uncluttered screen around them, read effortlessly from across a garage gym, and that is the one thing a WOD timer must never get wrong.

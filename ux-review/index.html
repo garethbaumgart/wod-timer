@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wharf WOD — UX review screens</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; background: #0b0b14; color: #eee; margin: 24px; }
+  h1 { font-size: 20px; } h2 { font-size: 15px; color: #9f9; margin: 28px 0 10px; }
+  p.note { color: #999; max-width: 70ch; }
+  .grid { display: flex; flex-wrap: wrap; gap: 16px; }
+  figure { margin: 0; width: 210px; }
+  figure.wide { width: 420px; }
+  img { width: 100%; border: 1px solid #333; border-radius: 10px; display: block; }
+  figcaption { font-size: 12px; color: #bbb; margin-top: 6px; line-height: 1.35; }
+  figcaption b { color: #fff; }
+</style>
+</head>
+<body>
+<h1>The Wharf WOD Timer — UX review screens</h1>
+<p class="note">21 screens, iPhone 16 Pro Max simulator, app defaults unless noted.
+The review prompt is <code>REVIEW_REQUEST.md</code>. Screens 18–21 are landscape.</p>
+
+<h2>Entry &amp; setup</h2>
+<div class="grid">
+  <figure><img src="screens/01_home.png"><figcaption><b>01 home</b> — first-run home: “WOD.” hero, 4 mode strips, settings gear</figcaption></figure>
+  <figure><img src="screens/02_amrap_setup.png"><figcaption><b>02 amrap_setup</b> — duration picker (default 10:00), summary, START</figcaption></figure>
+  <figure><img src="screens/03_fortime_setup.png"><figcaption><b>03 fortime_setup</b> — time cap + COUNT UP selected</figcaption></figure>
+  <figure><img src="screens/04_fortime_setup_countdown.png"><figcaption><b>04 fortime_setup_countdown</b> — same screen, COUNT DOWN selected</figcaption></figure>
+  <figure><img src="screens/05_emom_setup.png"><figcaption><b>05 emom_setup</b> — interval duration + rounds</figcaption></figure>
+  <figure><img src="screens/06_tabata_setup.png"><figcaption><b>06 tabata_setup</b> — classic-Tabata chip, work/rest pickers, rounds</figcaption></figure>
+</div>
+
+<h2>Settings</h2>
+<div class="grid">
+  <figure><img src="screens/07_settings.png"><figcaption><b>07 settings</b> — Display / Audio / About (all defaults)</figcaption></figure>
+  <figure><img src="screens/08_settings_voice_picker.png"><figcaption><b>08 settings_voice_picker</b> — voice pack sheet (Major/Liam/Holly/Random)</figcaption></figure>
+  <figure><img src="screens/09_settings_orientation_picker.png"><figcaption><b>09 settings_orientation_picker</b> — orientation lock sheet</figcaption></figure>
+</div>
+
+<h2>In workout</h2>
+<div class="grid">
+  <figure><img src="screens/10_active_prep_countdown.png"><figcaption><b>10 active_prep_countdown</b> — GET READY prep phase at 00:03 (pulse)</figcaption></figure>
+  <figure><img src="screens/11_active_amrap_work.png"><figcaption><b>11 active_amrap_work</b> — AMRAP mid-workout (countdown)</figcaption></figure>
+  <figure><img src="screens/12_active_amrap_paused.png"><figcaption><b>12 active_amrap_paused</b> — paused state</figcaption></figure>
+  <figure><img src="screens/13_active_amrap_complete.png"><figcaption><b>13 active_amrap_complete</b> — completion after pressing Stop mid-workout</figcaption></figure>
+  <figure><img src="screens/14_active_fortime_countup.png"><figcaption><b>14 active_fortime_countup</b> — For Time counting up + flag “Done” button</figcaption></figure>
+  <figure><img src="screens/15_active_emom_round2.png"><figcaption><b>15 active_emom_round2</b> — EMOM round 2/10, 1:00 intervals</figcaption></figure>
+  <figure><img src="screens/16_active_tabata_rest.png"><figcaption><b>16 active_tabata_rest</b> — Tabata REST phase (blue)</figcaption></figure>
+  <figure><img src="screens/17_active_tabata_complete.png"><figcaption><b>17 active_tabata_complete</b> — completion with rounds card (2/2 — capture used 2 rounds)</figcaption></figure>
+</div>
+
+<h2>Landscape</h2>
+<div class="grid">
+  <figure class="wide"><img src="screens/18_home_landscape.png"><figcaption><b>18 home_landscape</b> — home in landscape</figcaption></figure>
+  <figure class="wide"><img src="screens/19_amrap_setup_landscape.png"><figcaption><b>19 amrap_setup_landscape</b> — two-column setup + compact START</figcaption></figure>
+  <figure class="wide"><img src="screens/20_active_work_landscape.png"><figcaption><b>20 active_work_landscape</b> — the propped-phone gym view</figcaption></figure>
+  <figure class="wide"><img src="screens/21_complete_landscape.png"><figcaption><b>21 complete_landscape</b> — completion, two-column</figcaption></figure>
+</div>
+</body>
+</html>

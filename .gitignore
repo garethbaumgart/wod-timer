@@ -84,3 +84,8 @@ fastlane/report.xml
 fastlane/README.md
 fastlane/Preview.html
 fastlane/test_output/
+
+# UX-review screenshots (bulky + regenerable via integration_test/ux_review_tour_test.dart)
+ux-review/screens/
+ux-review/screens_raw/
+ux-review/screens_after/
