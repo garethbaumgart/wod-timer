@@ -5,6 +5,7 @@ import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
@@ -181,7 +182,8 @@ class PlaceholderHomePage extends ConsumerWidget {
   Widget _buildPortrait(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
-      child: Column(
+      child: ContentWidthCap(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHero(),
@@ -201,6 +203,7 @@ class PlaceholderHomePage extends ConsumerWidget {
             children: [_buildSettingsButton(context)],
           ),
         ],
+        ),
       ),
     );
   }
@@ -230,7 +233,8 @@ class PlaceholderHomePage extends ConsumerWidget {
           const SizedBox(width: 24),
           Expanded(
             flex: 2,
-            child: Center(
+            child: ContentWidthCap(
+              maxWidth: 520,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

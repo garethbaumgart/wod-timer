@@ -7,6 +7,7 @@ import 'package:wod_timer/core/application/providers/package_info_provider.dart'
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
@@ -23,7 +24,9 @@ class SettingsPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
-        child: Column(
+        child: ContentWidthCap(
+          maxWidth: 700,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header row
@@ -155,6 +158,7 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

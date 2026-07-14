@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
@@ -62,9 +63,12 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
         child: OrientationBuilder(
           builder: (context, orientation) {
             if (orientation == Orientation.landscape) {
-              return _buildLandscapeLayout();
+              return ContentWidthCap(
+                maxWidth: 900,
+                child: _buildLandscapeLayout(),
+              );
             }
-            return _buildPortraitLayout();
+            return ContentWidthCap(child: _buildPortraitLayout());
           },
         ),
       ),

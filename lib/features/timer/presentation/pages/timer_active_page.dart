@@ -8,6 +8,7 @@ import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
@@ -379,11 +380,13 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   Widget _buildPortraitLayout(TimerNotifierState state) {
     // Completed state has a special layout
     if (state is TimerCompleted) {
-      return _buildCompletedLayout(state);
+      return ContentWidthCap(child: _buildCompletedLayout(state));
     }
 
     final session = state.sessionOrNull;
     final phaseColor = _getPhaseColor(state);
+    // Tablets have the acreage: let the digits fill it, like landscape.
+    final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
 
     return Column(
       children: [
@@ -395,7 +398,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         const Spacer(),
 
         // Giant time with radial glow behind
-        _buildTimerWithGlow(state, phaseColor),
+        _buildTimerWithGlow(state, phaseColor, expand: isTablet),
 
         const SizedBox(height: AppSpacing.sm),
 
@@ -411,12 +414,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
         // For Time: the success action is a real, labelled button
         if (_showFinishButton(state)) ...[
-          _buildFinishButton(),
+          ContentWidthCap(maxWidth: 520, child: _buildFinishButton()),
           const SizedBox(height: AppSpacing.lg),
         ],
 
         // Control buttons
-        _buildControls(state),
+        ContentWidthCap(maxWidth: 560, child: _buildControls(state)),
 
         const SizedBox(height: AppSpacing.xl),
       ],
@@ -434,7 +437,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
   Widget _buildLandscapeLayout(TimerNotifierState state) {
     if (state is TimerCompleted) {
-      return _buildCompletedLayoutLandscape(state);
+      return ContentWidthCap(
+        maxWidth: 900,
+        child: _buildCompletedLayoutLandscape(state),
+      );
     }
 
     final session = state.sessionOrNull;
@@ -470,7 +476,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.lg,
                         ),
-                        child: _buildFinishButton(),
+                        child: ContentWidthCap(
+                          maxWidth: 520,
+                          child: _buildFinishButton(),
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                     ],
@@ -576,9 +585,11 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       digits = FadeTransition(opacity: _pausedPulse, child: digits);
     }
     if (expand) {
+      final isPortrait =
+          MediaQuery.orientationOf(context) == Orientation.portrait;
       digits = SizedBox(
         width: double.infinity,
-        height: 180,
+        height: isPortrait ? 230 : 180,
         child: digits,
       );
     }
