@@ -28,6 +28,7 @@ dependencies:
   sentry_flutter: ^9.20.0
   shared_preferences: ^2.3.5
   uuid: ^4.5.1
+  url_launcher: ^6.3.1
   wakelock_plus: ^1.2.10
 
 dev_dependencies:

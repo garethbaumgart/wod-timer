@@ -117,12 +117,12 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   String _formatValue() {
-    final m = _minutes.toString().padLeft(2, '0');
+    // Clock format, unpadded minutes — matches summaries and results.
     if (!widget.showSeconds) {
-      return '$m:00';
+      return '$_minutes:00';
     }
     final s = _seconds.toString().padLeft(2, '0');
-    return '$m:$s';
+    return '$_minutes:$s';
   }
 
   @override

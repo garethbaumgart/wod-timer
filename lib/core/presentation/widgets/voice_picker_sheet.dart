@@ -75,6 +75,7 @@ Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: AppColors.surfaceDark,
+    showDragHandle: true,
     builder: (sheetContext) => SafeArea(
       // Scrollable so the sheet never overflows in landscape.
       child: SingleChildScrollView(

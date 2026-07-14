@@ -453,7 +453,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                   children: [
                     _buildPillBadge(state, phaseColor),
                     const SizedBox(height: AppSpacing.md),
-                    _buildTimerWithGlow(state, phaseColor),
+                    _buildTimerWithGlow(state, phaseColor, expand: true),
                     const SizedBox(height: AppSpacing.sm),
                     _buildSubInfo(state, session, phaseColor),
                   ],
@@ -527,7 +527,11 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         '${secs.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildTimerWithGlow(TimerNotifierState state, Color phaseColor) {
+  Widget _buildTimerWithGlow(
+    TimerNotifierState state,
+    Color phaseColor, {
+    bool expand = false,
+  }) {
     final seconds = _displaySeconds(state);
     final timeString = _displayString(state, seconds);
     final isBareSeconds = !timeString.contains(':');
@@ -555,8 +559,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         fontSize: fontSize,
         color: digitColor,
       ),
+      // In landscape the digits scale UP to fill the wide column — the
+      // whole point of the propped-phone posture is a bigger clock.
       child: FittedBox(
-        fit: BoxFit.scaleDown,
+        fit: expand ? BoxFit.contain : BoxFit.scaleDown,
         child: Text(
           timeString,
           semanticsLabel:
@@ -568,6 +574,13 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
     if (isPaused) {
       digits = FadeTransition(opacity: _pausedPulse, child: digits);
+    }
+    if (expand) {
+      digits = SizedBox(
+        width: double.infinity,
+        height: 180,
+        child: digits,
+      );
     }
 
     return Stack(
@@ -1293,7 +1306,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'Again',
+                      'AGAIN',
                       style: AppTypography.buttonMedium.copyWith(
                         color: Colors.white70,
                         fontSize: 14,
@@ -1325,7 +1338,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'Done',
+                      'DONE',
                       style: AppTypography.buttonMedium.copyWith(
                         color: Colors.black,
                         fontSize: 14,

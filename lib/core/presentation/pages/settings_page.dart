@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/package_info_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
@@ -70,7 +71,7 @@ class SettingsPage extends ConsumerWidget {
                   _buildSectionHeader('Display'),
                   _buildDivider(),
                   _buildTapRow(
-                    label: 'Orientation Lock',
+                    label: 'Orientation',
                     value: _getOrientationShortLabel(settings.orientationLock),
                     onTap: () => _showOrientationPicker(context, ref, settings),
                   ),
@@ -104,6 +105,16 @@ class SettingsPage extends ConsumerWidget {
                     value: voiceShortLabel(settings.voice),
                     onTap: () => showVoicePickerSheet(context, ref),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                    child: Text(
+                      'Voice cues play through the silent switch.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textHintDark,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                   _buildDivider(),
                   _buildSwitchRow(
                     label: 'Haptic Feedback',
@@ -117,6 +128,26 @@ class SettingsPage extends ConsumerWidget {
                   ),
                   // ABOUT section
                   _buildSectionHeader('About'),
+                  _buildDivider(),
+                  _buildTapRow(
+                    label: 'Send Feedback',
+                    value: '',
+                    onTap: () => launchUrl(
+                      Uri.parse(
+                        'mailto:support@mentalmetal.app'
+                        '?subject=Wharf%20WOD%20feedback',
+                      ),
+                    ),
+                  ),
+                  _buildDivider(),
+                  _buildTapRow(
+                    label: 'Privacy Policy',
+                    value: '',
+                    onTap: () => launchUrl(
+                      Uri.parse('https://mentalmetal.app/wharf-wod/privacy'),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
                   _buildDivider(),
                   _buildVersionRow(ref),
                   _buildDivider(),
@@ -165,7 +196,7 @@ class SettingsPage extends ConsumerWidget {
               style: AppTypography.bodyMedium.copyWith(color: _labelColor),
             ),
             Text(
-              '$value >',
+              value.isEmpty ? '>' : '$value >',
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondaryDark,
               ),
@@ -278,6 +309,7 @@ class SettingsPage extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surfaceDark,
+      showDragHandle: true,
       builder: (context) => SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -286,7 +318,7 @@ class SettingsPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Orientation Lock',
+                'Orientation',
                 style: AppTypography.sectionHeader.copyWith(
                   color: AppColors.textPrimaryDark,
                 ),

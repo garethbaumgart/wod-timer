@@ -103,7 +103,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
           ),
           const SizedBox(width: 8),
           Text(
-            'For Time',
+            'FOR TIME',
             style: AppTypography.sectionHeader.copyWith(
               color: AppColors.textPrimaryDark,
               fontSize: 24,

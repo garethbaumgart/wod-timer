@@ -72,7 +72,7 @@ Future<void> holdStop(WidgetTester tester) async {
 Future<void> stopAndFinish(WidgetTester tester, {String? completeMark}) async {
   await holdStop(tester);
   expect(
-    await pumpUntil(tester, find.text('Done'),
+    await pumpUntil(tester, find.text('DONE'),
         timeout: const Duration(seconds: 10)),
     isTrue,
     reason: 'completion screen after Stop',
@@ -80,7 +80,7 @@ Future<void> stopAndFinish(WidgetTester tester, {String? completeMark}) async {
   if (completeMark != null) {
     await hold(tester, completeMark);
   }
-  await tester.tap(find.text('Done'));
+  await tester.tap(find.text('DONE'));
   await tester.pumpAndSettle();
 }
 
@@ -136,7 +136,7 @@ void main() {
       await tester.tap(find.text('Major (CrossFit Coach)'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Orientation Lock'));
+      await tester.tap(find.text('Orientation'));
       await tester.pumpAndSettle();
       await hold(tester, 'settings_orientation_picker');
       await tester.tap(find.text('Auto (follow device)'));
@@ -209,13 +209,13 @@ void main() {
       expect(await pumpUntil(tester, find.text('Finished!'),
           timeout: const Duration(seconds: 60)), isTrue);
       await hold(tester, 'active_tabata_complete');
-      await tester.tap(find.text('Done'));
+      await tester.tap(find.text('DONE'));
       await tester.pumpAndSettle();
 
       // ---------- 19-22. Landscape: home, setup, active, complete ----------
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Orientation Lock'));
+      await tester.tap(find.text('Orientation'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Landscape only'));
       await tester.pumpAndSettle();
@@ -232,16 +232,16 @@ void main() {
       await pumpSeconds(tester, 6);
       await hold(tester, 'active_work_landscape');
       await holdStop(tester);
-      expect(await pumpUntil(tester, find.text('Done'),
+      expect(await pumpUntil(tester, find.text('DONE'),
           timeout: const Duration(seconds: 10)), isTrue);
       await hold(tester, 'complete_landscape');
-      await tester.tap(find.text('Done'));
+      await tester.tap(find.text('DONE'));
       await tester.pumpAndSettle();
 
       // ---------- Restore settings (orientation auto, sound on) ----------
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Orientation Lock'));
+      await tester.tap(find.text('Orientation'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Auto (follow device)'));
       await tester.pumpAndSettle();

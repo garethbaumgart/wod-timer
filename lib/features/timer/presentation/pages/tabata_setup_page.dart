@@ -118,7 +118,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
           ),
           const SizedBox(width: 8),
           Text(
-            'Tabata',
+            'TABATA',
             style: AppTypography.sectionHeader.copyWith(
               color: AppColors.textPrimaryDark,
               fontSize: 24,
