@@ -29,8 +29,14 @@ class TimerNotifierState with _$TimerNotifierState {
       TimerPaused;
 
   /// Completed state when the workout has finished.
-  const factory TimerNotifierState.completed({required TimerSession session}) =
-      TimerCompleted;
+  ///
+  /// [endedEarly] is true when the user aborted via Stop before the
+  /// workout ran its course — the completion screen renders an honest
+  /// "Stopped" state instead of celebrating with "Finished!".
+  const factory TimerNotifierState.completed({
+    required TimerSession session,
+    @Default(false) bool endedEarly,
+  }) = TimerCompleted;
 
   /// Error state when something goes wrong.
   const factory TimerNotifierState.error({

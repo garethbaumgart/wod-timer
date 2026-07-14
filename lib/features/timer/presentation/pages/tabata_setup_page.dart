@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/core/presentation/widgets/repeating_icon_button.dart';
@@ -35,8 +37,6 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     return Duration(seconds: workSeconds + restSeconds);
   }
 
-  Duration get _totalDuration =>
-      _totalWorkoutDuration + const Duration(seconds: 10);
 
   void _applyClassicTabata() {
     setState(() {
@@ -188,10 +188,14 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
                 // Summary card
                 WorkoutSummaryCard(
                   timerType: 'Tabata',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _totalWorkoutDuration,
                   rounds: _rounds,
                   workDuration: _workDuration,
                   restDuration: _restDuration,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -269,10 +273,14 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
               children: [
                 WorkoutSummaryCard(
                   timerType: 'Tabata',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _totalWorkoutDuration,
                   rounds: _rounds,
                   workDuration: _workDuration,
                   restDuration: _restDuration,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
                 _buildStartButtonCompact(),
@@ -284,49 +292,79 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     );
   }
 
+  /// Whether the current values match the classic 20/10 x 8 protocol.
+  bool get _isClassic =>
+      _workDuration == const Duration(seconds: 20) &&
+      _restDuration == const Duration(seconds: 10) &&
+      _rounds == 8;
+
+  /// A real toggle chip: lit while the values match classic Tabata,
+  /// visibly deselected the moment they diverge; tapping re-applies.
   Widget _buildClassicTabataButton() {
+    final isActive = _isClassic;
+    final accent = isActive ? AppColors.primary : AppColors.textHintDark;
     return Center(
-      child: GestureDetector(
-        onTap: _applyClassicTabata,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              width: 1,
-            ),
-            color: AppColors.primary.withValues(alpha: 0.05),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.flash_on, size: 16, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'CLASSIC TABATA',
-                    style: AppTypography.bodySmall.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    '20s work / 10s rest \u00D7 8 rounds',
-                    style: AppTypography.bodySmall.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textHintDark,
-                    ),
-                  ),
-                ],
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        label: isActive
+            ? 'Classic Tabata applied: 20 seconds work, 10 seconds rest, '
+                  '8 rounds'
+            : 'Apply classic Tabata: 20 seconds work, 10 seconds rest, '
+                  '8 rounds',
+        child: GestureDetector(
+          onTap: _applyClassicTabata,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isActive
+                    ? AppColors.primary.withValues(alpha: 0.4)
+                    : AppColors.border,
               ),
-            ],
+              color: isActive
+                  ? AppColors.primary.withValues(alpha: 0.05)
+                  : Colors.transparent,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isActive ? Icons.flash_on : Icons.flash_off,
+                  size: 16,
+                  color: accent,
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isActive ? 'CLASSIC TABATA' : 'RESET TO CLASSIC',
+                      style: AppTypography.bodySmall.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '20s work / 10s rest \u00D7 8 rounds',
+                      style: AppTypography.bodySmall.copyWith(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textHintDark,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isActive) ...[
+                  const SizedBox(width: 10),
+                  const Icon(Icons.check, size: 16, color: AppColors.primary),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -427,7 +465,7 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
             ),
             child: Center(
               child: Text(
-                'START WORKOUT',
+                'START',
                 style: AppTypography.buttonLarge.copyWith(
                   color: Colors.black,
                   fontSize: 16,

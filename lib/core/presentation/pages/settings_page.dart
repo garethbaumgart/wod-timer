@@ -6,6 +6,7 @@ import 'package:wod_timer/core/application/providers/package_info_provider.dart'
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 
 /// Settings page with Signal-inspired minimal design.
@@ -35,7 +36,7 @@ class SettingsPage extends ConsumerWidget {
                     child: GestureDetector(
                       onTap: () => context.go(AppRoutes.home),
                       behavior: HitTestBehavior.opaque,
-                      child: SizedBox(
+                      child: const SizedBox(
                         width: 48,
                         height: 48,
                         child: Center(
@@ -100,8 +101,8 @@ class SettingsPage extends ConsumerWidget {
                   _buildDivider(),
                   _buildTapRow(
                     label: 'Voice',
-                    value: _getVoiceShortLabel(settings.voice),
-                    onTap: () => _showVoicePicker(context, ref, settings),
+                    value: voiceShortLabel(settings.voice),
+                    onTap: () => showVoicePickerSheet(context, ref),
                   ),
                   _buildDivider(),
                   _buildSwitchRow(
@@ -235,98 +236,6 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  String _getVoiceShortLabel(VoiceOption voice) {
-    switch (voice) {
-      case VoiceOption.major:
-        return 'Major';
-      case VoiceOption.liam:
-        return 'Liam';
-      case VoiceOption.holly:
-        return 'Holly';
-      case VoiceOption.random:
-        return 'Random';
-    }
-  }
-
-  String _getVoiceLabel(VoiceOption voice) {
-    switch (voice) {
-      case VoiceOption.major:
-        return 'Major (CrossFit Coach)';
-      case VoiceOption.liam:
-        return 'Liam (Old British Man)';
-      case VoiceOption.holly:
-        return 'Holly';
-      case VoiceOption.random:
-        return 'Random (mix it up each cue)';
-    }
-  }
-
-  IconData _getVoiceIcon(VoiceOption voice) {
-    switch (voice) {
-      case VoiceOption.major:
-        return Icons.record_voice_over;
-      case VoiceOption.liam:
-        return Icons.record_voice_over_outlined;
-      case VoiceOption.holly:
-        return Icons.face;
-      case VoiceOption.random:
-        return Icons.shuffle;
-    }
-  }
-
-  void _showVoicePicker(
-    BuildContext context,
-    WidgetRef ref,
-    AppSettings settings,
-  ) {
-    ref.read(hapticServiceProvider).selectionClick();
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surfaceDark,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Voice',
-                style: AppTypography.sectionHeader.copyWith(
-                  color: AppColors.textPrimaryDark,
-                ),
-              ),
-            ),
-            ...VoiceOption.values.map(
-              (voice) => ListTile(
-                leading: Icon(
-                  _getVoiceIcon(voice),
-                  color: AppColors.textPrimaryDark,
-                ),
-                title: Text(
-                  _getVoiceLabel(voice),
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.textPrimaryDark,
-                  ),
-                ),
-                trailing: settings.voice == voice
-                    ? const Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  ref.read(hapticServiceProvider).selectionClick();
-                  ref
-                      .read(appSettingsNotifierProvider.notifier)
-                      .setVoice(voice);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _getOrientationShortLabel(OrientationLockMode mode) {
     switch (mode) {
       case OrientationLockMode.auto:
@@ -370,7 +279,8 @@ class SettingsPage extends ConsumerWidget {
       context: context,
       backgroundColor: AppColors.surfaceDark,
       builder: (context) => SafeArea(
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
@@ -408,6 +318,7 @@ class SettingsPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
           ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
@@ -26,7 +28,6 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
   Duration _timeCap = const Duration(minutes: 20);
   // Count up (stopwatch style) vs count down
   bool _countUp = true;
-  Duration get _totalDuration => _timeCap + const Duration(seconds: 10);
 
   Future<void> _onStart() async {
     // Create the timer type
@@ -147,7 +148,12 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
                 // Summary card
                 WorkoutSummaryCard(
                   timerType: 'For Time',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _timeCap,
+                  isTimeCap: true,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -202,7 +208,12 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
               children: [
                 WorkoutSummaryCard(
                   timerType: 'For Time',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _timeCap,
+                  isTimeCap: true,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
                 _buildStartButtonCompact(),
@@ -290,7 +301,7 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
             ),
             child: Center(
               child: Text(
-                'START WORKOUT',
+                'START',
                 style: AppTypography.buttonLarge.copyWith(
                   color: Colors.black,
                   fontSize: 16,

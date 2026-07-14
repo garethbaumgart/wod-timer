@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
@@ -26,8 +28,6 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
   Duration get _totalWorkoutDuration =>
       Duration(seconds: _intervalDuration.inSeconds * _rounds);
 
-  Duration get _totalDuration =>
-      _totalWorkoutDuration + const Duration(seconds: 10);
 
   Future<void> _onStart() async {
     // Create the timer type
@@ -158,9 +158,13 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
                 // Summary card
                 WorkoutSummaryCard(
                   timerType: 'EMOM',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _totalWorkoutDuration,
                   rounds: _rounds,
                   intervalDuration: _intervalDuration,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -225,9 +229,13 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
               children: [
                 WorkoutSummaryCard(
                   timerType: 'EMOM',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _totalWorkoutDuration,
                   rounds: _rounds,
                   intervalDuration: _intervalDuration,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
                 _buildStartButtonCompact(),
@@ -260,7 +268,7 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
             ),
             child: Center(
               child: Text(
-                'START WORKOUT',
+                'START',
                 style: AppTypography.buttonLarge.copyWith(
                   color: Colors.black,
                   fontSize: 16,

@@ -20,6 +20,10 @@ enum VoiceOption {
 
   /// Random - randomly pick a different voice for each cue.
   random,
+
+  /// Off - no spoken cues; timing-critical moments fall back to beeps.
+  /// (Kept last: settings persist the enum index.)
+  off,
 }
 
 /// Orientation lock mode options.

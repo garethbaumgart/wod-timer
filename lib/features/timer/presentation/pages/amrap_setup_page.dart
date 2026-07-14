@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
@@ -21,7 +23,6 @@ class AmrapSetupPage extends ConsumerStatefulWidget {
 class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
   // Default 10 minutes
   Duration _duration = const Duration(minutes: 10);
-  Duration get _totalDuration => _duration + const Duration(seconds: 10);
 
   Future<void> _onStart() async {
     // Create the timer type
@@ -134,7 +135,11 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
                 // Summary card
                 WorkoutSummaryCard(
                   timerType: 'AMRAP',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _duration,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -187,7 +192,11 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
               children: [
                 WorkoutSummaryCard(
                   timerType: 'AMRAP',
-                  totalDuration: _totalDuration,
+                  workoutDuration: _duration,
+                  voiceLabel: voiceShortLabel(
+                    ref.watch(appSettingsNotifierProvider).voice,
+                  ),
+                  onVoiceTap: () => showVoicePickerSheet(context, ref),
                 ),
                 const SizedBox(height: 16),
                 _buildStartButtonCompact(),
@@ -220,7 +229,7 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
             ),
             child: Center(
               child: Text(
-                'START WORKOUT',
+                'START',
                 style: AppTypography.buttonLarge.copyWith(
                   color: Colors.black,
                   fontSize: 16,

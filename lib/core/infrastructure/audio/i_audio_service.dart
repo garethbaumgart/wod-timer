@@ -86,4 +86,12 @@ abstract class IAudioService {
   /// When enabled, each voice cue randomly picks between available
   /// voice packs instead of using the fixed [setVoicePack] value.
   void setRandomizePerCue({required bool enabled});
+
+  /// Mute only the spoken voice cues, keeping beep fallbacks for the
+  /// timing-critical moments (countdown, GO, phase/round transitions).
+  void setVoiceMuted({required bool muted});
+
+  /// Play a short preview sample ("GO!") for the given voice pack,
+  /// regardless of the currently selected pack. Used by the voice picker.
+  Future<Either<AudioFailure, Unit>> playVoicePreview(String voicePack);
 }
