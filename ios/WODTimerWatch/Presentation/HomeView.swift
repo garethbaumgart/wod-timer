@@ -86,7 +86,7 @@ struct HomeView: View {
                 }
             }
             .listStyle(.carousel)
-            .navigationTitle("WOD Timer")
+            .navigationTitle("Wharf WOD")
             .navigationDestination(isPresented: $showingTimer) {
                 ActiveTimerView(viewModel: viewModel)
             }
