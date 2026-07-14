@@ -12,6 +12,10 @@ Music library (downloaded, not currently in the cut):
   License: Pixabay Content License — free for commercial use, no attribution required.
   (Used in the v1 promo; still slaps.)
 
-Footage: iPhone 16 Pro Max simulator, driven by integration_test/promo_tour_test.dart,
-recorded with `xcrun simctl io recordVideo`. Overlays: mktext.py (SVG -> rsvg-convert).
-Build: build.sh (segment cuts from work/raw.mov -> xfade -> phonk bed).
+Footage (v3): iPhone 16 Pro Max simulator (promo_tour_test.dart + promo_pickup_test.dart,
+`simctl io recordVideo`), Pixel Tablet API 34 emulator (promo_tablet_tour_test.dart,
+`adb screenrecord`; pre-confirm immersive_mode_confirmations to kill the fullscreen
+toast), Apple Watch Series 11 simulator (--promo-autostart launch arg + recordVideo).
+Overlays: mktext.py (SVG -> rsvg-convert). Build: build3.sh (frame-hunted cuts from
+work3/ raws -> hard-cut concat -> epic-rock bed + the app's own voice cues).
+v2 pipeline kept in build.sh for reference.

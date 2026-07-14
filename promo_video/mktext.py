@@ -135,6 +135,28 @@ caption("c_setup", "PICK YOUR POISON. START.", expr="smile")
 caption("c_tabata", "WORK. REST. IT KEEPS COUNT.", expr="yell", fs=60)
 caption("c_done", "GOOD JOB. (IT SAYS THAT TOO.)", expr="starry", fs=58)
 
+# ---- v3: tap-to-count + device-family captions ----
+caption("c_rounds", "TAP ANYWHERE. ROUND COUNTED.", expr="smile", fs=60)
+caption("c_tablet", "PROP UP A TABLET. WHOLE-GYM CLOCK.", expr="smile", fs=56)
+caption("c_watch", "ON YOUR WRIST. SAME COACH.", expr="yell", fs=60)
+
+# Scene headers for the device shots (top of frame, above the footage)
+def scene_header(name, text, y=430, fs=88):
+    render(name, big(text, y, fs, fill=INK, spacing=3))
+
+scene_header("h_tablet", "AND ON THE BIG SCREEN")
+scene_header("h_watch", "AND ON YOUR WRIST")
+
+# ---- v3: device footage masks (rounded corners via alphamerge) ----
+# Tablet: 2560x1600 footage scaled to 1160x725 inside the portrait canvas.
+render("tablet_mask",
+       '<rect x="0" y="0" width="1230" height="769" rx="44" fill="#ffffff"/>',
+       w=1230, h=769)
+# Watch: 416x496 footage scaled x2.30 -> 957x1141; watch squircle corners.
+render("watch_mask",
+       '<rect x="0" y="0" width="957" height="1141" rx="240" fill="#ffffff"/>',
+       w=957, h=1141)
+
 # ---------------- GO slam ----------------
 # Full-frame overlay for the WORK flip: mega GO. dropped over the live footage
 # the exact frame the coach yells it.

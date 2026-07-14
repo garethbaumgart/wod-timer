@@ -90,6 +90,17 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showingTimer) {
                 ActiveTimerView(viewModel: viewModel)
             }
+            .onAppear {
+                // Promo-footage hook: `simctl launch ... --promo-autostart`
+                // starts a default AMRAP after a beat so the simulator can be
+                // recorded without driving the UI. No effect in normal use.
+                if CommandLine.arguments.contains("--promo-autostart") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        viewModel.start(workout: WorkoutFactory.defaultAmrap())
+                        showingTimer = true
+                    }
+                }
+            }
         }
     }
 
