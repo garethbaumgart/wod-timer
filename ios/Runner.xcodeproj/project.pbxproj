@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		84C6AECD039243D7BBCD4CDE /* AppIcon40x40@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */; };
 		AA10EMBEDWATCH0000000001 /* WODTimerWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B4250CE524A45DCF1D4A4BEF /* WODTimerWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		01622E3E9F23251B4F0D371A /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 132E64E7768E363C5BCEDAE8 /* Pods_Runner.framework */; };
 		0AA83DFFE0F067E26335DD9F /* RoundCountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119156B33EE114893DAD865E /* RoundCountTests.swift */; };
@@ -156,6 +157,7 @@
 		D889A11A6B6C33B724EE9CAE /* audio */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = audio; path = WODTimerWatch/Resources/audio; sourceTree = SOURCE_ROOT; };
 		D9FEB30C945EA3D887BF9A99 /* TabataSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TabataSetupView.swift; sourceTree = "<group>"; };
 		E13289430A010C3C7405AD9B /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
+		376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "AppIcon40x40@2x.png"; sourceTree = "<group>"; };
 		ECDA17D450854F2CC8163106 /* WODTimerWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WODTimerWatchApp.swift; sourceTree = "<group>"; };
 		F168591883E7BA44AA243E7F /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F50DA5261B988ABA2357CC5E /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -242,6 +244,7 @@
 				42A02274E4350620D506DDC6 /* Info.plist */,
 				004A7A4C5D7DD91996B84791 /* Presentation */,
 				B1A0949A51B977ADEDDA4890 /* Services */,
+				376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */,
 				ECDA17D450854F2CC8163106 /* WODTimerWatchApp.swift */,
 				D889A11A6B6C33B724EE9CAE /* audio */,
 			);
@@ -561,6 +564,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84C6AECD039243D7BBCD4CDE /* AppIcon40x40@2x.png in Resources */,
 				855FFBFF3563F14E4CFAA2D1 /* Assets.xcassets in Resources */,
 				4F1C1330BF3AF2408AB7C43B /* audio in Resources */,
 			);
