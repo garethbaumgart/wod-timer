@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 import 'package:wod_timer/core/presentation/router/app_router.dart';
+import 'package:wod_timer/core/presentation/theme/app_fonts.dart';
 import 'package:wod_timer/core/presentation/theme/app_theme.dart';
 import 'package:wod_timer/injection.dart';
 
@@ -20,6 +21,12 @@ const _aptabaseKey = String.fromEnvironment('APTABASE_KEY');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Fonts ship in the bundle and must never be fetched at runtime — an
+  // offline cold start used to crash the whole session when the Google Fonts
+  // CDN was unreachable (Sentry WHARFWOD-1).
+  configureBundledFonts();
+
   await configureDependencies();
 
   // Aptabase: anonymous funnel only, release builds only, key required.
