@@ -1,0 +1,1 @@
+Offline fix: the timer no longer crashes when opened with no signal. Fonts now ship inside the app, so basement gyms, airplane mode and dead zones are all fair game.

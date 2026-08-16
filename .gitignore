@@ -84,6 +84,8 @@ fastlane/report.xml
 fastlane/README.md
 fastlane/Preview.html
 fastlane/test_output/
+# review contact details (name/email/phone) — PUBLIC repo, never commit
+fastlane/metadata/review_information/
 
 # UX-review screenshots (bulky + regenerable via integration_test/ux_review_tour_test.dart)
 ux-review/screens/
