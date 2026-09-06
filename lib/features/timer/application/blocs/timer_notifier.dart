@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
@@ -342,6 +343,11 @@ class TimerNotifier extends _$TimerNotifier {
           _stopTicking();
           _playCompletionEncouragement();
           _hapticService.success(); // Haptic success for natural completion
+          // The workout ran all the way out: the payoff, and the only
+          // unambiguous one. Deliberately NOT the manual-finish or ended-early
+          // paths, which say nothing about whether it went well. The prompter
+          // stays quiet until the app has earned it and never throws.
+          unawaited(ref.read(reviewPrompterProvider).recordValueMoment());
         } else {
           state = TimerNotifierState.error(
             failure: failure,
