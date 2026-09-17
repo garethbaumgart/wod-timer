@@ -1,1 +1,1 @@
-Offline fix: the timer no longer crashes when opened with no signal. Fonts now ship inside the app, so basement gyms, airplane mode and dead zones are all fair game.
+Rebuilt on the latest Flutter for smoother timing and better support for newer phones. If Wharf WOD has earned a spot in your gym bag, you may now get the odd nudge to rate it (only after a few finished workouts, and never mid-set).
