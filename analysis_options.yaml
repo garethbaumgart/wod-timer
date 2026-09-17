@@ -7,6 +7,12 @@ analyzer:
     - "lib/injection.config.dart"
     - "build/**"
     - ".dart_tool/**"
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
   language:
     strict-casts: true
