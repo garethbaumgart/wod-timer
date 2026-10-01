@@ -1,7 +1,6 @@
 // Promo pickup: a believable For Time finish (~0:47). Scratch.
 // ignore_for_file: avoid_print
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wod_timer/main.dart' as app;
