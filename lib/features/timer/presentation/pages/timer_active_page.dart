@@ -359,18 +359,32 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     }
   }
 
-  /// Pill text: the phase word is shown only when it carries information
-  /// (get-ready/paused/rest always; WORK only for Tabata, the one running
-  /// mode with a contrasting phase).
-  String _pillText(TimerNotifierState state) {
-    final type = _getTimerTypeLabel();
-    final showPhase =
-        state is TimerPreparing ||
+  /// The pill shows only when it carries the phase (get-ready, paused and
+  /// rest always; WORK only for Tabata, the one running mode with a
+  /// contrasting phase). A pill that just says "EMOM" mid-workout tells the
+  /// athlete nothing they don't know.
+  bool _pillCarriesPhase(TimerNotifierState state) {
+    return state is TimerPreparing ||
         state is TimerPaused ||
         state is TimerResting ||
         (state is TimerRunning && widget.timerType == TimerTypes.tabata);
-    if (!showPhase) return type;
-    return '$type  ·  ${_getPhaseLabel(state)}';
+  }
+
+  String _pillText(TimerNotifierState state) {
+    return '${_getTimerTypeLabel()}  ·  ${_getPhaseLabel(state)}';
+  }
+
+  /// Fixed-height slot for the pill, so the digits never jump when it
+  /// comes and goes (pause, rest).
+  Widget _buildPillSlot(TimerNotifierState state, Color phaseColor) {
+    return SizedBox(
+      height: 40,
+      child: Center(
+        child: _pillCarriesPhase(state)
+            ? _buildPillBadge(state, phaseColor)
+            : null,
+      ),
+    );
   }
 
   // ===================================================================
@@ -385,27 +399,31 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
     final session = state.sessionOrNull;
     final phaseColor = _getPhaseColor(state);
-    // Tablets have the acreage: let the digits fill it, like landscape.
-    final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
 
     return Column(
       children: [
-        const Spacer(flex: 2),
+        const SizedBox(height: AppSpacing.lg),
 
-        // Pill badge: "TABATA . REST"
-        _buildPillBadge(state, phaseColor),
+        // Pill badge: "TABATA . REST" (only when it carries the phase)
+        _buildPillSlot(state, phaseColor),
 
-        const Spacer(),
+        // Giant time, scaled to fill the width (what matters from across
+        // the gym), with the direction label + round counter directly
+        // under it, the pair centred in the space.
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: _buildTimerWithGlow(state, phaseColor, fill: true),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _buildSubInfo(state, session, phaseColor),
+            ],
+          ),
+        ),
 
-        // Giant time with radial glow behind
-        _buildTimerWithGlow(state, phaseColor, expand: isTablet),
-
-        const SizedBox(height: AppSpacing.sm),
-
-        // Direction label + round counter + phase preview
-        _buildSubInfo(state, session, phaseColor),
-
-        const Spacer(flex: 2),
+        const SizedBox(height: AppSpacing.xl),
 
         // Progress bar
         _buildProgressBar(state),
@@ -457,9 +475,18 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildPillBadge(state, phaseColor),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildTimerWithGlow(state, phaseColor, expand: true),
+                    _buildPillSlot(state, phaseColor),
+                    const SizedBox(height: AppSpacing.xs),
+                    // Flexible, like portrait: a fixed 180pt digit box
+                    // pushed ROUNDS / the tap hint off the bottom of a
+                    // phone held sideways (11-18px overflow since 1.1).
+                    Flexible(
+                      child: _buildTimerWithGlow(
+                        state,
+                        phaseColor,
+                        fill: true,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildSubInfo(state, session, phaseColor),
                   ],
@@ -536,10 +563,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         '${secs.toString().padLeft(2, '0')}';
   }
 
+  /// With [fill] the digits grow to the width they are given (inside a
+  /// Flexible, which caps the height on short screens).
   Widget _buildTimerWithGlow(
     TimerNotifierState state,
     Color phaseColor, {
-    bool expand = false,
+    bool fill = false,
   }) {
     final seconds = _displaySeconds(state);
     final timeString = _displayString(state, seconds);
@@ -568,10 +597,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         fontSize: fontSize,
         color: digitColor,
       ),
-      // In landscape the digits scale UP to fill the wide column — the
-      // whole point of the propped-phone posture is a bigger clock.
+      // The digits scale UP to fill the column: from across the gym (or
+      // a phone propped on a box) a bigger clock is the whole point.
       child: FittedBox(
-        fit: expand ? BoxFit.contain : BoxFit.scaleDown,
+        fit: fill ? BoxFit.contain : BoxFit.scaleDown,
         child: Text(
           timeString,
           semanticsLabel:
@@ -581,17 +610,23 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       ),
     );
 
+    // Scaled digits ignore the font-size bump, so the final-3s prep pulse
+    // is applied as a scale instead.
+    if (fill) {
+      digits = AnimatedScale(
+        scale: isPulsing ? 1.08 : 1,
+        duration: const Duration(milliseconds: 200),
+        child: digits,
+      );
+    }
     if (isPaused) {
       digits = FadeTransition(opacity: _pausedPulse, child: digits);
     }
-    if (expand) {
-      final isPortrait =
-          MediaQuery.orientationOf(context) == Orientation.portrait;
-      digits = SizedBox(
-        width: double.infinity,
-        height: isPortrait ? 230 : 180,
-        child: digits,
-      );
+    if (fill) {
+      // FittedBox only scales UP under a forced size: pin the width so the
+      // digits grow to it; the height follows the aspect ratio (and the
+      // enclosing Flexible caps it on short screens).
+      digits = SizedBox(width: double.infinity, child: digits);
     }
 
     return Stack(
@@ -918,14 +953,16 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     final isPaused = state is TimerPaused;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Stop button (hold to confirm)
+        // Stop button (hold to confirm; a tap flashes the hint above)
         _HoldToStopButton(
           enabled: state.canStop,
           onConfirmed: _onStopConfirmed,
           onTapped: _onStopTapped,
         ),
+
+        const SizedBox(width: 44),
 
         // Pause/Resume button (large centre; neutral so colour = phase)
         _buildCircleButton(
@@ -936,9 +973,6 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           onPressed: state.canPause || state.canResume ? _onPauseResume : null,
           size: 72,
         ),
-
-        // Symmetry placeholder (FINISH moved to its own labelled button)
-        const SizedBox(width: 64),
       ],
     );
   }
@@ -1003,46 +1037,31 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       button: true,
       enabled: !isDisabled,
       label: '$label button${isDisabled ? ', disabled' : ''}',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(size / 2),
-              child: Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDisabled ? AppColors.border : borderColor,
-                    width: 1.5,
-                  ),
-                ),
-                child: ExcludeSemantics(
-                  child: Icon(
-                    icon,
-                    color: isDisabled ? AppColors.textDisabledDark : iconColor,
-                    size: size * 0.45,
-                  ),
-                ),
+      // Icon only: pause / play are universal, and the caption was 11pt.
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(size / 2),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDisabled ? AppColors.border : borderColor,
+                width: 1.5,
+              ),
+            ),
+            child: ExcludeSemantics(
+              child: Icon(
+                icon,
+                color: isDisabled ? AppColors.textDisabledDark : iconColor,
+                size: size * 0.45,
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          ExcludeSemantics(
-            child: Text(
-              label,
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.textSecondaryDark,
-                letterSpacing: 1.5,
-                fontSize: 11,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1443,64 +1462,50 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
       button: true,
       enabled: enabled,
       label: 'End workout. Hold to confirm.',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: enabled ? widget.onTapped : null,
-            onLongPressStart: enabled ? (_) => _startHold() : null,
-            onLongPressEnd: (_) => _cancelHold(),
-            onLongPressCancel: _cancelHold,
-            child: SizedBox(
-              width: _size,
-              height: _size,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: _size,
-                    height: _size,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.error.withValues(
-                        alpha: enabled ? 0.10 : 0.0,
-                      ),
-                      border: Border.all(color: ringColor, width: 1.5),
-                    ),
-                    child: ExcludeSemantics(
-                      child: Icon(Icons.stop, color: iconColor, size: 28),
-                    ),
+      // No caption: a tap already flashes "HOLD TO END WORKOUT" above the
+      // controls, and the filling ring teaches the hold.
+      child: GestureDetector(
+        onTap: enabled ? widget.onTapped : null,
+        onLongPressStart: enabled ? (_) => _startHold() : null,
+        onLongPressEnd: (_) => _cancelHold(),
+        onLongPressCancel: _cancelHold,
+        child: SizedBox(
+          width: _size,
+          height: _size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: _size,
+                height: _size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.error.withValues(
+                    alpha: enabled ? 0.10 : 0.0,
                   ),
-                  // Hold-progress ring fills as confirmation approaches
-                  if (_fill.value > 0)
-                    SizedBox(
-                      width: _size,
-                      height: _size,
-                      child: CircularProgressIndicator(
-                        value: _fill.value,
-                        strokeWidth: 3.5,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.error,
-                        ),
-                        backgroundColor: Colors.transparent,
-                      ),
+                  border: Border.all(color: ringColor, width: 1.5),
+                ),
+                child: ExcludeSemantics(
+                  child: Icon(Icons.stop, color: iconColor, size: 28),
+                ),
+              ),
+              // Hold-progress ring fills as confirmation approaches
+              if (_fill.value > 0)
+                SizedBox(
+                  width: _size,
+                  height: _size,
+                  child: CircularProgressIndicator(
+                    value: _fill.value,
+                    strokeWidth: 3.5,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.error,
                     ),
-                ],
-              ),
-            ),
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 6),
-          ExcludeSemantics(
-            child: Text(
-              'HOLD TO END',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.textSecondaryDark,
-                letterSpacing: 1.2,
-                fontSize: 10,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

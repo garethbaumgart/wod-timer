@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 import 'package:wod_timer/core/presentation/router/app_router.dart';
 import 'package:wod_timer/core/presentation/theme/app_fonts.dart';
@@ -29,6 +31,14 @@ Future<void> main() async {
 
   await configureDependencies();
 
+  // Loaded before the first frame so setup screens open on the last
+  // workout run in each mode, with no flash of defaults.
+  final prefs = await SharedPreferences.getInstance();
+  final rootScope = ProviderScope(
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    child: const WodTimerApp(),
+  );
+
   // Aptabase: anonymous funnel only, release builds only, key required.
   if (kReleaseMode && _aptabaseKey.isNotEmpty) {
     try {
@@ -43,22 +53,19 @@ Future<void> main() async {
   // Sentry: crash + error reporting. No PII — scrub user/request context
   // defensively so nothing identifying leaves the phone.
   if (_sentryDsn.isNotEmpty) {
-    await SentryFlutter.init(
-      (options) {
-        options
-          ..dsn = _sentryDsn
-          ..environment = _sentryEnv
-          ..sendDefaultPii = false
-          ..beforeSend = (event, hint) {
-            return event
-              ..user = null
-              ..request = null;
-          };
-      },
-      appRunner: () => runApp(const ProviderScope(child: WodTimerApp())),
-    );
+    await SentryFlutter.init((options) {
+      options
+        ..dsn = _sentryDsn
+        ..environment = _sentryEnv
+        ..sendDefaultPii = false
+        ..beforeSend = (event, hint) {
+          return event
+            ..user = null
+            ..request = null;
+        };
+    }, appRunner: () => runApp(rootScope));
   } else {
-    runApp(const ProviderScope(child: WodTimerApp()));
+    runApp(rootScope);
   }
 }
 
