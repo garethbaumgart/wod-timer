@@ -151,6 +151,64 @@ void main() {
     });
   });
 
+  group('Live screen declutter (UX review 1 Oct 2026)', () {
+    testWidgets('no mode-name pill while it would only say the mode', (
+      tester,
+    ) async {
+      await pumpActivePage(tester, countUp: true);
+
+      expect(find.text('FOR TIME'), findsNothing);
+      expect(find.textContaining('FOR TIME  ·'), findsNothing);
+      expect(find.text('ELAPSED'), findsOneWidget);
+    });
+
+    testWidgets('the pill comes back when it carries the phase', (
+      tester,
+    ) async {
+      final container = await pumpActivePage(tester, countUp: true);
+
+      container.read(timerNotifierProvider.notifier).pause();
+      await tester.pump();
+
+      expect(find.text('FOR TIME  ·  PAUSED'), findsOneWidget);
+    });
+
+    testWidgets('portrait digits fill the phone width, pill slot stays put', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1170, 2532) // iPhone 16e, portrait
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final container = await pumpActivePage(tester, countUp: true);
+
+      final digits = tester.getRect(find.text('01:05'));
+      expect(digits.width, greaterThan(390 * 0.8));
+      expect(tester.takeException(), isNull);
+
+      // Pausing brings the pill back in its fixed slot: the digits keep
+      // their size and position.
+      container.read(timerNotifierProvider.notifier).pause();
+      await tester.pump();
+      expect(find.text('FOR TIME  ·  PAUSED'), findsOneWidget);
+      expect(tester.getRect(find.text('01:05')), digits);
+    });
+
+    testWidgets('controls carry no captions but keep their labels', (
+      tester,
+    ) async {
+      await pumpActivePage(tester, countUp: true);
+
+      expect(find.text('PAUSE'), findsNothing);
+      expect(find.text('HOLD TO END'), findsNothing);
+      expect(find.bySemanticsLabel('PAUSE button'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('End workout. Hold to confirm.'),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('End-of-workout honesty (UX review round 1)', () {
     // Regression: Stop used to land on "Finished!" with a full green bar
     // even when aborting at 0:19 of a 10:00 workout.
