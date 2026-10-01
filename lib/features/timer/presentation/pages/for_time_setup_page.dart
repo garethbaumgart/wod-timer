@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
-import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
-import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
-import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
-import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
-import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 
-/// Setup page for For Time timer.
+/// Setup page for For Time workouts.
 ///
 /// For Time workouts involve completing a set of exercises as fast as possible,
 /// with an optional time cap.
@@ -25,317 +21,106 @@ class ForTimeSetupPage extends ConsumerStatefulWidget {
 }
 
 class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
-  // Default 20 minute time cap
-  Duration _timeCap = const Duration(minutes: 20);
-  // Count up (stopwatch style) vs count down
-  bool _countUp = true;
+  late ForTimeSetup _setup = ref.read(setupMemoryProvider).forTime;
+
+  static const _cap = SetupRanges.forTimeCap;
 
   Future<void> _onStart() async {
-    // Create the timer type
-    final timerType = ForTimeTimer(
-      timeCap: TimerDuration.fromSeconds(_timeCap.inSeconds),
-      countUp: _countUp,
-    );
-
-    // Create the workout
-    final createWorkout = ref.read(createWorkoutProvider);
-    final workoutResult = createWorkout(
+    await ref.read(setupMemoryProvider).saveForTime(_setup);
+    if (!mounted) return;
+    await startSetupWorkout(
+      context: context,
+      ref: ref,
       name: 'For Time Workout',
-      timerType: timerType,
-      prepCountdownSeconds: 10,
-    );
-
-    // Start the timer
-    await workoutResult.fold<Future<void>>(
-      (failure) async {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${failure.toString()}')));
-      },
-      (workout) async {
-        await ref.read(timerNotifierProvider.notifier).start(workout);
-        if (!mounted) return;
-        context.go(AppRoutes.timerActivePath(TimerTypes.forTime));
-      },
+      timerType: ForTimeTimer(
+        timeCap: TimerDuration.fromSeconds(_setup.capSeconds),
+        countUp: _setup.countUp,
+      ),
+      route: TimerTypes.forTime,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: OrientationBuilder(
-          builder: (context, orientation) {
-            if (orientation == Orientation.landscape) {
-              return ContentWidthCap(
-                maxWidth: 900,
-                child: _buildLandscapeLayout(),
-              );
-            }
-            return ContentWidthCap(child: _buildPortraitLayout());
-          },
+    final cap = _setup.capSeconds;
+    return SetupScaffold(
+      title: 'FOR TIME',
+      onStart: _onStart,
+      controls: [
+        SetupStepper(
+          label: 'Time cap',
+          value: setupClock(cap),
+          semanticValue: setupSpokenDuration(cap),
+          decrementLabel: 'Decrease time cap',
+          incrementLabel: 'Increase time cap',
+          onDecrement: _cap.canDecrement(cap)
+              ? () => setState(
+                  () =>
+                      _setup = _setup.copyWith(capSeconds: _cap.decrement(cap)),
+                )
+              : null,
+          onIncrement: _cap.canIncrement(cap)
+              ? () => setState(
+                  () =>
+                      _setup = _setup.copyWith(capSeconds: _cap.increment(cap)),
+                )
+              : null,
         ),
-      ),
+        _buildCountDirectionSwitch(),
+      ],
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  /// One two-way switch, so count direction reads as a single choice.
+  Widget _buildCountDirectionSwitch() {
+    return Container(
+      width: 310,
+      height: 54,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: AppColors.border, width: 1.5),
+      ),
       child: Row(
         children: [
-          Semantics(
-            button: true,
-            label: 'Go back',
-            child: GestureDetector(
-              onTap: () => context.go(AppRoutes.home),
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 22,
-                    color: AppColors.textPrimaryDark,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'FOR TIME',
-            style: AppTypography.sectionHeader.copyWith(
-              color: AppColors.textPrimaryDark,
-              fontSize: 24,
-            ),
-          ),
+          _buildSegment(label: 'COUNT UP', countUp: true),
+          _buildSegment(label: 'COUNT DOWN', countUp: false),
         ],
       ),
     );
   }
 
-  Widget _buildPortraitLayout() {
-    return Column(
-      children: [
-        _buildHeader(),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 32),
-
-                // Time cap picker
-                DurationPicker(
-                  initialDuration: _timeCap,
-                  onChanged: (duration) {
-                    setState(() {
-                      _timeCap = duration;
-                    });
-                  },
-                  label: 'Time Cap',
-                  maxMinutes: 60,
-                  minuteInterval: 1,
-                  secondInterval: 30,
-                ),
-                const SizedBox(height: 28),
-
-                // Count direction segmented control
-                _buildCountDirectionToggle(),
-                const SizedBox(height: 24),
-
-                // Summary card
-                WorkoutSummaryCard(
-                  timerType: 'For Time',
-                  workoutDuration: _timeCap,
-                  isTimeCap: true,
-                  voiceLabel: voiceShortLabel(
-                    ref.watch(appSettingsNotifierProvider).voice,
-                  ),
-                  onVoiceTap: () => showVoicePickerSheet(context, ref),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-        _buildStartButton(),
-      ],
-    );
-  }
-
-  Widget _buildLandscapeLayout() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 16),
-                      DurationPicker(
-                        initialDuration: _timeCap,
-                        onChanged: (duration) {
-                          setState(() {
-                            _timeCap = duration;
-                          });
-                        },
-                        label: 'Time Cap',
-                        maxMinutes: 60,
-                        minuteInterval: 1,
-                        secondInterval: 30,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCountDirectionToggle(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                WorkoutSummaryCard(
-                  timerType: 'For Time',
-                  workoutDuration: _timeCap,
-                  isTimeCap: true,
-                  voiceLabel: voiceShortLabel(
-                    ref.watch(appSettingsNotifierProvider).voice,
-                  ),
-                  onVoiceTap: () => showVoicePickerSheet(context, ref),
-                ),
-                const SizedBox(height: 16),
-                _buildStartButtonCompact(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCountDirectionToggle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildSegmentButton(
-          label: 'COUNT UP',
-          isSelected: _countUp,
-          onTap: () => setState(() => _countUp = true),
-        ),
-        const SizedBox(width: 8),
-        _buildSegmentButton(
-          label: 'COUNT DOWN',
-          isSelected: !_countUp,
-          onTap: () => setState(() => _countUp = false),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSegmentButton({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.borderLight,
-              width: 1,
-            ),
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : Colors.transparent,
-          ),
-          child: Text(
-            label,
-            style: AppTypography.bodySmall.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.primary : const Color(0xFF666666),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStartButton() {
-    final isEnabled = _timeCap.inSeconds > 0;
-    return Padding(
-      padding: const EdgeInsets.all(16),
+  Widget _buildSegment({required String label, required bool countUp}) {
+    final isSelected = _setup.countUp == countUp;
+    return Expanded(
       child: Semantics(
         button: true,
-        enabled: isEnabled,
-        label: 'Start workout',
+        selected: isSelected,
+        label: label,
+        excludeSemantics: true,
         child: GestureDetector(
-          onTap: isEnabled ? _onStart : null,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20),
+          onTap: () =>
+              setState(() => _setup = _setup.copyWith(countUp: countUp)),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: _timeCap.inSeconds > 0
-                  ? AppColors.primary
-                  : AppColors.primary.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(11),
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.13)
+                  : Colors.transparent,
             ),
             child: Center(
               child: Text(
-                'START',
-                style: AppTypography.buttonLarge.copyWith(
-                  color: Colors.black,
-                  fontSize: 16,
+                label,
+                style: AppTypography.labelSmall.copyWith(
+                  fontSize: 15,
+                  letterSpacing: 1.2,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondaryDark,
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStartButtonCompact() {
-    return GestureDetector(
-      onTap: _timeCap.inSeconds > 0 ? _onStart : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: _timeCap.inSeconds > 0
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Text(
-            'START',
-            style: AppTypography.buttonLarge.copyWith(
-              color: Colors.black,
-              fontSize: 16,
             ),
           ),
         ),

@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
-import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
-import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
-import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
-import 'package:wod_timer/core/presentation/widgets/repeating_icon_button.dart';
-import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
-import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 
@@ -28,479 +22,147 @@ class TabataSetupPage extends ConsumerStatefulWidget {
 }
 
 class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
-  // Classic Tabata defaults
-  Duration _workDuration = const Duration(seconds: 20);
-  Duration _restDuration = const Duration(seconds: 10);
-  int _rounds = 8;
-  Duration get _totalWorkoutDuration {
-    final workSeconds = _workDuration.inSeconds * _rounds;
-    final restSeconds = _restDuration.inSeconds * _rounds;
-    return Duration(seconds: workSeconds + restSeconds);
-  }
+  late TabataSetup _setup = ref.read(setupMemoryProvider).tabata;
 
-
-  void _applyClassicTabata() {
-    setState(() {
-      _workDuration = const Duration(seconds: 20);
-      _restDuration = const Duration(seconds: 10);
-      _rounds = 8;
-    });
-  }
+  static const _work = SetupRanges.tabataWork;
+  static const _rest = SetupRanges.tabataRest;
+  static const _rounds = SetupRanges.tabataRounds;
 
   Future<void> _onStart() async {
-    final timerType = TabataTimer(
-      workDuration: TimerDuration.fromSeconds(_workDuration.inSeconds),
-      restDuration: TimerDuration.fromSeconds(_restDuration.inSeconds),
-      rounds: RoundCount.fromInt(_rounds),
-    );
-
-    final createWorkout = ref.read(createWorkoutProvider);
-    final workoutResult = createWorkout(
+    await ref.read(setupMemoryProvider).saveTabata(_setup);
+    if (!mounted) return;
+    await startSetupWorkout(
+      context: context,
+      ref: ref,
       name: 'Tabata Workout',
-      timerType: timerType,
-      prepCountdownSeconds: 10,
-    );
-
-    await workoutResult.fold<Future<void>>(
-      (failure) async {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${failure.toString()}')));
-      },
-      (workout) async {
-        await ref.read(timerNotifierProvider.notifier).start(workout);
-        if (!mounted) return;
-        context.go(AppRoutes.timerActivePath(TimerTypes.tabata));
-      },
+      timerType: TabataTimer(
+        workDuration: TimerDuration.fromSeconds(_setup.workSeconds),
+        restDuration: TimerDuration.fromSeconds(_setup.restSeconds),
+        rounds: RoundCount.fromInt(_setup.rounds),
+      ),
+      route: TimerTypes.tabata,
     );
   }
+
+  void _update(TabataSetup next) => setState(() => _setup = next);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: OrientationBuilder(
-          builder: (context, orientation) {
-            if (orientation == Orientation.landscape) {
-              return ContentWidthCap(
-                maxWidth: 900,
-                child: _buildLandscapeLayout(),
-              );
-            }
-            return ContentWidthCap(child: _buildPortraitLayout());
-          },
+    final work = _setup.workSeconds;
+    final rest = _setup.restSeconds;
+    final rounds = _setup.rounds;
+    return SetupScaffold(
+      title: 'TABATA',
+      totalSeconds: _setup.totalSeconds,
+      spacing: 30,
+      onStart: _onStart,
+      controls: [
+        _buildClassicChip(),
+        SetupStepper(
+          label: 'Work',
+          labelColor: AppColors.work,
+          value: '${work}s',
+          semanticValue: '$work seconds',
+          decrementLabel: 'Decrease work',
+          incrementLabel: 'Increase work',
+          onDecrement: _work.canDecrement(work)
+              ? () =>
+                    _update(_setup.copyWith(workSeconds: _work.decrement(work)))
+              : null,
+          onIncrement: _work.canIncrement(work)
+              ? () =>
+                    _update(_setup.copyWith(workSeconds: _work.increment(work)))
+              : null,
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Semantics(
-            button: true,
-            label: 'Go back',
-            child: GestureDetector(
-              onTap: () => context.go(AppRoutes.home),
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 22,
-                    color: AppColors.textPrimaryDark,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'TABATA',
-            style: AppTypography.sectionHeader.copyWith(
-              color: AppColors.textPrimaryDark,
-              fontSize: 24,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPortraitLayout() {
-    return Column(
-      children: [
-        _buildHeader(),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 12),
-
-                // Classic Tabata preset button
-                _buildClassicTabataButton(),
-                const SizedBox(height: 28),
-
-                // Work/Rest duration pickers side by side
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildCompactDurationPicker(
-                        label: 'Work',
-                        duration: _workDuration,
-                        color: AppColors.work,
-                        onChanged: (d) => setState(() => _workDuration = d),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildCompactDurationPicker(
-                        label: 'Rest',
-                        duration: _restDuration,
-                        color: AppColors.rest,
-                        onChanged: (d) => setState(() => _restDuration = d),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-
-                // Rounds picker
-                RoundPicker(
-                  initialRounds: _rounds,
-                  onChanged: (rounds) {
-                    setState(() {
-                      _rounds = rounds;
-                    });
-                  },
-                  label: 'Number of Rounds',
-                  minRounds: 1,
-                  maxRounds: 20,
-                ),
-                const SizedBox(height: 28),
-
-                const SizedBox(height: 4),
-
-                // Summary card
-                WorkoutSummaryCard(
-                  timerType: 'Tabata',
-                  workoutDuration: _totalWorkoutDuration,
-                  rounds: _rounds,
-                  workDuration: _workDuration,
-                  restDuration: _restDuration,
-                  voiceLabel: voiceShortLabel(
-                    ref.watch(appSettingsNotifierProvider).voice,
-                  ),
-                  onVoiceTap: () => showVoicePickerSheet(context, ref),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
+        SetupStepper(
+          label: 'Rest',
+          labelColor: AppColors.rest,
+          value: '${rest}s',
+          semanticValue: '$rest seconds',
+          decrementLabel: 'Decrease rest',
+          incrementLabel: 'Increase rest',
+          onDecrement: _rest.canDecrement(rest)
+              ? () =>
+                    _update(_setup.copyWith(restSeconds: _rest.decrement(rest)))
+              : null,
+          onIncrement: _rest.canIncrement(rest)
+              ? () =>
+                    _update(_setup.copyWith(restSeconds: _rest.increment(rest)))
+              : null,
         ),
-        _buildStartButton(),
-      ],
-    );
-  }
-
-  Widget _buildLandscapeLayout() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildClassicTabataButton(),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildCompactDurationPicker(
-                              label: 'Work',
-                              duration: _workDuration,
-                              color: AppColors.work,
-                              onChanged: (d) =>
-                                  setState(() => _workDuration = d),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildCompactDurationPicker(
-                              label: 'Rest',
-                              duration: _restDuration,
-                              color: AppColors.rest,
-                              onChanged: (d) =>
-                                  setState(() => _restDuration = d),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      RoundPicker(
-                        initialRounds: _rounds,
-                        onChanged: (rounds) {
-                          setState(() {
-                            _rounds = rounds;
-                          });
-                        },
-                        label: 'Rounds',
-                        minRounds: 1,
-                        maxRounds: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                WorkoutSummaryCard(
-                  timerType: 'Tabata',
-                  workoutDuration: _totalWorkoutDuration,
-                  rounds: _rounds,
-                  workDuration: _workDuration,
-                  restDuration: _restDuration,
-                  voiceLabel: voiceShortLabel(
-                    ref.watch(appSettingsNotifierProvider).voice,
-                  ),
-                  onVoiceTap: () => showVoicePickerSheet(context, ref),
-                ),
-                const SizedBox(height: 16),
-                _buildStartButtonCompact(),
-              ],
-            ),
-          ),
+        SetupStepper(
+          label: 'Rounds',
+          value: '$rounds',
+          semanticValue: '$rounds',
+          decrementLabel: 'Decrease rounds',
+          incrementLabel: 'Increase rounds',
+          onDecrement: _rounds.canDecrement(rounds)
+              ? () =>
+                    _update(_setup.copyWith(rounds: _rounds.decrement(rounds)))
+              : null,
+          onIncrement: _rounds.canIncrement(rounds)
+              ? () =>
+                    _update(_setup.copyWith(rounds: _rounds.increment(rounds)))
+              : null,
         ),
       ],
     );
   }
 
-  /// Whether the current values match the classic 20/10 x 8 protocol.
-  bool get _isClassic =>
-      _workDuration == const Duration(seconds: 20) &&
-      _restDuration == const Duration(seconds: 10) &&
-      _rounds == 8;
-
-  /// A real toggle chip: lit while the values match classic Tabata,
-  /// visibly deselected the moment they diverge; tapping re-applies.
-  Widget _buildClassicTabataButton() {
-    final isActive = _isClassic;
-    final accent = isActive ? AppColors.primary : AppColors.textHintDark;
-    return Center(
-      child: Semantics(
-        button: true,
-        selected: isActive,
-        label: isActive
-            ? 'Classic Tabata applied: 20 seconds work, 10 seconds rest, '
-                  '8 rounds'
-            : 'Apply classic Tabata: 20 seconds work, 10 seconds rest, '
-                  '8 rounds',
-        child: GestureDetector(
-          onTap: _applyClassicTabata,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isActive
-                    ? AppColors.primary.withValues(alpha: 0.4)
-                    : AppColors.border,
+  /// One line: lit while the values are classic 20/10 x 8, and an offer to
+  /// reset the moment they drift. The steppers already show the values.
+  Widget _buildClassicChip() {
+    final isClassic = _setup.isClassic;
+    final accent = isClassic ? AppColors.primary : AppColors.textSecondaryDark;
+    return Semantics(
+      button: true,
+      selected: isClassic,
+      label: isClassic
+          ? 'Classic Tabata applied: 20 seconds work, 10 seconds rest, '
+                '8 rounds'
+          : 'Reset to classic Tabata: 20 seconds work, 10 seconds rest, '
+                '8 rounds',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () => _update(TabataSetup.classic),
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          height: 48,
+          child: Center(
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.only(left: 12, right: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(19),
+                border: Border.all(
+                  color: isClassic
+                      ? AppColors.primary.withValues(alpha: 0.38)
+                      : AppColors.borderLight,
+                  width: 1.5,
+                ),
+                color: isClassic
+                    ? AppColors.primary.withValues(alpha: 0.06)
+                    : Colors.transparent,
               ),
-              color: isActive
-                  ? AppColors.primary.withValues(alpha: 0.05)
-                  : Colors.transparent,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isActive ? Icons.flash_on : Icons.flash_off,
-                  size: 16,
-                  color: accent,
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isActive ? 'CLASSIC TABATA' : 'RESET TO CLASSIC',
-                      style: AppTypography.bodySmall.copyWith(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                        letterSpacing: 0.5,
-                      ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isClassic ? Icons.check : Icons.refresh,
+                    size: 18,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isClassic ? 'CLASSIC TABATA' : 'RESET TO CLASSIC',
+                    style: AppTypography.labelSmall.copyWith(
+                      fontSize: 15,
+                      letterSpacing: 1,
+                      color: accent,
                     ),
-                    const SizedBox(height: 1),
-                    Text(
-                      '20s work / 10s rest \u00D7 8 rounds',
-                      style: AppTypography.bodySmall.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textHintDark,
-                      ),
-                    ),
-                  ],
-                ),
-                if (isActive) ...[
-                  const SizedBox(width: 10),
-                  const Icon(Icons.check, size: 16, color: AppColors.primary),
+                  ),
                 ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactDurationPicker({
-    required String label,
-    required Duration duration,
-    required Color color,
-    required ValueChanged<Duration> onChanged,
-  }) {
-    return Column(
-      children: [
-        // Label with color dot
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label.toUpperCase(),
-              style: AppTypography.labelSmall.copyWith(
-                color: color,
-                letterSpacing: 1.5,
-                fontSize: 12,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Big seconds display
-        Text(
-          '${duration.inSeconds}s',
-          style: AppTypography.timerDisplaySmall.copyWith(
-            color: AppColors.textPrimaryDark,
-          ),
-        ),
-        const SizedBox(height: 12),
-        // +/- buttons
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            RepeatingIconButton(
-              icon: Icons.remove,
-              onPressed: duration.inSeconds > 5
-                  ? () => onChanged(duration - const Duration(seconds: 5))
-                  : null,
-              semanticsLabel: 'Decrease by 5 seconds',
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '5s',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                  color: AppColors.textHintDark,
-                ),
-              ),
-            ),
-            RepeatingIconButton(
-              icon: Icons.add,
-              onPressed: duration.inSeconds < 120
-                  ? () => onChanged(duration + const Duration(seconds: 5))
-                  : null,
-              semanticsLabel: 'Increase by 5 seconds',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStartButton() {
-    final isValid = _workDuration.inSeconds > 0 && _rounds > 0;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Semantics(
-        button: true,
-        enabled: isValid,
-        label: 'Start workout',
-        child: GestureDetector(
-          onTap: isValid ? _onStart : null,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            decoration: BoxDecoration(
-              color: isValid
-                  ? AppColors.primary
-                  : AppColors.primary.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                'START',
-                style: AppTypography.buttonLarge.copyWith(
-                  color: Colors.black,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStartButtonCompact() {
-    final isValid = _workDuration.inSeconds > 0 && _rounds > 0;
-    return GestureDetector(
-      onTap: isValid ? _onStart : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: isValid
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Text(
-            'START',
-            style: AppTypography.buttonLarge.copyWith(
-              color: Colors.black,
-              fontSize: 16,
             ),
           ),
         ),

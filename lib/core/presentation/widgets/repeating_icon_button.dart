@@ -7,9 +7,9 @@ import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 /// A bordered icon button that supports long-press auto-repeat.
 ///
 /// On tap, fires [onPressed] once. On long-press, fires [onPressed]
-/// repeatedly at [repeatInterval] after an initial [repeatDelay].
-/// This enables fast value adjustments in pickers without requiring
-/// many individual taps.
+/// repeatedly at [repeatInterval] after an initial [repeatDelay], and twice
+/// as fast after [accelerateAfter] repeats, so a long hold crosses a wide
+/// range (a 60-minute cap) quickly.
 class RepeatingIconButton extends StatefulWidget {
   const RepeatingIconButton({
     required this.icon,
@@ -20,6 +20,7 @@ class RepeatingIconButton extends StatefulWidget {
     this.iconSize = 20,
     this.repeatDelay = const Duration(milliseconds: 400),
     this.repeatInterval = const Duration(milliseconds: 100),
+    this.accelerateAfter = 10,
   });
 
   /// The icon to display.
@@ -43,6 +44,9 @@ class RepeatingIconButton extends StatefulWidget {
   /// Interval between repeated callbacks.
   final Duration repeatInterval;
 
+  /// Repeats at [repeatInterval] before switching to half that interval.
+  final int accelerateAfter;
+
   @override
   State<RepeatingIconButton> createState() => _RepeatingIconButtonState();
 }
@@ -52,9 +56,16 @@ class _RepeatingIconButtonState extends State<RepeatingIconButton> {
 
   void _startRepeating() {
     if (widget.onPressed == null) return;
+    var repeats = 0;
     _timer = Timer(widget.repeatDelay, () {
-      _timer = Timer.periodic(widget.repeatInterval, (_) {
+      _timer = Timer.periodic(widget.repeatInterval, (timer) {
         widget.onPressed?.call();
+        if (++repeats == widget.accelerateAfter) {
+          timer.cancel();
+          _timer = Timer.periodic(widget.repeatInterval ~/ 2, (_) {
+            widget.onPressed?.call();
+          });
+        }
       });
     });
   }
@@ -82,20 +93,24 @@ class _RepeatingIconButtonState extends State<RepeatingIconButton> {
         onLongPressStart: isEnabled ? (_) => _startRepeating() : null,
         onLongPressEnd: isEnabled ? (_) => _stopRepeating() : null,
         onLongPressCancel: _stopRepeating,
-        child: Container(
-          width: widget.size,
-          height: widget.size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Center(
-            child: Icon(
-              widget.icon,
-              size: widget.iconSize,
-              color: isEnabled
-                  ? const Color(0xFF666666)
-                  : AppColors.textDisabledDark,
+        // A live button reads as live: white glyph on a visible border.
+        // At a limit the whole button drops to 30% (the old #666 glyph was
+        // darker than the disabled colour, so live buttons looked off).
+        child: Opacity(
+          opacity: isEnabled ? 1 : 0.3,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight, width: 1.5),
+            ),
+            child: Center(
+              child: Icon(
+                widget.icon,
+                size: widget.iconSize,
+                color: AppColors.textPrimaryDark,
+              ),
             ),
           ),
         ),
