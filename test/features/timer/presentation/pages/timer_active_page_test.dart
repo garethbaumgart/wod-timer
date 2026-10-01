@@ -285,6 +285,24 @@ void main() {
       return container;
     }
 
+    // Regression: landscape used a fixed 180pt digit box, so on a phone
+    // held sideways "ROUNDS 0" + the tap hint overflowed the column by
+    // 11-18px (seen on the iPhone 16e sim, 1.1.3 and 1.2.0 dev builds).
+    testWidgets('landscape phone shows the round tally without overflow', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(2532, 1170) // iPhone 16e, landscape
+        ..devicePixelRatio = 3
+        ..padding = const FakeViewPadding(left: 141, right: 141, bottom: 63);
+      addTearDown(tester.view.reset);
+      await pumpAmrapPage(tester);
+
+      expect(tester.takeException(), isNull);
+      final hint = tester.getRect(find.text('TAP ANYWHERE TO COUNT A ROUND'));
+      expect(hint.bottom, lessThan(390 - 21 - 8)); // above the progress bar
+    });
+
     testWidgets('tap-to-count tallies rounds and survives to completion', (
       tester,
     ) async {

@@ -477,7 +477,16 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                   children: [
                     _buildPillSlot(state, phaseColor),
                     const SizedBox(height: AppSpacing.xs),
-                    _buildTimerWithGlow(state, phaseColor, expand: true),
+                    // Flexible, like portrait: a fixed 180pt digit box
+                    // pushed ROUNDS / the tap hint off the bottom of a
+                    // phone held sideways (11-18px overflow since 1.1).
+                    Flexible(
+                      child: _buildTimerWithGlow(
+                        state,
+                        phaseColor,
+                        fill: true,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildSubInfo(state, session, phaseColor),
                   ],
@@ -554,12 +563,11 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         '${secs.toString().padLeft(2, '0')}';
   }
 
-  /// [expand] fixes the digit box (landscape); [fill] lets the digits
-  /// grow to the width they are given (portrait, inside a Flexible).
+  /// With [fill] the digits grow to the width they are given (inside a
+  /// Flexible, which caps the height on short screens).
   Widget _buildTimerWithGlow(
     TimerNotifierState state,
     Color phaseColor, {
-    bool expand = false,
     bool fill = false,
   }) {
     final seconds = _displaySeconds(state);
@@ -589,10 +597,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         fontSize: fontSize,
         color: digitColor,
       ),
-      // In landscape the digits scale UP to fill the wide column — the
-      // whole point of the propped-phone posture is a bigger clock.
+      // The digits scale UP to fill the column: from across the gym (or
+      // a phone propped on a box) a bigger clock is the whole point.
       child: FittedBox(
-        fit: expand || fill ? BoxFit.contain : BoxFit.scaleDown,
+        fit: fill ? BoxFit.contain : BoxFit.scaleDown,
         child: Text(
           timeString,
           semanticsLabel:
@@ -604,7 +612,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
     // Scaled digits ignore the font-size bump, so the final-3s prep pulse
     // is applied as a scale instead.
-    if (expand || fill) {
+    if (fill) {
       digits = AnimatedScale(
         scale: isPulsing ? 1.08 : 1,
         duration: const Duration(milliseconds: 200),
@@ -614,15 +622,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     if (isPaused) {
       digits = FadeTransition(opacity: _pausedPulse, child: digits);
     }
-    if (expand) {
-      final isPortrait =
-          MediaQuery.orientationOf(context) == Orientation.portrait;
-      digits = SizedBox(
-        width: double.infinity,
-        height: isPortrait ? 230 : 180,
-        child: digits,
-      );
-    } else if (fill) {
+    if (fill) {
       // FittedBox only scales UP under a forced size: pin the width so the
       // digits grow to it; the height follows the aspect ratio (and the
       // enclosing Flexible caps it on short screens).
