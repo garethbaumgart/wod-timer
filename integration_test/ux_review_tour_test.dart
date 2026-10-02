@@ -270,10 +270,12 @@ void main() {
       await pumpSeconds(tester, 0.8);
       await tester.tap(find.text('START'));
       await tester.pump();
+      // The round fraction only shows once work starts (the setup screen's
+      // WORK label stays in the tree under the live route).
       expect(
         await pumpUntil(
           tester,
-          find.text('WORK'),
+          find.text('1/2'),
           timeout: const Duration(seconds: 20),
         ),
         isTrue,
@@ -333,15 +335,20 @@ void main() {
       await hold(tester, 'tabata_setup_landscape');
       await goBack(tester);
       await openAndStart(tester, 'AMRAP');
+      // Rounds were counted earlier in the run, so TAP TO COUNT is gone.
       expect(
         await pumpUntil(
           tester,
-          find.text('TAP TO COUNT'),
+          _pauseIcon,
           timeout: const Duration(seconds: 15),
         ),
         isTrue,
       );
       await pumpSeconds(tester, 6);
+      await tester.tapAt(tester.getCenter(find.byType(Scaffold)) / 1.6);
+      await pumpSeconds(tester, 1.2);
+      await tester.tapAt(tester.getCenter(find.byType(Scaffold)) / 1.6);
+      await pumpSeconds(tester, 1);
       await hold(tester, 'active_work_landscape');
       await pause(tester);
       await hold(tester, 'active_paused_landscape');

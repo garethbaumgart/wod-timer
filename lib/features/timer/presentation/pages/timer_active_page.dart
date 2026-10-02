@@ -1144,6 +1144,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           config,
         ],
         Expanded(child: Center(child: middle)),
+        const SizedBox(height: AppSpacing.sm),
         _buildCompletedButtons(),
         SizedBox(height: landscape ? AppSpacing.md : AppSpacing.xl),
       ],
@@ -1156,8 +1157,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     required bool landscape,
   }) {
     final color = state.endedEarly ? Colors.white : AppColors.primary;
+    // Scaled with the tablet factor so the score stays big on an iPad.
+    final maxHero = (landscape ? 150.0 : 200.0) * _scale(context);
     Widget hero = ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: landscape ? 150 : 200),
+      constraints: BoxConstraints(maxHeight: maxHero),
       child: SizedBox(
         width: double.infinity,
         child: FittedBox(
