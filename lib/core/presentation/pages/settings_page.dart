@@ -34,126 +34,136 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsNotifierProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: ContentWidthCap(
-          maxWidth: 700,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    Semantics(
-                      button: true,
-                      label: 'Go back',
-                      child: GestureDetector(
-                        onTap: () => context.go(AppRoutes.home),
-                        behavior: HitTestBehavior.opaque,
-                        child: const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: Center(
-                            child: Icon(
-                              Icons.arrow_back_ios_new,
-                              size: 22,
-                              color: AppColors.textPrimaryDark,
+    // Reached with context.go, so it is the only route: the Android back
+    // button would close the app. Back goes Home, like the header chevron.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(AppRoutes.home);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: SafeArea(
+          child: ContentWidthCap(
+            maxWidth: 700,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: 'Go back',
+                        child: GestureDetector(
+                          onTap: () => context.go(AppRoutes.home),
+                          behavior: HitTestBehavior.opaque,
+                          child: const SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Center(
+                              child: Icon(
+                                Icons.arrow_back_ios_new,
+                                size: 22,
+                                color: AppColors.textPrimaryDark,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Settings',
-                      style: AppTypography.sectionHeader.copyWith(
-                        color: AppColors.textPrimaryDark,
-                        fontSize: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // One flat list: six rows read faster than three headed
-              // sections of one or two rows each.
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _buildDivider(),
-                    _buildTapRow(
-                      label: 'Orientation',
-                      value: _getOrientationShortLabel(
-                        settings.orientationLock,
-                      ),
-                      onTap: () =>
-                          _showOrientationPicker(context, ref, settings),
-                    ),
-                    _buildDivider(),
-                    _buildTapRow(
-                      label: 'Voice',
-                      value: voiceShortLabel(settings.voice),
-                      onTap: () => showVoicePickerSheet(context, ref),
-                    ),
-                    _buildDivider(),
-                    _buildSwitchRow(
-                      label: 'Haptics',
-                      value: settings.hapticEnabled,
-                      onChanged: (value) {
-                        ref.read(hapticServiceProvider).selectionClick();
-                        ref
-                            .read(appSettingsNotifierProvider.notifier)
-                            .setHapticEnabled(enabled: value);
-                      },
-                    ),
-                    _buildDivider(),
-                    // The automatic rating sheet is throttled by Apple and may
-                    // never appear, so someone who wants to rate needs a row
-                    // they can find. It opens the store page, not the sheet:
-                    // neither store lets a button call the in-app review API.
-                    _buildTapRow(
-                      label: 'Rate Wharf WOD',
-                      value: '',
-                      onTap: () {
-                        trackEvent('rate_tapped', {'source': 'settings'});
-                        unawaited(
-                          ref.read(reviewPrompterProvider).openStorePage(),
-                        );
-                      },
-                    ),
-                    _buildDivider(),
-                    _buildTapRow(
-                      label: 'Send feedback',
-                      value: '',
-                      onTap: () => launchUrl(
-                        Uri.parse(
-                          'mailto:support@mentalmetal.app'
-                          '?subject=Wharf%20WOD%20feedback',
+                      const SizedBox(width: 8),
+                      Text(
+                        'Settings',
+                        style: AppTypography.sectionHeader.copyWith(
+                          color: AppColors.textPrimaryDark,
+                          fontSize: 24,
                         ),
                       ),
-                    ),
-                    _buildDivider(),
-                    _buildTapRow(
-                      label: 'Privacy policy',
-                      value: '',
-                      onTap: () => launchUrl(
-                        Uri.parse('https://mentalmetal.app/wharf-wod/privacy'),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                    ),
-                    _buildDivider(),
-                    _buildVersionFooter(ref),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                // One flat list: six rows read faster than three headed
+                // sections of one or two rows each.
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildDivider(),
+                      _buildTapRow(
+                        label: 'Orientation',
+                        value: _getOrientationShortLabel(
+                          settings.orientationLock,
+                        ),
+                        onTap: () =>
+                            _showOrientationPicker(context, ref, settings),
+                      ),
+                      _buildDivider(),
+                      _buildTapRow(
+                        label: 'Voice',
+                        value: voiceShortLabel(settings.voice),
+                        onTap: () => showVoicePickerSheet(context, ref),
+                      ),
+                      _buildDivider(),
+                      _buildSwitchRow(
+                        label: 'Haptics',
+                        value: settings.hapticEnabled,
+                        onChanged: (value) {
+                          ref.read(hapticServiceProvider).selectionClick();
+                          ref
+                              .read(appSettingsNotifierProvider.notifier)
+                              .setHapticEnabled(enabled: value);
+                        },
+                      ),
+                      _buildDivider(),
+                      // The automatic rating sheet is throttled by Apple and may
+                      // never appear, so someone who wants to rate needs a row
+                      // they can find. It opens the store page, not the sheet:
+                      // neither store lets a button call the in-app review API.
+                      _buildTapRow(
+                        label: 'Rate Wharf WOD',
+                        value: '',
+                        onTap: () {
+                          trackEvent('rate_tapped', {'source': 'settings'});
+                          unawaited(
+                            ref.read(reviewPrompterProvider).openStorePage(),
+                          );
+                        },
+                      ),
+                      _buildDivider(),
+                      _buildTapRow(
+                        label: 'Send feedback',
+                        value: '',
+                        onTap: () => launchUrl(
+                          Uri.parse(
+                            'mailto:support@mentalmetal.app'
+                            '?subject=Wharf%20WOD%20feedback',
+                          ),
+                        ),
+                      ),
+                      _buildDivider(),
+                      _buildTapRow(
+                        label: 'Privacy policy',
+                        value: '',
+                        onTap: () => launchUrl(
+                          Uri.parse(
+                            'https://mentalmetal.app/wharf-wod/privacy',
+                          ),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                      _buildDivider(),
+                      _buildVersionFooter(ref),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

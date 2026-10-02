@@ -92,6 +92,18 @@ void main() {
     await tester.pump();
   }
 
+  group('system back on setup (1.3.0)', () {
+    testWidgets('goes Home instead of closing the app', (tester) async {
+      await pumpSetup(tester, const AmrapSetupPage());
+      expect(find.text('HOME'), findsNothing);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('HOME'), findsOneWidget);
+    });
+  });
+
   group('EMOM setup', () {
     testWidgets('shows each number once, with nothing repeated', (
       tester,
