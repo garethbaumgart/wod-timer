@@ -19,7 +19,16 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
-  static const _labelColor = Color(0xFF777777);
+  /// Rows at 17pt: white labels, grey values.
+  static TextStyle get _labelStyle => AppTypography.bodyMedium.copyWith(
+    color: AppColors.textPrimaryDark,
+    fontSize: 17,
+  );
+
+  static TextStyle get _valueStyle => AppTypography.bodyMedium.copyWith(
+    color: AppColors.textSecondaryDark,
+    fontSize: 17,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,145 +40,121 @@ class SettingsPage extends ConsumerWidget {
         child: ContentWidthCap(
           maxWidth: 700,
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Semantics(
-                    button: true,
-                    label: 'Go back',
-                    child: GestureDetector(
-                      onTap: () => context.go(AppRoutes.home),
-                      behavior: HitTestBehavior.opaque,
-                      child: const SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Center(
-                          child: Icon(
-                            Icons.arrow_back_ios_new,
-                            size: 22,
-                            color: AppColors.textPrimaryDark,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Go back',
+                      child: GestureDetector(
+                        onTap: () => context.go(AppRoutes.home),
+                        behavior: HitTestBehavior.opaque,
+                        child: const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Center(
+                            child: Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 22,
+                              color: AppColors.textPrimaryDark,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Settings',
-                    style: AppTypography.sectionHeader.copyWith(
-                      color: AppColors.textPrimaryDark,
-                      fontSize: 24,
+                    const SizedBox(width: 8),
+                    Text(
+                      'Settings',
+                      style: AppTypography.sectionHeader.copyWith(
+                        color: AppColors.textPrimaryDark,
+                        fontSize: 24,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // Settings rows
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  // DISPLAY section
-                  _buildSectionHeader('Display'),
-                  _buildDivider(),
-                  _buildTapRow(
-                    label: 'Orientation',
-                    value: _getOrientationShortLabel(settings.orientationLock),
-                    onTap: () => _showOrientationPicker(context, ref, settings),
-                  ),
-                  // AUDIO section
-                  _buildSectionHeader('Audio'),
-                  _buildDivider(),
-                  _buildTapRow(
-                    label: 'Voice',
-                    value: voiceShortLabel(settings.voice),
-                    onTap: () => showVoicePickerSheet(context, ref),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                    child: Text(
-                      'Voice cues play through the silent switch.',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textHintDark,
-                        fontSize: 12,
+              // One flat list: six rows read faster than three headed
+              // sections of one or two rows each.
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _buildDivider(),
+                    _buildTapRow(
+                      label: 'Orientation',
+                      value: _getOrientationShortLabel(
+                        settings.orientationLock,
+                      ),
+                      onTap: () =>
+                          _showOrientationPicker(context, ref, settings),
+                    ),
+                    _buildDivider(),
+                    _buildTapRow(
+                      label: 'Voice',
+                      value: voiceShortLabel(settings.voice),
+                      onTap: () => showVoicePickerSheet(context, ref),
+                    ),
+                    _buildDivider(),
+                    _buildSwitchRow(
+                      label: 'Haptics',
+                      value: settings.hapticEnabled,
+                      onChanged: (value) {
+                        ref.read(hapticServiceProvider).selectionClick();
+                        ref
+                            .read(appSettingsNotifierProvider.notifier)
+                            .setHapticEnabled(enabled: value);
+                      },
+                    ),
+                    _buildDivider(),
+                    // The automatic rating sheet is throttled by Apple and may
+                    // never appear, so someone who wants to rate needs a row
+                    // they can find. It opens the store page, not the sheet:
+                    // neither store lets a button call the in-app review API.
+                    _buildTapRow(
+                      label: 'Rate Wharf WOD',
+                      value: '',
+                      onTap: () {
+                        trackEvent('rate_tapped', {'source': 'settings'});
+                        unawaited(
+                          ref.read(reviewPrompterProvider).openStorePage(),
+                        );
+                      },
+                    ),
+                    _buildDivider(),
+                    _buildTapRow(
+                      label: 'Send feedback',
+                      value: '',
+                      onTap: () => launchUrl(
+                        Uri.parse(
+                          'mailto:support@mentalmetal.app'
+                          '?subject=Wharf%20WOD%20feedback',
+                        ),
                       ),
                     ),
-                  ),
-                  _buildDivider(),
-                  _buildSwitchRow(
-                    label: 'Haptic Feedback',
-                    value: settings.hapticEnabled,
-                    onChanged: (value) {
-                      ref.read(hapticServiceProvider).selectionClick();
-                      ref
-                          .read(appSettingsNotifierProvider.notifier)
-                          .setHapticEnabled(enabled: value);
-                    },
-                  ),
-                  // ABOUT section
-                  _buildSectionHeader('About'),
-                  _buildDivider(),
-                  // The automatic rating sheet is throttled by Apple and may
-                  // never appear, so someone who wants to rate needs a row
-                  // they can find. It opens the store page, not the sheet:
-                  // neither store lets a button call the in-app review API.
-                  _buildTapRow(
-                    label: 'Rate Wharf WOD',
-                    value: '',
-                    onTap: () {
-                      trackEvent('rate_tapped', {'source': 'settings'});
-                      unawaited(
-                        ref.read(reviewPrompterProvider).openStorePage(),
-                      );
-                    },
-                  ),
-                  _buildDivider(),
-                  _buildTapRow(
-                    label: 'Send Feedback',
-                    value: '',
-                    onTap: () => launchUrl(
-                      Uri.parse(
-                        'mailto:support@mentalmetal.app'
-                        '?subject=Wharf%20WOD%20feedback',
+                    _buildDivider(),
+                    _buildTapRow(
+                      label: 'Privacy policy',
+                      value: '',
+                      onTap: () => launchUrl(
+                        Uri.parse('https://mentalmetal.app/wharf-wod/privacy'),
+                        mode: LaunchMode.externalApplication,
                       ),
                     ),
-                  ),
-                  _buildDivider(),
-                  _buildTapRow(
-                    label: 'Privacy Policy',
-                    value: '',
-                    onTap: () => launchUrl(
-                      Uri.parse('https://mentalmetal.app/wharf-wod/privacy'),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                  ),
-                  _buildDivider(),
-                  _buildVersionRow(ref),
-                  _buildDivider(),
-                ],
+                    _buildDivider(),
+                    _buildVersionFooter(ref),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: AppTypography.summaryLabel.copyWith(
-          color: AppColors.textHintDark,
-          fontSize: 11,
-          letterSpacing: 1,
         ),
       ),
     );
@@ -192,16 +177,8 @@ class SettingsPage extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(color: _labelColor),
-            ),
-            Text(
-              value.isEmpty ? '>' : '$value >',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondaryDark,
-              ),
-            ),
+            Text(label, style: _labelStyle),
+            Text(value.isEmpty ? '>' : '$value >', style: _valueStyle),
           ],
         ),
       ),
@@ -218,10 +195,7 @@ class SettingsPage extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: AppTypography.bodyMedium.copyWith(color: _labelColor),
-          ),
+          Text(label, style: _labelStyle),
           SizedBox(
             height: 28,
             child: Switch(
@@ -239,31 +213,25 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildVersionRow(WidgetRef ref) {
-    final packageInfoAsync = ref.watch(packageInfoProvider);
-
-    final versionText = packageInfoAsync.when(
-      data: (info) => '${info.version} (${info.buildNumber})',
-      loading: () => 'Loading...',
-      error: (_, __) => 'Unknown',
-    );
+  /// The version as a quiet footer, not a row: it isn't something to tap.
+  Widget _buildVersionFooter(WidgetRef ref) {
+    final versionText = ref
+        .watch(packageInfoProvider)
+        .when(
+          data: (info) => 'Wharf WOD ${info.version} (${info.buildNumber})',
+          loading: () => 'Wharf WOD',
+          error: (_, _) => 'Wharf WOD',
+        );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Version',
-            style: AppTypography.bodyMedium.copyWith(color: _labelColor),
-          ),
-          Text(
-            versionText,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondaryDark,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+      child: Text(
+        versionText,
+        textAlign: TextAlign.center,
+        style: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textSecondaryDark,
+          fontSize: 15,
+        ),
       ),
     );
   }
@@ -314,43 +282,43 @@ class SettingsPage extends ConsumerWidget {
       builder: (context) => SafeArea(
         child: SingleChildScrollView(
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Orientation',
-                style: AppTypography.sectionHeader.copyWith(
-                  color: AppColors.textPrimaryDark,
-                ),
-              ),
-            ),
-            ...OrientationLockMode.values.map(
-              (mode) => ListTile(
-                leading: Icon(
-                  _getOrientationIcon(mode),
-                  color: AppColors.textPrimaryDark,
-                ),
-                title: Text(
-                  _getOrientationLabel(mode),
-                  style: AppTypography.bodyLarge.copyWith(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Orientation',
+                  style: AppTypography.sectionHeader.copyWith(
                     color: AppColors.textPrimaryDark,
                   ),
                 ),
-                trailing: settings.orientationLock == mode
-                    ? const Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  ref.read(hapticServiceProvider).selectionClick();
-                  ref
-                      .read(appSettingsNotifierProvider.notifier)
-                      .setOrientationLock(mode);
-                  Navigator.pop(context);
-                },
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              ...OrientationLockMode.values.map(
+                (mode) => ListTile(
+                  leading: Icon(
+                    _getOrientationIcon(mode),
+                    color: AppColors.textPrimaryDark,
+                  ),
+                  title: Text(
+                    _getOrientationLabel(mode),
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.textPrimaryDark,
+                    ),
+                  ),
+                  trailing: settings.orientationLock == mode
+                      ? const Icon(Icons.check, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    ref.read(hapticServiceProvider).selectionClick();
+                    ref
+                        .read(appSettingsNotifierProvider.notifier)
+                        .setOrientationLock(mode);
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
