@@ -534,8 +534,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Fixed by the 96pt row, whatever the tablet
+                        // scale: the text fits itself to it.
                         SizedBox(
-                          height: 56 * s,
+                          height: 64,
                           child: _buildLandscapeInfoLine(state, session, s),
                         ),
                         const SizedBox(height: AppSpacing.xs),
@@ -964,6 +966,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     const size = 96.0;
 
     return Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       label: '${isPaused ? 'Resume' : 'Pause'} button'
@@ -1011,6 +1014,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// has to travel sideways into a different shape and colour.
   Widget _buildFinishButton() {
     return Semantics(
+      container: true,
       button: true,
       label: 'Finish workout and log your time',
       excludeSemantics: true,
@@ -1217,6 +1221,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     Widget button(String label, String semantics, VoidCallback onTap) =>
         Expanded(
           child: Semantics(
+            container: true,
             button: true,
             label: semantics,
             excludeSemantics: true,
@@ -1299,6 +1304,7 @@ class _GhostStepButton extends StatelessWidget {
     final enabled = onPressed != null;
     final color = Colors.white.withValues(alpha: enabled ? 0.4 : 0.15);
     return Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       label: semanticsLabel,
@@ -1416,6 +1422,7 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
     final iconColor = enabled ? AppColors.error : AppColors.textDisabledDark;
 
     return Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       label: 'End workout. Hold to confirm.',
