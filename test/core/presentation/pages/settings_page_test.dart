@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/package_info_provider.dart';
 import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
+import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
+import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/presentation/pages/settings_page.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/review/review_prompter.dart';
+import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+
+class _MockAudioService extends Mock implements IAudioService {}
+
+class _MockHapticService extends Mock implements IHapticService {}
 
 /// In-memory store so the prompter never touches SharedPreferences.
 class _MapStore implements ReviewStore {
@@ -40,6 +49,7 @@ void main() {
 
   late _FakeRequester requester;
   late _MapStore store;
+  late _MockAudioService audio;
   final now = DateTime(2026, 10, 2);
 
   /// Pumps the settings page on a [width] x [height] portrait screen, with
@@ -58,10 +68,18 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     requester = _FakeRequester();
     store = _MapStore();
+    audio = _MockAudioService();
+    when(
+      () => audio.playVoicePreview(any()),
+    ).thenAnswer((_) async => right(unit));
+    final haptic = _MockHapticService();
+    when(haptic.selectionClick).thenAnswer((_) async => right(unit));
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          audioServiceProvider.overrideWithValue(audio),
+          hapticServiceProvider.overrideWithValue(haptic),
           reviewPrompterProvider.overrideWithValue(
             ReviewPrompter(requester: requester, store: store, now: () => now),
           ),
@@ -198,6 +216,99 @@ void main() {
         rect.top,
         greaterThan(tester.getRect(find.text('Privacy policy')).bottom),
       );
+    });
+  });
+
+  group('Voice picker', () {
+    Future<void> openPicker(WidgetTester tester) async {
+      await tester.tap(find.text('Voice'));
+      await tester.pumpAndSettle();
+    }
+
+    Finder playButton(String voice) => find.byTooltip('Preview $voice');
+
+    testWidgets('preview leads each row, the check trails it', (tester) async {
+      await pumpSettings(tester);
+      await openPicker(tester);
+
+      // No leading voice icons any more.
+      for (final icon in [
+        Icons.record_voice_over,
+        Icons.shuffle,
+        Icons.volume_down,
+        Icons.volume_off,
+      ]) {
+        expect(find.byIcon(icon), findsNothing);
+      }
+      expect(find.byIcon(Icons.play_circle_outline), findsNWidgets(4));
+      for (final voice in ['Beeps', 'Silent']) {
+        expect(playButton(voice), findsNothing, reason: voice);
+      }
+
+      final major = tester.getRect(find.text('Major (CrossFit Coach)'));
+      final play = tester.getRect(
+        find
+            .ancestor(of: playButton('Major'), matching: find.byType(SizedBox))
+            .first,
+      );
+      final check = tester.getRect(find.byIcon(Icons.check));
+      expect(play.size, const Size(48, 48));
+      expect(play.left, lessThan(24));
+      expect(play.right, lessThan(major.left));
+      expect(check.left, greaterThan(major.right));
+      expect(check.right, greaterThan(390 - 40));
+      // The empty 48pt slot keeps rows without a preview aligned.
+      expect(tester.getRect(find.text('Beeps only')).left, major.left);
+      expect(tester.getRect(find.text('Silent')).left, major.left);
+    });
+
+    testWidgets('play previews without selecting or closing', (tester) async {
+      await pumpSettings(tester);
+      await openPicker(tester);
+
+      await tester.tap(playButton('Liam'));
+      await tester.pumpAndSettle();
+
+      verify(() => audio.playVoicePreview('liam')).called(1);
+      expect(find.text('Liam (Old British Man)'), findsOneWidget);
+      expect(find.text('Major >'), findsOneWidget);
+    });
+
+    testWidgets('tapping the row selects and closes', (tester) async {
+      await pumpSettings(tester);
+      await openPicker(tester);
+
+      await tester.tap(find.text('Liam (Old British Man)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Liam (Old British Man)'), findsNothing);
+      expect(find.text('Liam >'), findsOneWidget);
+      verifyNever(() => audio.playVoicePreview(any()));
+    });
+
+    testWidgets('the silent-switch line sits at the bottom of the sheet', (
+      tester,
+    ) async {
+      await pumpSettings(tester);
+      await openPicker(tester);
+
+      final caption = find.text('Voice cues play through the silent switch.');
+      expect(caption, findsOneWidget);
+      final style = tester.widget<Text>(caption).style!;
+      expect(style.fontSize, 15);
+      expect(style.color, AppColors.textSecondaryDark);
+      expect(
+        tester.getRect(caption).top,
+        greaterThan(tester.getRect(find.text('Silent')).bottom),
+      );
+    });
+
+    testWidgets('large text (1.6x at 375pt) lays out without overflow', (
+      tester,
+    ) async {
+      await pumpSettings(tester, width: 375, height: 812, textScale: 1.6);
+      await openPicker(tester);
+      expect(tester.takeException(), isNull);
     });
   });
 
