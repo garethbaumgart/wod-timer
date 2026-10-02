@@ -226,6 +226,106 @@ final class TimerSessionTests: XCTestCase {
         }
     }
 
+    // MARK: - 1.3.0 regressions
+
+    /// A Tabata paused mid-WORK was measured against the REST length
+    /// (12s into 20s work showed 0:00 instead of 8).
+    func testTabataPausedMidWorkKeepsWorkCountdown() {
+        var session = makeRunningTabataSession(workSeconds: 20, restSeconds: 10, rounds: 8)
+        _ = session.tick(deltaMs: 12_000)
+        XCTAssertEqual(session.state, .running)
+        XCTAssertEqual(session.timeRemaining.seconds, 8)
+        _ = session.pause()
+        XCTAssertEqual(session.timeRemaining.seconds, 8)
+        _ = session.resume()
+        XCTAssertEqual(session.timeRemaining.seconds, 8)
+    }
+
+    func testTabataPausedMidRestKeepsRestCountdown() {
+        var session = makeRunningTabataSession(workSeconds: 20, restSeconds: 10, rounds: 8)
+        _ = session.tick(deltaMs: 20_000)
+        _ = session.tick(deltaMs: 3_000)
+        XCTAssertEqual(session.state, .resting)
+        _ = session.pause()
+        XCTAssertEqual(session.timeRemaining.seconds, 7)
+    }
+
+    /// After the watch slept, one catch-up tick spanning several rounds
+    /// used to advance only one.
+    func testEmomLargeDeltaConsumesEveryInterval() {
+        var session = makeRunningEmomSession(intervalSeconds: 60, rounds: 10)
+        _ = session.tick(deltaMs: 185_000)
+        XCTAssertEqual(session.currentRound, 4)
+        XCTAssertEqual(session.timeRemaining.seconds, 55)
+        XCTAssertEqual(session.elapsed.seconds, 185)
+    }
+
+    func testTabataLargeDeltaConsumesEveryPhase() {
+        var session = makeRunningTabataSession(workSeconds: 20, restSeconds: 10, rounds: 8)
+        _ = session.tick(deltaMs: 95_000) // 3 rounds (90s) + 5s into work
+        XCTAssertEqual(session.currentRound, 4)
+        XCTAssertEqual(session.state, .running)
+        XCTAssertEqual(session.timeRemaining.seconds, 15)
+    }
+
+    func testLargeDeltaPastTheEndCompletesAtTheExactTotal() {
+        var session = makeRunningEmomSession(intervalSeconds: 60, rounds: 3)
+        _ = session.tick(deltaMs: 500_000)
+        XCTAssertEqual(session.state, .completed)
+        XCTAssertEqual(session.elapsed.seconds, 180)
+    }
+
+    func testPrepOvershootCarriesIntoTheWorkout() {
+        let workout = Workout(
+            id: UUID(), name: "Test", timerType: .amrap(duration: TimerDuration(seconds: 600)),
+            prepCountdown: TimerDuration(seconds: 10), createdAt: Date()
+        )
+        var session = TimerSession.fromWorkout(workout)
+        _ = session.start()
+        _ = session.tick(deltaMs: 25_000)
+        XCTAssertEqual(session.state, .running)
+        XCTAssertEqual(session.elapsed.seconds, 15)
+    }
+
+    /// The summary read one tick short (9:59 for a 10:00 AMRAP).
+    func testAmrapCompletionPinsTheExactDuration() {
+        var session = makeRunningAmrapSession(durationSeconds: 600)
+        for _ in 0 ..< 6_010 { _ = session.tick(deltaMs: 100) }
+        XCTAssertEqual(session.state, .completed)
+        XCTAssertEqual(session.elapsed.seconds, 600)
+    }
+
+    func testAmrapRoundTallyCountsAndCorrectsButNeverGoesNegative() {
+        var session = makeRunningAmrapSession(durationSeconds: 60)
+        session.countRound()
+        session.countRound()
+        XCTAssertEqual(session.countedRounds, 2)
+        _ = session.tick(deltaMs: 61_000)
+        XCTAssertEqual(session.state, .completed)
+        session.adjustRounds(by: 1)
+        XCTAssertEqual(session.countedRounds, 3)
+        session.adjustRounds(by: -5)
+        XCTAssertEqual(session.countedRounds, 0)
+    }
+
+    func testRoundTallyOnlyCountsWhileAnAmrapRuns() {
+        var emom = makeRunningEmomSession(intervalSeconds: 60, rounds: 10)
+        emom.countRound()
+        XCTAssertEqual(emom.currentRound, 1)
+        var amrap = makeRunningAmrapSession(durationSeconds: 60)
+        _ = amrap.pause()
+        amrap.countRound()
+        XCTAssertEqual(amrap.countedRounds, 0)
+    }
+
+    func testClockFormatNeverZeroPadsMinutes() {
+        XCTAssertEqual(TimerDuration(seconds: 585).clock, "9:45")
+        XCTAssertEqual(TimerDuration(seconds: 11).clock, "0:11")
+        XCTAssertEqual(TimerDuration(seconds: 750).clock, "12:30")
+        XCTAssertEqual(TimerDuration(seconds: 20).phase, "20s")
+        XCTAssertEqual(TimerDuration(seconds: 120).phase, "2:00")
+    }
+
     // MARK: - Helpers
 
     private func makeRunningSession() -> TimerSession {
@@ -302,3 +402,68 @@ final class TimerSessionTests: XCTestCase {
         return session
     }
 }
+
+/// View-model rules added in 1.3.0 (simulator test runs have the capture
+/// hooks, which advance the session without waiting on the engine).
+final class TimerViewModelRulesTests: XCTestCase {
+
+    private func forTime(cap: Int) -> Workout {
+        Workout(
+            id: UUID(), name: "Test", timerType: .forTime(timeCap: TimerDuration(seconds: cap)),
+            prepCountdown: .zero, createdAt: Date()
+        )
+    }
+
+    func testGetReadyCannotBePaused() {
+        let vm = TimerViewModel()
+        vm.start(workout: Workout.defaultAmrap())
+        XCTAssertEqual(vm.phase, .preparing)
+        vm.pause()
+        XCTAssertEqual(vm.phase, .preparing)
+        vm.reset()
+    }
+
+    func testStopIsHonestAndFinishIsAFinish() {
+        let stopped = TimerViewModel()
+        stopped.start(workout: forTime(cap: 600))
+        stopped.debugAdvance(seconds: 30)
+        stopped.stop()
+        XCTAssertEqual(stopped.phase, .completed)
+        XCTAssertTrue(stopped.endedEarly)
+
+        let finished = TimerViewModel()
+        finished.start(workout: forTime(cap: 600))
+        finished.debugAdvance(seconds: 30)
+        finished.finish()
+        XCTAssertEqual(finished.phase, .completed)
+        XCTAssertFalse(finished.endedEarly)
+        XCTAssertFalse(finished.endedAtTimeCap)
+        stopped.reset(); finished.reset()
+    }
+
+    func testReachingTheCapIsATimeCap() {
+        let vm = TimerViewModel()
+        vm.start(workout: forTime(cap: 60))
+        vm.debugAdvance(seconds: 61)
+        XCTAssertEqual(vm.phase, .completed)
+        XCTAssertTrue(vm.endedAtTimeCap)
+        vm.reset()
+    }
+
+    func testADoubleTapCountsOneRound() {
+        let vm = TimerViewModel()
+        vm.start(workout: Workout(
+            id: UUID(), name: "Test", timerType: .amrap(duration: TimerDuration(seconds: 600)),
+            prepCountdown: .zero, createdAt: Date()
+        ))
+        // Starting straight into work arms the cooldown, as GO does.
+        vm.countRound()
+        XCTAssertEqual(vm.session?.countedRounds, 0)
+        Thread.sleep(forTimeInterval: 0.75)
+        vm.countRound()
+        vm.countRound()
+        XCTAssertEqual(vm.session?.countedRounds, 1)
+        vm.reset()
+    }
+}
+

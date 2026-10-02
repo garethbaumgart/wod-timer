@@ -23,6 +23,18 @@ struct TimerDuration: Equatable, Comparable, Codable, Hashable {
         String(format: "%02d:%02d", minutes, remainingSeconds)
     }
 
+    /// Clock format used everywhere since 1.3.0: "9:45", "0:11", "12:30".
+    /// Minutes are never zero-padded.
+    var clock: String {
+        "\(minutes):" + String(format: "%02d", remainingSeconds)
+    }
+
+    /// A phase length the way athletes say it: "20s" under a minute,
+    /// "2:00" from a minute up (Tabata values, config lines, Home).
+    var phase: String {
+        seconds < 60 ? "\(seconds)s" : clock
+    }
+
     var timeInterval: TimeInterval { TimeInterval(seconds) }
 
     // MARK: - Operators
