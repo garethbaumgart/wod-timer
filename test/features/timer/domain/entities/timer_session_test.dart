@@ -334,6 +334,66 @@ void main() {
     // Regression tests for the backgrounding desync: when the app is
     // suspended (iOS) the catch-up tick carries a very large delta, which
     // must advance MULTIPLE intervals/phases, not just one.
+    group('timeRemaining while paused (1.3.0)', () {
+      Workout tabata() => Workout(
+        id: UniqueId(),
+        name: WorkoutName.defaultTabata,
+        timerType: TabataTimer(
+          workDuration: TimerDuration.fromSeconds(20),
+          restDuration: TimerDuration.fromSeconds(10),
+          rounds: RoundCount.fromInt(8),
+        ),
+        prepCountdown: TimerDuration.zero,
+        createdAt: DateTime.now(),
+      );
+
+      TimerSession tickBy(TimerSession s, int seconds) =>
+          s.tick(Duration(seconds: seconds)).getOrElse((f) => fail('$f'));
+
+      test('Tabata paused mid-WORK keeps the work countdown', () {
+        var session = TimerSession.fromWorkout(tabata())
+            .start()
+            .getOrElse((f) => fail('$f'));
+        session = tickBy(session, 12);
+        expect(session.state, TimerState.running);
+        expect(session.timeRemaining.seconds, 8);
+
+        final paused = session.pause().getOrElse((f) => fail('$f'));
+
+        // Measured against the 10s REST this read 0 before 1.3.0.
+        expect(paused.timeRemaining.seconds, 8);
+        expect(
+          paused.resume().getOrElse((f) => fail('$f')).timeRemaining.seconds,
+          8,
+        );
+      });
+
+      test('Tabata paused mid-REST keeps the rest countdown', () {
+        var session = TimerSession.fromWorkout(tabata())
+            .start()
+            .getOrElse((f) => fail('$f'));
+        session = tickBy(session, 23); // 20 work + 3 into rest
+        expect(session.state, TimerState.resting);
+
+        final paused = session.pause().getOrElse((f) => fail('$f'));
+
+        expect(paused.timeRemaining.seconds, 7);
+      });
+
+      test('a paused prep keeps the prep countdown', () {
+        final workout = tabata().copyWith(
+          prepCountdown: TimerDuration.fromSeconds(10),
+        );
+        var session = TimerSession.fromWorkout(workout)
+            .start()
+            .getOrElse((f) => fail('$f'));
+        session = tickBy(session, 3);
+        final paused = session.pause().getOrElse((f) => fail('$f'));
+
+        expect(paused.timeRemaining.seconds, 7);
+      });
+    });
+
     group('large-delta catch-up (app suspension)', () {
       Workout emomWorkout({int intervalSeconds = 60, int rounds = 10}) =>
           Workout(

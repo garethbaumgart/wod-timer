@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 import 'package:wod_timer/features/timer/domain/failures/timer_failure.dart';
+import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 
 part 'timer_state.freezed.dart';
 
@@ -59,8 +60,11 @@ extension TimerNotifierStateX on TimerNotifierState {
   );
 
   /// Whether the timer can be paused.
+  ///
+  /// Not during the get-ready countdown (1.3.0): a nervous tap used to
+  /// freeze the "3" into a seven-second workout that was paused. Skip or
+  /// stop are the only actions there.
   bool get canPause => maybeMap(
-    preparing: (_) => true,
     running: (_) => true,
     resting: (_) => true,
     orElse: () => false,
@@ -75,6 +79,19 @@ extension TimerNotifierStateX on TimerNotifierState {
     running: (_) => true,
     resting: (_) => true,
     paused: (_) => true,
+    orElse: () => false,
+  );
+
+  /// Whether a finished For Time ran out of time rather than being
+  /// finished by the athlete: the clock reached the cap, which in CrossFit
+  /// is a DNF, not a score. Derived (FINISH stops the clock before the cap).
+  bool get endedAtTimeCap => maybeMap(
+    completed: (s) {
+      if (s.endedEarly) return false;
+      final type = s.session.workout.timerType;
+      return type is ForTimeTimer &&
+          s.session.elapsed.seconds >= type.timeCap.seconds;
+    },
     orElse: () => false,
   );
 
