@@ -13,11 +13,17 @@ class _MapStore implements ReviewStore {
 }
 
 class _FakeRequester implements ReviewRequester {
-  _FakeRequester({this.available = true, this.throwOnRequest = false});
+  _FakeRequester({
+    this.available = true,
+    this.throwOnRequest = false,
+    this.throwOnListing = false,
+  });
 
   final bool available;
   final bool throwOnRequest;
+  final bool throwOnListing;
   int requests = 0;
+  int listings = 0;
 
   @override
   Future<bool> isAvailable() async => available;
@@ -26,6 +32,12 @@ class _FakeRequester implements ReviewRequester {
   Future<void> request() async {
     requests++;
     if (throwOnRequest) throw StateError('store unavailable');
+  }
+
+  @override
+  Future<void> openStoreListing() async {
+    listings++;
+    if (throwOnListing) throw StateError('store unavailable');
   }
 }
 
@@ -135,5 +147,67 @@ void main() {
     await prompter.recordValueMoment();
     await prompter.recordValueMoment();
     expect(store.values[ReviewPrompter.momentsKey], 2);
+  });
+
+  group('openStorePage (the Rate row)', () {
+    test(
+      'opens the store listing once and never the automatic sheet',
+      () async {
+        final requester = _FakeRequester();
+        final prompter = build(requester);
+
+        await prompter.openStorePage();
+
+        expect(requester.listings, 1);
+        expect(
+          requester.requests,
+          0,
+          reason: 'a button may not call the sheet',
+        );
+      },
+    );
+
+    test('does not spend one of the automatic asks', () async {
+      final requester = _FakeRequester();
+      await build(requester).openStorePage();
+
+      expect(store.values[ReviewPrompter.asksKey] ?? 0, 0);
+    });
+
+    test('keeps the automatic sheet away right after a store visit', () async {
+      final requester = _FakeRequester();
+      final prompter = build(requester);
+      await prompter.recordValueMoment();
+      await prompter.recordValueMoment();
+
+      await prompter.openStorePage();
+      expect(
+        store.values[ReviewPrompter.lastAskedKey],
+        now.millisecondsSinceEpoch,
+      );
+
+      // The third payoff would normally ask; the visit just now holds it off.
+      expect(await prompter.recordValueMoment(), isFalse);
+      expect(requester.requests, 0);
+
+      // Once the quiet period has passed the automatic policy resumes, with
+      // all three of its slots still available.
+      now = now.add(const Duration(days: 61));
+      expect(await prompter.recordValueMoment(), isTrue);
+      expect(store.values[ReviewPrompter.asksKey], 1);
+    });
+
+    test('swallows a store that fails to open', () async {
+      final requester = _FakeRequester(throwOnListing: true);
+      final prompter = build(requester);
+
+      await expectLater(prompter.openStorePage(), completes);
+      expect(requester.listings, 1);
+      expect(
+        store.values[ReviewPrompter.lastAskedKey] ?? 0,
+        0,
+        reason: 'a failed open must not hold off the automatic ask',
+      );
+    });
   });
 }

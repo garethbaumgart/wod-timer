@@ -7,7 +7,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract class ReviewRequester {
   Future<bool> isAvailable();
   Future<void> request();
+
+  /// Opens this app's own store page, for a user who chose to rate it.
+  ///
+  /// Not the in-app sheet: neither store allows a button to call that, and
+  /// Apple may silently show nothing, which would leave the tap looking broken.
+  Future<void> openStoreListing();
 }
+
+/// Wharf WOD's App Store Connect record. iOS needs it to find the listing;
+/// Android ignores it and opens the Play page for this package.
+const wharfWodAppStoreId = '6790209231';
 
 /// The real one. `requestReview` shows Apple's/Google's own sheet, which the OS
 /// may silently decline to display — that is expected and not an error.
@@ -19,6 +29,12 @@ class StoreReviewRequester implements ReviewRequester {
 
   @override
   Future<void> request() => InAppReview.instance.requestReview();
+
+  /// On iOS this lands on the listing's write-a-review page; on Android, the
+  /// Play listing.
+  @override
+  Future<void> openStoreListing() =>
+      InAppReview.instance.openStoreListing(appStoreId: wharfWodAppStoreId);
 }
 
 /// Where the counters live. Two methods so the policy is testable with a Map.
@@ -118,6 +134,30 @@ class ReviewPrompter {
     } on Object {
       // A rating prompt must never surface as an error in the app.
       return false;
+    }
+  }
+
+  /// Open the store page because the user tapped "Rate". User-initiated, so it
+  /// skips the policy above and does not spend one of the [maxAsks] slots.
+  ///
+  /// It does book [lastAskedKey]: someone who has just been to the store should
+  /// not get the automatic sheet a few workouts later as well. That booking
+  /// only happens once the page actually opened, so a failed open leaves the
+  /// automatic ask free to try later.
+  ///
+  /// Never throws, like the rest of this class: a broken store link must not
+  /// break the settings screen.
+  Future<void> openStorePage() async {
+    try {
+      await requester.openStoreListing();
+    } on Object {
+      return;
+    }
+    try {
+      await store.writeInt(lastAskedKey, now().millisecondsSinceEpoch);
+    } on Object {
+      // The store page already opened; a missed booking only means the
+      // automatic sheet might come round a little sooner.
     }
   }
 }

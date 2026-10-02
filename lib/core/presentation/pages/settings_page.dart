@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/package_info_provider.dart';
+import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
+import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
@@ -131,6 +135,21 @@ class SettingsPage extends ConsumerWidget {
                   ),
                   // ABOUT section
                   _buildSectionHeader('About'),
+                  _buildDivider(),
+                  // The automatic rating sheet is throttled by Apple and may
+                  // never appear, so someone who wants to rate needs a row
+                  // they can find. It opens the store page, not the sheet:
+                  // neither store lets a button call the in-app review API.
+                  _buildTapRow(
+                    label: 'Rate Wharf WOD',
+                    value: '',
+                    onTap: () {
+                      trackEvent('rate_tapped', {'source': 'settings'});
+                      unawaited(
+                        ref.read(reviewPrompterProvider).openStorePage(),
+                      );
+                    },
+                  ),
                   _buildDivider(),
                   _buildTapRow(
                     label: 'Send Feedback',
