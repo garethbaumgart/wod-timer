@@ -11,6 +11,7 @@ import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/domain/entities/workout.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_scaffold.dart';
 
 /// Records the workout START launches instead of running a real timer.
 class _RecordingTimerNotifier extends TimerNotifier {
@@ -29,11 +30,13 @@ void main() {
   late _RecordingTimerNotifier timer;
 
   /// Pumps [page] on an iPhone-16e-sized portrait screen with [stored] as
-  /// the device's SharedPreferences.
+  /// the device's SharedPreferences, then waits out the START guard unless
+  /// [waitOutGuard] is false.
   Future<SharedPreferences> pumpSetup(
     WidgetTester tester,
     Widget page, {
     Map<String, Object> stored = const {},
+    bool waitOutGuard = true,
   }) async {
     tester.view
       ..physicalSize = const Size(1170, 2532)
@@ -67,6 +70,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    if (waitOutGuard) await tester.pump(SetupScaffold.startGuard);
     return prefs;
   }
 
@@ -211,6 +215,42 @@ void main() {
       final label = tester.getRect(find.text('WORK'));
       final value = tester.getRect(find.text('20s'));
       expect((label.center.dx - value.center.dx).abs(), lessThan(3));
+    });
+  });
+
+  group('START guard', () {
+    // DONE on the completion screen lands on setup, so the second tap of a
+    // double tap on DONE used to hit START and begin a new countdown.
+    testWidgets('START ignores taps for 500ms after the screen appears', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const AmrapSetupPage(), waitOutGuard: false);
+
+      // The second tap of a double tap on DONE, landing straight away.
+      await tester.tap(find.text('START'));
+      await tester.pump();
+      expect(timer.started, isNull);
+      expect(find.text('ACTIVE amrap'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.tap(find.text('START'));
+      await tester.pump();
+      expect(timer.started, isNull, reason: 'still inside the 500ms');
+
+      await tester.pump(SetupScaffold.startGuard);
+      await tester.tap(find.text('START'));
+      await tester.pumpAndSettle();
+      expect(timer.started, isNotNull);
+      expect(find.text('ACTIVE amrap'), findsOneWidget);
+    });
+
+    testWidgets('steppers work straight away; only START waits', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const AmrapSetupPage(), waitOutGuard: false);
+
+      await tapLabel(tester, 'Increase duration');
+      expect(find.text('11:00'), findsOneWidget);
     });
   });
 

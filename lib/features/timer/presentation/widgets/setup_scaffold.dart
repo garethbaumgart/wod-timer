@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +17,7 @@ import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart
 /// The frame every setup screen shares: header (back, mode, voice chip),
 /// the mode's controls centred in the space, then an optional total line
 /// and START. One value per control, nothing repeated.
-class SetupScaffold extends StatelessWidget {
+class SetupScaffold extends StatefulWidget {
   const SetupScaffold({
     required this.title,
     required this.controls,
@@ -41,6 +43,37 @@ class SetupScaffold extends StatelessWidget {
   /// Vertical gap between controls in portrait.
   final double spacing;
 
+  /// How long START ignores taps after the screen appears. DONE on the
+  /// completion screen lands here, so the second tap of a double tap on
+  /// DONE would otherwise start a fresh countdown.
+  static const startGuard = Duration(milliseconds: 500);
+
+  @override
+  State<SetupScaffold> createState() => _SetupScaffoldState();
+}
+
+class _SetupScaffoldState extends State<SetupScaffold> {
+  // Lives here, not in the footer, so rotating the phone (which rebuilds
+  // the footer in a new place) doesn't re-arm it.
+  late final Timer _guard;
+
+  @override
+  void initState() {
+    super.initState();
+    _guard = Timer(SetupScaffold.startGuard, () {});
+  }
+
+  @override
+  void dispose() {
+    _guard.cancel();
+    super.dispose();
+  }
+
+  void _onStart() {
+    if (_guard.isActive) return;
+    widget.onStart();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,11 +94,14 @@ class SetupScaffold extends StatelessWidget {
   Widget _buildPortrait() {
     return Column(
       children: [
-        _SetupHeader(title: title),
+        _SetupHeader(title: widget.title),
         Expanded(
-          child: _SetupControls(controls: controls, spacing: spacing),
+          child: _SetupControls(
+            controls: widget.controls,
+            spacing: widget.spacing,
+          ),
         ),
-        _SetupFooter(totalSeconds: totalSeconds, onStart: onStart),
+        _SetupFooter(totalSeconds: widget.totalSeconds, onStart: _onStart),
       ],
     );
   }
@@ -73,21 +109,21 @@ class SetupScaffold extends StatelessWidget {
   Widget _buildLandscape() {
     return Column(
       children: [
-        _SetupHeader(title: title),
+        _SetupHeader(title: widget.title),
         Expanded(
           child: Row(
             children: [
               Expanded(
                 flex: 3,
-                child: _SetupControls(controls: controls, spacing: 20),
+                child: _SetupControls(controls: widget.controls, spacing: 20),
               ),
               Expanded(
                 flex: 2,
                 child: Center(
                   child: SingleChildScrollView(
                     child: _SetupFooter(
-                      totalSeconds: totalSeconds,
-                      onStart: onStart,
+                      totalSeconds: widget.totalSeconds,
+                      onStart: _onStart,
                     ),
                   ),
                 ),
