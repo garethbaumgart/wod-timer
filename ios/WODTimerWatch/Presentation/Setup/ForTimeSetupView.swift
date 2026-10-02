@@ -1,88 +1,56 @@
 import SwiftUI
 
-/// For Time setup: Digital Crown for cap, UP/DOWN toggle.
+/// For Time setup: the cap (whole minutes on the Crown) and the count
+/// direction as one tappable line. Opens on the last For Time started.
 struct ForTimeSetupView: View {
     @Bindable var viewModel: TimerViewModel
-    @State private var capMinutes: Double = 20
-    @State private var countUp = true
+    @State private var capMinutes: Double
+    @State private var countUp: Bool
     @State private var showingTimer = false
 
-    private var capSeconds: Int { Int(capMinutes) * 60 }
-    private var timeCap: TimerDuration { TimerDuration(seconds: capSeconds) }
+    init(viewModel: TimerViewModel) {
+        self.viewModel = viewModel
+        let last = SetupMemory().forTime
+        _capMinutes = State(initialValue: Double(max(1, last.cap.seconds / 60)))
+        _countUp = State(initialValue: last.countUp)
+    }
+
+    private var timeCap: TimerDuration { TimerDuration(seconds: Int(capMinutes) * 60) }
 
     var body: some View {
         VStack(spacing: 4) {
-            Text("FOR TIME")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(1.5)
-                .foregroundStyle(.blue.opacity(0.7))
-
-            Spacer()
-
-            Text("Time Cap")
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(1)
-
-            TimerDisplayText(timeCap, size: 42)
+            Spacer(minLength: 0)
+            SetupValue(label: "TIME CAP", value: timeCap.clock)
                 .focusable()
-                .digitalCrownRotation(
-                    $capMinutes,
-                    from: 1,
-                    through: 60,
-                    by: 1,
-                    sensitivity: .medium
-                )
-
-            // Count direction toggle
-            HStack(spacing: 4) {
-                directionButton("UP", isSelected: countUp) { countUp = true }
-                directionButton("DOWN", isSelected: !countUp) { countUp = false }
+                .digitalCrownRotation($capMinutes, from: 1, through: 60, by: 1, sensitivity: .medium)
+            Button { countUp.toggle() } label: {
+                VStack(spacing: 0) {
+                    Text(countUp ? "COUNTS UP" : "COUNTS DOWN")
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .tracking(1)
+                        .foregroundStyle(.white)
+                    Text("TAP TO CHANGE")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .tracking(1)
+                        .foregroundStyle(Palette.label)
+                }
+                .frame(maxWidth: .infinity, minHeight: 36)
             }
-            .padding(.top, 4)
-
-            Text("Crown to adjust")
-                .font(.system(size: 9))
-                .foregroundStyle(.blue.opacity(0.4))
-
-            Spacer()
-
-            Text("10s prep + \(timeCap.formatted) cap")
-                .font(.system(size: 9))
-                .foregroundStyle(.secondary)
-
-            Button {
-                let timerType = TimerType.forTime(timeCap: timeCap, countUp: countUp)
-                let workout = WorkoutFactory.create(timerType: timerType)
-                viewModel.start(workout: workout)
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+            StartButton {
+                let type = TimerType.forTime(timeCap: timeCap, countUp: countUp)
+                SetupMemory().save(type)
+                viewModel.start(workout: WorkoutFactory.create(timerType: type))
                 showingTimer = viewModel.session?.state != .ready
-            } label: {
-                Text("START")
-                    .font(.system(size: 16, weight: .bold))
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
         }
         .padding(.horizontal, 8)
+        .navigationTitle("For Time")
         .navigationBarBackButtonHidden(showingTimer)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)
         }
-    }
-
-    private func directionButton(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(isSelected ? Color.blue : Color.blue.opacity(0.2))
-                .foregroundStyle(isSelected ? .white : .blue.opacity(0.6))
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }
 

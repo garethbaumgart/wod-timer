@@ -10,6 +10,17 @@ final class TimerViewModel {
     private(set) var session: TimerSession?
     private(set) var phase: TimerState = .ready
 
+    /// True when the athlete ended the workout with Stop: the end screen
+    /// says "Stopped", never celebrates.
+    private(set) var endedEarly = false
+
+    /// A For Time that ran into its cap: a DNF, not a finish.
+    var endedAtTimeCap: Bool {
+        guard phase == .completed, !endedEarly, let session,
+              case let .forTime(timeCap, _) = session.workout.timerType else { return false }
+        return session.elapsed.seconds >= timeCap.seconds
+    }
+
     // MARK: - Dependencies
 
     private let engine = TimerEngine()
@@ -32,6 +43,19 @@ final class TimerViewModel {
     private var playedFinalCountdown = false
     private var lastWorkout: Workout?
 
+    /// AMRAP taps are ignored for this long after a counted round, after GO
+    /// and after a resume, so a double tap or a late prep skip never counts.
+    private static let roundCountCooldown: TimeInterval = 0.7
+    private var roundCountBlockedUntil: Date?
+
+    /// "TAP TO COUNT" shows until the athlete has counted a round once,
+    /// ever (one additive key, like the phone).
+    private(set) var hasCountedRound = UserDefaults.standard.bool(forKey: "watch_hint_amrap_counted")
+
+    private func blockRoundCount() {
+        roundCountBlockedUntil = Date().addingTimeInterval(Self.roundCountCooldown)
+    }
+
     init() {
         engine.onTick = { [weak self] elapsed in
             self?.onTick(elapsed: elapsed)
@@ -43,6 +67,7 @@ final class TimerViewModel {
     func start(workout: Workout) {
         lastWorkout = workout
         resetCueState()
+        endedEarly = false
 
         var newSession = TimerSession.fromWorkout(workout)
         let result = newSession.start()
@@ -54,13 +79,15 @@ final class TimerViewModel {
             lastTickElapsed = 0
             engine.start()
             recentsStore.save(workout)
+            if started.state == .running { blockRoundCount() }
         case .failure:
             break
         }
     }
 
     func pause() {
-        guard var current = session else { return }
+        // The get-ready countdown is skipped or cancelled, never paused.
+        guard phase != .preparing, var current = session else { return }
         let result = current.pause()
 
         switch result {
@@ -84,17 +111,37 @@ final class TimerViewModel {
             phase = resumed.state
             engine.resume()
             haptics.pauseResume()
+            blockRoundCount()
         case .failure:
             break
         }
     }
 
+    /// End early: an honest "Stopped", no celebration.
     func stop() {
-        guard var current = session else { return }
+        guard phase != .completed, var current = session else { return }
         let result = current.complete()
 
         switch result {
         case let .success(completed):
+            endedEarly = true
+            session = completed
+            phase = .completed
+            engine.stop()
+            haptics.pauseResume()
+        case .failure:
+            break
+        }
+    }
+
+    /// For Time's success action: log the time and celebrate.
+    func finish() {
+        guard phase != .completed, var current = session else { return }
+        let result = current.complete()
+
+        switch result {
+        case let .success(completed):
+            endedEarly = false
             session = completed
             phase = .completed
             engine.stop()
@@ -103,6 +150,47 @@ final class TimerViewModel {
         case .failure:
             break
         }
+    }
+
+    /// Cancel the get-ready countdown (nothing has happened yet).
+    func cancelPrep() {
+        guard phase == .preparing else { return }
+        reset()
+    }
+
+    /// Skip the rest of the get-ready countdown.
+    func skipPrep() {
+        guard phase == .preparing, var current = session else { return }
+        let old = current
+        let remainingMs = current.timeRemaining.seconds * 1000
+        if case let .success(updated) = current.tick(deltaMs: remainingMs) {
+            handleCues(old: old, new: updated)
+            session = updated
+            phase = updated.state
+        }
+    }
+
+    /// Count an AMRAP round (tap anywhere while running).
+    func countRound() {
+        guard phase == .running, var current = session,
+              case .amrap = current.workout.timerType else { return }
+        let now = Date()
+        if let blocked = roundCountBlockedUntil, now < blocked { return }
+        roundCountBlockedUntil = now.addingTimeInterval(Self.roundCountCooldown)
+        current.countRound()
+        session = current
+        haptics.prepTick()
+        if !hasCountedRound {
+            hasCountedRound = true
+            UserDefaults.standard.set(true, forKey: "watch_hint_amrap_counted")
+        }
+    }
+
+    /// Correct the AMRAP tally on the end screen.
+    func adjustRounds(by delta: Int) {
+        guard phase == .completed, var current = session else { return }
+        current.adjustRounds(by: delta)
+        session = current
     }
 
     func restart() {
@@ -115,6 +203,7 @@ final class TimerViewModel {
         engine.stop()
         session = nil
         phase = .ready
+        endedEarly = false
         lastWorkout = nil
         resetCueState()
     }
@@ -139,19 +228,20 @@ final class TimerViewModel {
                 phase = .completed
                 engine.stop()
                 haptics.complete()
-                playCompletionEncouragement()
+                // A capped For Time is a DNF: no "Good job".
+                if !endedAtTimeCap { playCompletionEncouragement() }
             } else {
                 session = updated
                 phase = updated.state
             }
 
         case .failure:
-            if current.state == .completed {
+            if current.state == .completed, phase != .completed {
                 session = current
                 phase = .completed
                 engine.stop()
                 haptics.complete()
-                playCompletionEncouragement()
+                if !endedAtTimeCap { playCompletionEncouragement() }
             }
         }
     }
@@ -190,6 +280,7 @@ final class TimerViewModel {
                 audio.playLetsGo()
             }
             haptics.go()
+            blockRoundCount()
             voiceCuePlayed = true
         }
 
@@ -253,10 +344,13 @@ final class TimerViewModel {
             voiceCuePlayed = true
         }
 
-        // "Ten seconds" warning (only if workout > 15s to avoid overlap with final countdown)
-        if !voiceCuePlayed && new.state == .running && !playedTenSeconds
+        // "Ten seconds" warning (only if workout > 15s to avoid overlap with
+        // final countdown). Whole-workout remaining: for EMOM / Tabata the
+        // session's timeRemaining is per interval, which fired this at the
+        // end of round 1 and then latched.
+        if !voiceCuePlayed && new.state.isActive && new.state != .preparing && !playedTenSeconds
             && new.workout.timerType.estimatedDuration.seconds > 15 {
-            let remaining = new.timeRemaining.seconds
+            let remaining = workoutRemaining(new)
             if remaining <= 10 && remaining > 7 {
                 playedTenSeconds = true
                 audio.playTenSeconds()
@@ -264,15 +358,22 @@ final class TimerViewModel {
             }
         }
 
-        // Final countdown (single pre-recorded "5, 4, 3, 2, 1" clip)
-        if !voiceCuePlayed && new.state == .running && !playedFinalCountdown {
-            let remaining = new.timeRemaining.seconds
+        // Final countdown (single pre-recorded "5, 4, 3, 2, 1" clip). Whole
+        // workout, and resting counts: a Tabata ends on a rest.
+        if !voiceCuePlayed && new.state.isActive && new.state != .preparing && !playedFinalCountdown {
+            let remaining = workoutRemaining(new)
             if remaining <= 5 && remaining > 0 {
                 playedFinalCountdown = true
                 audio.playFinalCountdown()
                 haptics.finalCountdown()
             }
         }
+    }
+
+    /// Seconds left in the WHOLE workout, not the current interval.
+    private func workoutRemaining(_ session: TimerSession) -> Int {
+        let total = session.workout.timerType.estimatedDuration.seconds
+        return max(0, total - session.elapsed.seconds)
     }
 
     /// Plays "Good job" or "That's it" after completion,
@@ -305,3 +406,29 @@ final class TimerViewModel {
         playedFinalCountdown = false
     }
 }
+
+#if targetEnvironment(simulator)
+// MARK: - Capture hooks (simulator builds only; see CaptureRoot)
+
+extension TimerViewModel {
+    /// Jump the session forward in 100ms steps (as the engine would).
+    func debugAdvance(seconds: Int) {
+        guard var current = session else { return }
+        for _ in 0 ..< seconds * 10 {
+            guard current.state.isActive else { break }
+            if case let .success(next) = current.tick(deltaMs: 100) { current = next }
+        }
+        session = current
+        phase = current.state
+        if current.state == .completed { engine.stop() }
+    }
+
+    func debugCountRounds(_ n: Int) {
+        guard var current = session else { return }
+        for _ in 0 ..< n { current.countRound() }
+        session = current
+    }
+
+    func debugFinish() { finish() }
+}
+#endif

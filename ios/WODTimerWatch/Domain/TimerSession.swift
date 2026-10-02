@@ -105,10 +105,15 @@ struct TimerSession: Equatable {
         // Handle preparation phase
         if state == .preparing {
             if newIntervalElapsed.seconds >= workout.prepCountdown.seconds {
-                // Prep done, start the workout
+                // Prep done, start the workout. Carry any overshoot into the
+                // workout so a large delta (the watch was asleep) loses nothing.
+                let overflow = TimerDuration(
+                    seconds: newIntervalElapsed.seconds - workout.prepCountdown.seconds
+                )
                 state = .running
-                currentIntervalElapsed = .zero
-                intervalElapsedMillis = 0
+                elapsed = overflow
+                currentIntervalElapsed = overflow
+                intervalElapsedMillis = newIntervalMillisRemainder
                 elapsedMillis = newElapsedMillisRemainder
                 return .success(self)
             }
@@ -162,7 +167,7 @@ struct TimerSession: Equatable {
         newElapsedMillis: Int
     ) -> Result<TimerSession, TimerError> {
         if newElapsed.seconds >= duration.seconds {
-            markComplete()
+            markComplete(elapsedAt: duration)
             return .success(self)
         }
         elapsed = newElapsed
@@ -176,7 +181,7 @@ struct TimerSession: Equatable {
         newElapsedMillis: Int
     ) -> Result<TimerSession, TimerError> {
         if newElapsed.seconds >= timeCap.seconds {
-            markComplete()
+            markComplete(elapsedAt: timeCap)
             return .success(self)
         }
         elapsed = newElapsed
@@ -192,24 +197,26 @@ struct TimerSession: Equatable {
         newElapsedMillis: Int,
         newIntervalMillis: Int
     ) -> Result<TimerSession, TimerError> {
-        if newIntervalElapsed.seconds >= intervalDuration.seconds {
-            // Move to next round
-            if currentRound >= rounds.value {
-                markComplete()
+        // Consume every interval the delta covers: after the watch was asleep
+        // one catch-up tick can span several rounds, and advancing only one
+        // per tick desynced the session from the wall clock.
+        let intervalSeconds = intervalDuration.seconds
+        var intervalElapsedSeconds = newIntervalElapsed.seconds
+        var round = currentRound
+        while intervalSeconds > 0 && intervalElapsedSeconds >= intervalSeconds {
+            if round >= rounds.value {
+                markComplete(elapsedAt: TimerDuration(seconds: intervalSeconds * rounds.value))
                 return .success(self)
             }
-            elapsed = newElapsed
-            elapsedMillis = newElapsedMillis
-            currentIntervalElapsed = .zero
-            intervalElapsedMillis = 0
-            currentRound += 1
-            return .success(self)
+            intervalElapsedSeconds -= intervalSeconds
+            round += 1
         }
 
         elapsed = newElapsed
         elapsedMillis = newElapsedMillis
-        currentIntervalElapsed = newIntervalElapsed
+        currentIntervalElapsed = TimerDuration(seconds: intervalElapsedSeconds)
         intervalElapsedMillis = newIntervalMillis
+        currentRound = round
         return .success(self)
     }
 
@@ -222,52 +229,77 @@ struct TimerSession: Equatable {
         newElapsedMillis: Int,
         newIntervalMillis: Int
     ) -> Result<TimerSession, TimerError> {
-        let isWorkPhase = state == .running
-        let phaseSeconds = isWorkPhase ? workDuration.seconds : restDuration.seconds
-
-        if newIntervalElapsed.seconds >= phaseSeconds {
+        // Consume every work / rest phase the delta covers (see tickEmom).
+        let work = workDuration.seconds
+        let rest = restDuration.seconds
+        var isWorkPhase = state == .running
+        var intervalElapsedSeconds = newIntervalElapsed.seconds
+        var round = currentRound
+        var phaseSeconds = isWorkPhase ? work : rest
+        while work + rest > 0 && intervalElapsedSeconds >= phaseSeconds {
+            intervalElapsedSeconds -= phaseSeconds
             if isWorkPhase {
-                // Work done, start rest
-                state = .resting
-                elapsed = newElapsed
-                elapsedMillis = newElapsedMillis
-                currentIntervalElapsed = .zero
-                intervalElapsedMillis = 0
-                return .success(self)
+                isWorkPhase = false
             } else {
-                // Rest done
-                if currentRound >= rounds.value {
-                    markComplete()
+                if round >= rounds.value {
+                    markComplete(elapsedAt: TimerDuration(seconds: (work + rest) * rounds.value))
                     return .success(self)
                 }
-                // Start next round's work phase
-                state = .running
-                elapsed = newElapsed
-                elapsedMillis = newElapsedMillis
-                currentIntervalElapsed = .zero
-                intervalElapsedMillis = 0
-                currentRound += 1
-                return .success(self)
+                round += 1
+                isWorkPhase = true
             }
+            phaseSeconds = isWorkPhase ? work : rest
         }
 
+        state = isWorkPhase ? .running : .resting
         elapsed = newElapsed
         elapsedMillis = newElapsedMillis
-        currentIntervalElapsed = newIntervalElapsed
+        currentIntervalElapsed = TimerDuration(seconds: intervalElapsedSeconds)
         intervalElapsedMillis = newIntervalMillis
+        currentRound = round
         return .success(self)
     }
 
-    private mutating func markComplete() {
+    /// [elapsedAt] pins the final time to the workout's exact boundary
+    /// (10:00 for a 10-minute AMRAP); without it the summary read one tick
+    /// short (9:59).
+    private mutating func markComplete(elapsedAt: TimerDuration? = nil) {
         state = .completed
         completedAt = Date()
+        if let elapsedAt {
+            elapsed = elapsedAt
+            elapsedMillis = 0
+        }
     }
+
+    // MARK: - AMRAP round tally
+
+    /// Count one AMRAP round (tap-to-count). AMRAP sessions start at round 1
+    /// and the clock never advances them, so completed rounds are
+    /// currentRound - 1.
+    mutating func countRound() {
+        guard case .amrap = workout.timerType, state == .running else { return }
+        currentRound += 1
+    }
+
+    /// Correct the AMRAP tally on the end screen; never below zero rounds.
+    mutating func adjustRounds(by delta: Int) {
+        guard case .amrap = workout.timerType, state == .completed else { return }
+        currentRound = max(1, currentRound + delta)
+    }
+
+    /// Rounds the athlete counted in an AMRAP.
+    var countedRounds: Int { max(0, currentRound - 1) }
 
     // MARK: - Computed Properties
 
     /// Time remaining in the current phase/interval.
     var timeRemaining: TimerDuration {
-        if state == .preparing {
+        // While paused, answer for the phase the session paused in, so the
+        // clock reads what it read the instant before the pause (a Tabata
+        // paused mid-WORK used to be measured against the REST length).
+        let phase = state == .paused ? (stateBeforePause ?? state) : state
+        if phase == .preparing {
             let remaining = workout.prepCountdown.seconds - currentIntervalElapsed.seconds
             return TimerDuration(seconds: max(0, remaining))
         }
@@ -280,7 +312,7 @@ struct TimerSession: Equatable {
         case let .emom(intervalDuration, _):
             return TimerDuration(seconds: max(0, intervalDuration.seconds - currentIntervalElapsed.seconds))
         case let .tabata(workDuration, restDuration, _):
-            let phaseSeconds = state == .running ? workDuration.seconds : restDuration.seconds
+            let phaseSeconds = phase == .running ? workDuration.seconds : restDuration.seconds
             return TimerDuration(seconds: max(0, phaseSeconds - currentIntervalElapsed.seconds))
         }
     }

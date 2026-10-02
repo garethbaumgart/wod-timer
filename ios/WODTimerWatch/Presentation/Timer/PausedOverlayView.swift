@@ -1,54 +1,40 @@
 import SwiftUI
 
-/// Paused state: big Resume + smaller End button.
-/// Resume is larger and green to prevent accidental workout termination.
+/// Paused: the phase word, the clock dimmed in its phase colour, the score,
+/// then Stop (hold) beside a filled Resume. Tap anywhere else resumes.
 struct PausedOverlayView: View {
     @Bindable var viewModel: TimerViewModel
 
     var body: some View {
-        VStack(spacing: 4) {
-            Text("PAUSED")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(2)
-                .foregroundStyle(.orange)
-
-            if let session = viewModel.session {
-                TimerDisplayText(session.timeRemaining, size: 38)
-                    .opacity(0.6)
-
-                Text(session.workout.timerTypeLabel)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+        if let session = viewModel.session {
+            VStack(spacing: 0) {
+                PhaseLine(session: session)
+                BigClock(
+                    text: LiveRules.clockText(session),
+                    color: Palette.phase(LiveRules.effectivePhase(session)),
+                    maxHeight: .infinity
+                )
+                .opacity(0.45)
+                .layoutPriority(1)
+                ScoreSlot(session: session, counted: true)
+                ProgressBar(progress: session.progress, color: Palette.paused, rounds: session.totalRounds)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 3)
+                Spacer(minLength: 2)
+                HStack(spacing: 10) {
+                    HoldToEndButton { viewModel.stop() }
+                    if case .forTime = session.workout.timerType {
+                        FinishButton(compact: true) { viewModel.finish() }
+                    }
+                    PauseDisc(paused: true, size: 50) { viewModel.resume() }
+                }
             }
-
-            Spacer()
-
-            // Resume button — large and green
-            Button {
-                viewModel.resume()
-            } label: {
-                Text("RESUME")
-                    .font(.system(size: 16, weight: .bold))
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
-
-            // End button — smaller and red
-            Button {
-                viewModel.stop()
-            } label: {
-                Text("END")
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .foregroundStyle(.red)
-            }
-            .buttonStyle(.bordered)
-            .tint(.red.opacity(0.3))
+            .padding(.horizontal, 8)
+            .padding(.bottom, 2)
+            .contentShape(Rectangle())
+            .onTapGesture { viewModel.resume() }
+            .navigationBarBackButtonHidden(true)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .navigationBarBackButtonHidden(true)
     }
 }
 

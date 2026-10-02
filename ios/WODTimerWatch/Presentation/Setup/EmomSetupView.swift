@@ -1,96 +1,63 @@
 import SwiftUI
 
-/// EMOM setup: tap to focus interval/rounds, Crown adjusts.
+/// EMOM setup: EVERY (15s steps, as on the phone) and ROUNDS; tap a value
+/// to move it with the Crown. Opens on the last EMOM started.
 struct EmomSetupView: View {
     @Bindable var viewModel: TimerViewModel
-    @State private var intervalMinutes: Double = 1
-    @State private var rounds: Double = 10
+    @State private var intervalSeconds: Double
+    @State private var rounds: Double
     @State private var focusedField: Field = .interval
     @State private var showingTimer = false
 
     enum Field { case interval, rounds }
 
-    private var intervalDuration: TimerDuration { TimerDuration(seconds: Int(intervalMinutes) * 60) }
-    private var roundCount: RoundCount { RoundCount(value: Int(rounds)) }
-    private var totalDuration: TimerDuration {
-        TimerDuration(seconds: intervalDuration.seconds * roundCount.value)
+    init(viewModel: TimerViewModel) {
+        self.viewModel = viewModel
+        let last = SetupMemory().emom
+        _intervalSeconds = State(initialValue: Double(min(600, max(15, last.interval.seconds / 15 * 15))))
+        _rounds = State(initialValue: Double(min(30, max(1, last.rounds))))
     }
 
+    private var interval: TimerDuration { TimerDuration(seconds: Int(intervalSeconds)) }
+    private var roundCount: RoundCount { RoundCount(value: Int(rounds)) }
+    private var total: TimerDuration { TimerDuration(seconds: interval.seconds * roundCount.value) }
+
     var body: some View {
-        VStack(spacing: 4) {
-            Text("EMOM")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(1.5)
-                .foregroundStyle(.orange.opacity(0.7))
-
-            Spacer()
-
-            // Interval
-            valueRow(
-                label: "INTERVAL",
-                value: intervalDuration.formatted,
-                isFocused: focusedField == .interval
-            ) { focusedField = .interval }
-
-            // Rounds
-            valueRow(
-                label: "ROUNDS",
-                value: "\(Int(rounds))",
-                isFocused: focusedField == .rounds
-            ) { focusedField = .rounds }
-
-            Text("Tap value · Crown adjusts")
-                .font(.system(size: 8))
-                .foregroundStyle(.orange.opacity(0.4))
-                .padding(.top, 2)
-
-            Spacer()
-
-            Text("Total: \(totalDuration.formatted)")
-                .font(.system(size: 9))
-                .foregroundStyle(.secondary)
-
-            Button {
-                let timerType = TimerType.emom(intervalDuration: intervalDuration, rounds: roundCount)
-                let workout = WorkoutFactory.create(timerType: timerType)
-                viewModel.start(workout: workout)
-                showingTimer = viewModel.session?.state != .ready
-            } label: {
-                Text("START")
-                    .font(.system(size: 16, weight: .bold))
-                    .frame(maxWidth: .infinity)
+        VStack(spacing: 2) {
+            Spacer(minLength: 0)
+            Button { focusedField = .interval } label: {
+                SetupValue(label: "EVERY", value: interval.clock, size: 38, focused: focusedField == .interval)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
+            .buttonStyle(.plain)
+            Button { focusedField = .rounds } label: {
+                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", size: 38, focused: focusedField == .rounds)
+            }
+            .buttonStyle(.plain)
+            Text("\(total.clock) total")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(Palette.label)
+            Spacer(minLength: 0)
+            StartButton {
+                let type = TimerType.emom(intervalDuration: interval, rounds: roundCount)
+                SetupMemory().save(type)
+                viewModel.start(workout: WorkoutFactory.create(timerType: type))
+                showingTimer = viewModel.session?.state != .ready
+            }
         }
         .padding(.horizontal, 8)
         .focusable()
         .digitalCrownRotation(
-            focusedField == .interval ? $intervalMinutes : $rounds,
-            from: focusedField == .interval ? 1 : 1,
-            through: focusedField == .interval ? 10 : 30,
-            by: 1,
+            focusedField == .interval ? $intervalSeconds : $rounds,
+            from: focusedField == .interval ? 15 : 1,
+            through: focusedField == .interval ? 600 : 30,
+            by: focusedField == .interval ? 15 : 1,
             sensitivity: .medium
         )
+        .navigationTitle("EMOM")
         .navigationBarBackButtonHidden(showingTimer)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)
         }
-    }
-
-    private func valueRow(label: String, value: String, isFocused: Bool, onTap: @escaping () -> Void) -> some View {
-        Button(action: onTap) {
-            VStack(spacing: 1) {
-                Text(label)
-                    .font(.system(size: 9))
-                    .tracking(1)
-                    .foregroundStyle(.orange.opacity(0.6))
-                Text(value)
-                    .font(.system(size: 28, weight: .ultraLight))
-                    .foregroundStyle(isFocused ? .white : .white.opacity(0.5))
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 

@@ -27,7 +27,19 @@ final class WatchAudioService {
     @ObservationIgnored
     private let playbackDelegate = AudioPlaybackDelegate()
 
+    // Persisted since 1.3.0 (the choice used to reset on every launch).
+    // Additive keys; a missing or unknown value reads as the default.
+    @ObservationIgnored private let defaults = UserDefaults.standard
+    private static let packKey = "watch_voice_pack"
+    private static let randomKey = "watch_voice_random"
+    private static let mutedKey = "watch_voice_muted"
+
     init() {
+        if let raw = defaults.string(forKey: Self.packKey), let pack = VoicePack(rawValue: raw) {
+            voicePack = pack
+        }
+        randomizePerCue = defaults.bool(forKey: Self.randomKey)
+        muted = defaults.bool(forKey: Self.mutedKey)
         configureAudioSession()
     }
 
@@ -39,14 +51,17 @@ final class WatchAudioService {
 
     func setVoicePack(_ pack: VoicePack) {
         voicePack = pack
+        defaults.set(pack.rawValue, forKey: Self.packKey)
     }
 
     func setRandomizePerCue(_ enabled: Bool) {
         randomizePerCue = enabled
+        defaults.set(enabled, forKey: Self.randomKey)
     }
 
     func setMuted(_ muted: Bool) {
         self.muted = muted
+        defaults.set(muted, forKey: Self.mutedKey)
     }
 
     func setVolume(_ volume: Float) {

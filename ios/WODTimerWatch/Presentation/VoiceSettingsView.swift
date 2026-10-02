@@ -1,72 +1,66 @@
 import SwiftUI
 
-/// Voice pack selection and audio settings for the watch.
+/// One list: three voices, Random, or Silent (haptics only). Choosing a
+/// voice plays a sample.
 struct VoiceSettingsView: View {
     @Bindable var viewModel: TimerViewModel
 
     private var audio: WatchAudioService { viewModel.audio }
 
+    private enum Choice: Equatable { case pack(WatchAudioService.VoicePack), random, silent }
+
+    private var current: Choice {
+        if audio.muted { return .silent }
+        if audio.randomizePerCue { return .random }
+        return .pack(audio.voicePack)
+    }
+
     var body: some View {
         List {
-            Section("Voice") {
-                voiceRow(.major, label: "Major", description: "Crossfit coach")
-                voiceRow(.liam, label: "Liam", description: "British gentleman")
-                voiceRow(.holly, label: "Holly", description: "Female voice")
-            }
-
-            Section {
-                Toggle("Randomize", isOn: Binding(
-                    get: { audio.randomizePerCue },
-                    set: { audio.setRandomizePerCue($0) }
-                ))
-                .font(.system(size: 13))
-            } footer: {
-                Text("Randomly pick a voice for each cue")
-                    .font(.system(size: 9))
-            }
-
-            Section {
-                Toggle("Mute Voice", isOn: Binding(
-                    get: { audio.muted },
-                    set: { audio.setMuted($0) }
-                ))
-                .font(.system(size: 13))
-            } footer: {
-                Text("Haptics still play when muted")
-                    .font(.system(size: 9))
-            }
+            row(.pack(.major), "Major", "CrossFit coach")
+            row(.pack(.liam), "Liam", "Old British man")
+            row(.pack(.holly), "Holly", "Female coach")
+            row(.random, "Random", "A different voice each cue")
+            row(.silent, "Silent", "Haptics only")
         }
         .navigationTitle("Voice")
     }
 
-    private func voiceRow(
-        _ pack: WatchAudioService.VoicePack,
-        label: String,
-        description: String
-    ) -> some View {
+    private func row(_ choice: Choice, _ name: String, _ detail: String) -> some View {
         Button {
-            audio.setVoicePack(pack)
-            audio.setRandomizePerCue(false)
-            // Play a sample so user hears the voice (skip if muted)
-            if !audio.muted {
-                audio.playLetsGo()
-            }
+            select(choice)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(label)
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(description)
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
+                    Text(name)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                    Text(detail)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Palette.label)
                 }
                 Spacer()
-                if audio.voicePack == pack && !audio.randomizePerCue {
+                if current == choice {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.green)
-                        .font(.system(size: 12))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Palette.primary)
                 }
             }
+        }
+    }
+
+    private func select(_ choice: Choice) {
+        switch choice {
+        case let .pack(pack):
+            audio.setMuted(false)
+            audio.setRandomizePerCue(false)
+            audio.setVoicePack(pack)
+            audio.playLetsGo()
+        case .random:
+            audio.setMuted(false)
+            audio.setRandomizePerCue(true)
+            audio.playLetsGo()
+        case .silent:
+            audio.setMuted(true)
         }
     }
 }
