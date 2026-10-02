@@ -247,6 +247,151 @@ void main() {
     });
   });
 
+  group('TimerNotifier 1.3.0 live-screen rules', () {
+    var now = DateTime(2026, 10, 3, 6);
+
+    setUp(() {
+      now = DateTime(2026, 10, 3, 6);
+      TimerNotifier.clock = () => now;
+      when(() => audio.playComplete()).thenAnswer((_) async => right(unit));
+      when(() => haptic.selectionClick()).thenAnswer((_) async => right(unit));
+    });
+
+    tearDown(() => TimerNotifier.clock = DateTime.now);
+
+    Workout forTime({int cap = 60, int prepSeconds = 0}) => Workout(
+      id: UniqueId(),
+      name: WorkoutName.defaultForTime,
+      timerType: ForTimeTimer(timeCap: TimerDuration.fromSeconds(cap)),
+      prepCountdown: TimerDuration.fromSeconds(prepSeconds),
+      createdAt: DateTime.now(),
+    );
+
+    int rounds() =>
+        container.read(timerNotifierProvider).sessionOrNull!.currentRound - 1;
+
+    test('the get-ready countdown cannot be paused', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(amrapWorkout(prepSeconds: 10));
+      expect(container.read(timerNotifierProvider), isA<TimerPreparing>());
+
+      notifier.pause();
+
+      expect(container.read(timerNotifierProvider), isA<TimerPreparing>());
+    });
+
+    test('a double tap counts one AMRAP round, not two', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(amrapWorkout());
+      now = now.add(const Duration(seconds: 30));
+
+      notifier.countRound();
+      now = now.add(const Duration(milliseconds: 250));
+      notifier.countRound();
+
+      expect(rounds(), 1);
+
+      now = now.add(const Duration(milliseconds: 700));
+      notifier.countRound();
+      expect(rounds(), 2);
+    });
+
+    test('a tap right after GO does not count a round', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(amrapWorkout(prepSeconds: 10));
+      notifier.skipPrep();
+      expect(container.read(timerNotifierProvider), isA<TimerRunning>());
+
+      now = now.add(const Duration(milliseconds: 300));
+      notifier.countRound();
+
+      expect(rounds(), 0);
+    });
+
+    test('a tap right after resume does not count a round', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(amrapWorkout());
+      now = now.add(const Duration(seconds: 30));
+      engine.emit(const Duration(seconds: 30));
+      notifier
+        ..pause()
+        ..resume();
+
+      now = now.add(const Duration(milliseconds: 200));
+      notifier.countRound();
+
+      expect(rounds(), 0);
+    });
+
+    test('the end screen can correct the AMRAP tally, never below 0', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(amrapWorkout(seconds: 60));
+      now = now.add(const Duration(seconds: 5));
+      notifier.countRound();
+      engine.emit(const Duration(seconds: 60));
+      expect(container.read(timerNotifierProvider), isA<TimerCompleted>());
+
+      notifier
+        ..adjustRounds(1)
+        ..adjustRounds(1);
+      expect(rounds(), 3);
+      notifier
+        ..adjustRounds(-1)
+        ..adjustRounds(-1)
+        ..adjustRounds(-1)
+        ..adjustRounds(-1);
+      expect(rounds(), 0);
+      final done = container.read(timerNotifierProvider) as TimerCompleted;
+      expect(done.endedEarly, isFalse);
+    });
+
+    test('reaching the For Time cap is a time cap, not a finish', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(forTime());
+
+      for (var s = 2; s <= 60; s += 2) {
+        engine.emit(Duration(seconds: s));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+
+      final state = container.read(timerNotifierProvider);
+      expect(state, isA<TimerCompleted>());
+      expect(state.endedAtTimeCap, isTrue);
+      verify(() => audio.playComplete()).called(1);
+      verifyNever(() => audio.playGoodJob());
+      verifyNever(() => audio.playThatsIt());
+      verifyNever(() => haptic.success());
+    });
+
+    test('FINISH under the cap is a real finish', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(forTime());
+      engine.emit(const Duration(seconds: 42));
+
+      notifier.finish();
+
+      final state = container.read(timerNotifierProvider);
+      expect(state, isA<TimerCompleted>());
+      expect(state.endedAtTimeCap, isFalse);
+      expect((state as TimerCompleted).endedEarly, isFalse);
+    });
+
+    test('a Stop landing after the final tick leaves Finished alone', () async {
+      final notifier = container.read(timerNotifierProvider.notifier);
+      await notifier.start(amrapWorkout(seconds: 60));
+      engine.emit(const Duration(seconds: 60));
+      expect(container.read(timerNotifierProvider), isA<TimerCompleted>());
+
+      notifier
+        ..stop()
+        ..finish();
+
+      final state = container.read(timerNotifierProvider);
+      expect(state, isA<TimerCompleted>());
+      expect((state as TimerCompleted).endedEarly, isFalse);
+    });
+  });
+
   group('TimerNotifier start cue', () {
     test('GO cue plays when there is no prep countdown', () async {
       var goCues = 0;

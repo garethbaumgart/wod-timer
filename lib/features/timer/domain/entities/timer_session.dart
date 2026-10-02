@@ -345,8 +345,16 @@ class TimerSession with _$TimerSession {
   // Computed properties
 
   /// Time remaining in the current phase/interval.
+  ///
+  /// While paused this answers for the phase the session paused in
+  /// ([stateBeforePause]), so the clock reads exactly what it read the
+  /// instant before the pause (a Tabata paused mid-WORK used to be measured
+  /// against the REST length).
   TimerDuration get timeRemaining {
-    if (state == TimerState.preparing) {
+    final phase = state == TimerState.paused
+        ? (stateBeforePause ?? state)
+        : state;
+    if (phase == TimerState.preparing) {
       final remaining =
           workout.prepCountdown.seconds - currentIntervalElapsed.seconds;
       return TimerDuration.fromSeconds(
@@ -375,7 +383,7 @@ class TimerSession with _$TimerSession {
         );
       },
       tabata: (timer) {
-        final phaseSeconds = state == TimerState.running
+        final phaseSeconds = phase == TimerState.running
             ? timer.workDuration.seconds
             : timer.restDuration.seconds;
         final remaining = phaseSeconds - currentIntervalElapsed.seconds;

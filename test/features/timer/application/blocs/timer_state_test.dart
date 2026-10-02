@@ -128,9 +128,11 @@ void main() {
         expect(state.canPause, isFalse);
       });
 
-      test('should be true for preparing state', () {
+      // 1.3.0: the get-ready countdown can be skipped or stopped, never
+      // paused (a paused prep read as a seven-second workout on hold).
+      test('should be false for preparing state', () {
         final state = TimerNotifierState.preparing(session: session);
-        expect(state.canPause, isTrue);
+        expect(state.canPause, isFalse);
       });
 
       test('should be true for running state', () {

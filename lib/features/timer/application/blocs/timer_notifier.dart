@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
@@ -54,6 +55,20 @@ class TimerNotifier extends _$TimerNotifier {
   int _completionCueToken = 0;
   final _random = Random();
 
+  /// Taps that count AMRAP rounds are ignored for this long after the last
+  /// counted round, after GO and after a resume, so a double tap, a late
+  /// prep-skip tap or a tap-to-resume can never count a round.
+  static const roundCountCooldown = Duration(milliseconds: 700);
+
+  /// Clock for the round-count cooldown; tests replace it.
+  @visibleForTesting
+  static DateTime Function() clock = DateTime.now;
+
+  DateTime? _roundCountBlockedUntil;
+
+  void _blockRoundCount() =>
+      _roundCountBlockedUntil = clock().add(roundCountCooldown);
+
   @override
   TimerNotifierState build() {
     // Auto-initialize from providers
@@ -77,7 +92,11 @@ class TimerNotifier extends _$TimerNotifier {
   /// voice cue picks a different voice pack at random.
   void _configureVoice() {
     final voice = ref.read(appSettingsNotifierProvider).voice;
-    _audioService.setVoiceMuted(muted: voice == VoiceOption.off);
+    // Silent's full mute is synced by AppSettingsNotifier on load and on
+    // every voice change; here only the spoken cues need switching off.
+    _audioService.setVoiceMuted(
+      muted: voice == VoiceOption.off || voice == VoiceOption.silent,
+    );
     switch (voice) {
       case VoiceOption.major:
         _audioService
@@ -94,6 +113,7 @@ class TimerNotifier extends _$TimerNotifier {
       case VoiceOption.random:
         _audioService.setRandomizePerCue(enabled: true);
       case VoiceOption.off:
+      case VoiceOption.silent:
         break;
     }
   }
@@ -124,6 +144,7 @@ class TimerNotifier extends _$TimerNotifier {
             _audioService.playLetsGo();
           }
           _hapticService.heavyImpact();
+          _blockRoundCount();
         }
         _startTicking();
       },
@@ -137,6 +158,7 @@ class TimerNotifier extends _$TimerNotifier {
   void pause() {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
+    if (!state.canPause) return;
     if (!currentSession.state.canPause) return;
 
     final result = _pauseTimer(currentSession);
@@ -173,6 +195,7 @@ class TimerNotifier extends _$TimerNotifier {
         state = _stateFromSession(session);
         _timerEngine.resume();
         _hapticService.mediumImpact();
+        _blockRoundCount();
       },
     );
   }
@@ -185,6 +208,9 @@ class TimerNotifier extends _$TimerNotifier {
   void stop() {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
+    // The final tick can land in the same frame as the hold completing:
+    // the workout already finished, so let Finished! stand.
+    if (state is TimerCompleted) return;
 
     final result = _stopTimer(currentSession);
 
@@ -212,6 +238,7 @@ class TimerNotifier extends _$TimerNotifier {
   void finish() {
     final currentSession = state.sessionOrNull;
     if (currentSession == null) return;
+    if (state is TimerCompleted) return;
 
     final result = _stopTimer(currentSession);
 
@@ -245,11 +272,31 @@ class TimerNotifier extends _$TimerNotifier {
     if (current is! TimerRunning) return;
     final session = current.session;
     if (session.workout.timerType is! AmrapTimer) return;
+    final now = clock();
+    final blockedUntil = _roundCountBlockedUntil;
+    if (blockedUntil != null && now.isBefore(blockedUntil)) return;
+    _roundCountBlockedUntil = now.add(roundCountCooldown);
 
     state = TimerNotifierState.running(
       session: session.copyWith(currentRound: session.currentRound + 1),
     );
     _hapticService.mediumImpact();
+  }
+
+  /// Correct the AMRAP round tally on the end screen (a stray tap counted
+  /// one too many, or the athlete never tapped). Never below zero rounds.
+  void adjustRounds(int delta) {
+    final current = state;
+    if (current is! TimerCompleted) return;
+    final session = current.session;
+    if (session.workout.timerType is! AmrapTimer) return;
+    final next = (session.currentRound + delta).clamp(1, 1000);
+    if (next == session.currentRound) return;
+    state = TimerNotifierState.completed(
+      session: session.copyWith(currentRound: next),
+      endedEarly: current.endedEarly,
+    );
+    _hapticService.selectionClick();
   }
 
   /// Skip the remaining get-ready countdown and start the work phase now.
@@ -341,13 +388,14 @@ class TimerNotifier extends _$TimerNotifier {
         if (currentSession.state == domain.TimerState.completed) {
           state = TimerNotifierState.completed(session: currentSession);
           _stopTicking();
-          _playCompletionEncouragement();
-          _hapticService.success(); // Haptic success for natural completion
-          // The workout ran all the way out: the payoff, and the only
-          // unambiguous one. Deliberately NOT the manual-finish or ended-early
-          // paths, which say nothing about whether it went well. The prompter
-          // stays quiet until the app has earned it and never throws.
-          unawaited(ref.read(reviewPrompterProvider).recordValueMoment());
+          if (_endNaturally()) {
+            // The workout ran all the way out: the payoff, and the only
+            // unambiguous one. Deliberately NOT the manual-finish,
+            // ended-early or time-cap paths, which say nothing about whether
+            // it went well. The prompter stays quiet until the app has
+            // earned it and never throws.
+            unawaited(ref.read(reviewPrompterProvider).recordValueMoment());
+          }
         } else {
           state = TimerNotifierState.error(
             failure: failure,
@@ -365,10 +413,9 @@ class TimerNotifier extends _$TimerNotifier {
           _stopTicking();
           trackEvent('workout_completed', {
             'type': session.workout.timerType.typeCode,
-            'ended_by': 'timer',
+            'ended_by': state.endedAtTimeCap ? 'time_cap' : 'timer',
           });
-          _playCompletionEncouragement();
-          _hapticService.success(); // Haptic success for natural completion
+          _endNaturally();
         } else {
           state = _stateFromSession(session);
         }
@@ -414,6 +461,7 @@ class TimerNotifier extends _$TimerNotifier {
         _audioService.playLetsGo();
       }
       _hapticService.heavyImpact(); // Strong haptic for GO!
+      _blockRoundCount();
       voiceCuePlayed = true;
     }
 
@@ -557,6 +605,27 @@ class TimerNotifier extends _$TimerNotifier {
       case domain.TimerState.completed:
         return TimerNotifierState.completed(session: session);
     }
+  }
+
+  /// Cue and haptic for a workout the clock ended. Returns false when it
+  /// ran into a For Time cap: that is a DNF, so a neutral end sound and a
+  /// plain haptic, never "Good job".
+  bool _endNaturally() {
+    if (state.endedAtTimeCap) {
+      final delay = _playedFinalCountdown
+          ? const Duration(milliseconds: 600)
+          : Duration.zero;
+      final token = ++_completionCueToken;
+      Future.delayed(delay, () {
+        if (token != _completionCueToken) return;
+        _audioService.playComplete();
+      });
+      _hapticService.heavyImpact();
+      return false;
+    }
+    _playCompletionEncouragement();
+    _hapticService.success(); // Haptic success for natural completion
+    return true;
   }
 
   /// Play a random encouragement cue on workout completion.

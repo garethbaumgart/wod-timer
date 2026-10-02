@@ -6,8 +6,9 @@ import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
-
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
@@ -67,7 +68,8 @@ class PlaceholderPage extends StatelessWidget {
   }
 }
 
-/// Signal design home page with hero title and colored sidebar strips.
+/// Signal design home page: the WOD. title, then one strip per mode showing
+/// the setup that mode will open on.
 class PlaceholderHomePage extends ConsumerWidget {
   const PlaceholderHomePage({required this.onTimerSelected, super.key});
 
@@ -92,77 +94,91 @@ class PlaceholderHomePage extends ConsumerWidget {
   }
 
   Widget _buildHero() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: 'WOD',
-                style: AppTypography.heroTitle.copyWith(color: Colors.white),
-              ),
-              TextSpan(
-                text: '.',
-                style: AppTypography.heroTitle.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: 'WOD',
+            style: AppTypography.heroTitle.copyWith(color: Colors.white),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Voice-coached gym timer',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondaryDark,
-            fontSize: 15,
+          TextSpan(
+            text: '.',
+            style: AppTypography.heroTitle.copyWith(color: AppColors.primary),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  List<Widget> _buildStrips(BuildContext context, WidgetRef ref) {
+  /// One strip per mode, each showing the remembered setup, so Home answers
+  /// "what will this start?" before the tap. Read on every build: Home is
+  /// rebuilt each time it is navigated back to, after setup saved.
+  List<Widget> _buildStrips(
+    BuildContext context,
+    WidgetRef ref, {
+    required double verticalPadding,
+  }) {
+    final memory = ref.watch(setupMemoryProvider);
+    final amrap = memory.amrap;
+    final forTime = memory.forTime;
+    final emom = memory.emom;
+    final tabata = memory.tabata;
+    final direction = forTime.countUp ? 'UP' : 'DOWN';
+
+    Widget strip({
+      required String name,
+      required String config,
+      required String spokenConfig,
+      required String timerType,
+    }) {
+      return _SignalStripItem(
+        name: name,
+        config: config,
+        spokenConfig: spokenConfig,
+        verticalPadding: verticalPadding,
+        onTap: () {
+          ref.read(hapticServiceProvider).lightImpact();
+          onTimerSelected(timerType);
+        },
+      );
+    }
+
     return [
-      _SignalStripItem(
+      strip(
         name: 'AMRAP',
-        description: 'Max rounds in time',
-        accentColor: AppColors.amrapAccent,
-        onTap: () {
-          ref.read(hapticServiceProvider).lightImpact();
-          onTimerSelected('amrap');
-        },
+        config: setupClock(amrap.durationSeconds),
+        spokenConfig: setupSpokenDuration(amrap.durationSeconds),
+        timerType: 'amrap',
       ),
       const SizedBox(height: 12),
-      _SignalStripItem(
+      strip(
         name: 'FOR TIME',
-        description: 'Race the clock',
-        accentColor: AppColors.forTimeAccent,
-        onTap: () {
-          ref.read(hapticServiceProvider).lightImpact();
-          onTimerSelected('fortime');
-        },
+        config: 'CAP ${setupClock(forTime.capSeconds)} \u00B7 $direction',
+        spokenConfig:
+            'Cap ${setupSpokenDuration(forTime.capSeconds)}, '
+            'counts ${direction.toLowerCase()}',
+        timerType: 'fortime',
       ),
       const SizedBox(height: 12),
-      _SignalStripItem(
+      strip(
         name: 'EMOM',
-        description: 'Every minute on the minute',
-        accentColor: AppColors.emomAccent,
-        onTap: () {
-          ref.read(hapticServiceProvider).lightImpact();
-          onTimerSelected('emom');
-        },
+        config: '${emom.rounds} \u00D7 ${setupClock(emom.intervalSeconds)}',
+        spokenConfig:
+            '${emom.rounds} ${emom.rounds == 1 ? 'round' : 'rounds'} of '
+            '${setupSpokenDuration(emom.intervalSeconds)}',
+        timerType: 'emom',
       ),
       const SizedBox(height: 12),
-      _SignalStripItem(
+      strip(
         name: 'TABATA',
-        description: 'Work / Rest intervals',
-        accentColor: AppColors.tabataAccent,
-        onTap: () {
-          ref.read(hapticServiceProvider).lightImpact();
-          onTimerSelected('tabata');
-        },
+        config:
+            '${tabata.rounds} \u00D7 ${setupPhase(tabata.workSeconds)} / '
+            '${setupPhase(tabata.restSeconds)}',
+        spokenConfig:
+            '${tabata.rounds} ${tabata.rounds == 1 ? 'round' : 'rounds'}, '
+            '${setupSpokenDuration(tabata.workSeconds)} work, '
+            '${setupSpokenDuration(tabata.restSeconds)} rest',
+        timerType: 'tabata',
       ),
     ];
   }
@@ -184,32 +200,42 @@ class PlaceholderHomePage extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
       child: ContentWidthCap(
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHero(),
-          const SizedBox(height: 20),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHero(),
+            const SizedBox(height: 20),
 
-          // Timer type strip list
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _buildStrips(context, ref),
+            // Timer type strip list; scrolls only when large text can't fit.
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: _buildStrips(context, ref, verticalPadding: 14),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
 
-          // Bottom icons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [_buildSettingsButton(context)],
-          ),
-        ],
+            // Bottom icons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [_buildSettingsButton(context)],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// Landscape gets its own layout (hero left, modes right) — the
-  /// portrait column used to overflow here and cut TABATA off entirely.
+  /// Landscape gets its own layout (hero left, modes right): the portrait
+  /// column used to overflow here and cut TABATA off entirely. All four
+  /// strips fit 844 x 390pt; the scroll view is only a silent fallback.
   Widget _buildLandscape(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -238,7 +264,7 @@ class PlaceholderHomePage extends ConsumerWidget {
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: _buildStrips(context, ref),
+                  children: _buildStrips(context, ref, verticalPadding: 12),
                 ),
               ),
             ),
@@ -249,32 +275,44 @@ class PlaceholderHomePage extends ConsumerWidget {
   }
 }
 
-/// A strip item with colored sidebar line for the Signal design.
+/// One mode as a single row: the name at the left, the setup it will open
+/// on at the right. No colour bar or chevron; the whole strip is the button.
 class _SignalStripItem extends StatelessWidget {
   const _SignalStripItem({
     required this.name,
-    required this.description,
-    required this.accentColor,
+    required this.config,
+    required this.spokenConfig,
+    required this.verticalPadding,
     required this.onTap,
   });
 
   final String name;
-  final String description;
-  final Color accentColor;
+
+  /// Remembered setup as shown ("10 × 1:00").
+  final String config;
+
+  /// The same setup the way a screen reader should say it.
+  final String spokenConfig;
+
+  final double verticalPadding;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '$name timer. $description. Double tap to select.',
+      label: '$name timer. $spokenConfig. Double tap to select.',
+      excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: verticalPadding,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
@@ -282,51 +320,26 @@ class _SignalStripItem extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Colored sidebar line
-                Container(
-                  width: 3,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    borderRadius: BorderRadius.circular(2),
+                Text(
+                  name,
+                  style: AppTypography.stripName.copyWith(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 14),
-                // Text content
+                const SizedBox(width: 12),
+                // Expanded so large text wraps the config instead of
+                // pushing the row off the screen.
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ExcludeSemantics(
-                        child: Text(
-                          name,
-                          style: AppTypography.stripName.copyWith(
-                            color: Colors.white,
-                            fontSize: 24,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      ExcludeSemantics(
-                        child: Text(
-                          description,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.textSecondaryDark,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Trailing chevron
-                const ExcludeSemantics(
                   child: Text(
-                    '\u203A',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.textDisabledDark,
+                    config,
+                    textAlign: TextAlign.end,
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.textPrimaryDark,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                 ),

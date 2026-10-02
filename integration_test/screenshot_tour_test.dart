@@ -1,3 +1,5 @@
+// STALE SINCE 1.3.0: written for the 1.2 live screen (REMAINING label, Stop
+// while running, DONE to Home). Captures now come from ux_review_tour_test.dart.
 // Screenshot tour for App Store / Play captures. NOT part of the normal
 // suite — run on a marketing-size simulator/emulator with a watcher script
 // that greps MARK_<name> lines and screenshots at each mark.

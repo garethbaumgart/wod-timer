@@ -1,3 +1,5 @@
+// STALE SINCE 1.3.0: written for the 1.2 live screen (REMAINING label, Stop
+// while running, DONE to Home). Captures now come from ux_review_tour_test.dart.
 // Promo-video footage tour (v3). NOT part of the normal suite — run on a
 // marketing-size simulator while `xcrun simctl io <udid> recordVideo` rolls.
 // Prints MARK_<name> lines for cut-finding. Updated for the 1.1.0 UI:

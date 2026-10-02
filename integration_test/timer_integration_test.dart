@@ -41,18 +41,20 @@ void main() {
       expect(find.text('START'), findsOneWidget);
       print('✓ Setup page shown');
 
-      // Start workout. The active page animates every frame, so
-      // pumpAndSettle never settles here — pump fixed durations instead.
+      // Start workout. START ignores taps for 500ms after setup appears
+      // (1.3.0 guard), and the active page animates every frame, so
+      // pumpAndSettle never settles there: pump fixed durations instead.
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.tap(find.text('START'));
       await tester.pump(const Duration(milliseconds: 600));
 
-      // Should see the prep countdown ("STARTS IN" + bare-digit seconds)
+      // Should see the prep countdown (GET READY + bare-digit seconds)
       expect(
-        find.text('STARTS IN'),
+        find.text('GET READY'),
         findsOneWidget,
-        reason: 'Should show the STARTS IN prep phase',
+        reason: 'Should show the GET READY prep phase',
       );
-      print('✓ STARTS IN prep phase shown');
+      print('✓ GET READY prep phase shown');
 
       String? findBareDigits() {
         for (final element in find.byType(Text).evaluate()) {
@@ -86,12 +88,12 @@ void main() {
       print('✓ Prep countdown is counting down! ($initialPrep -> $newPrep)');
 
       // Wait for the prep countdown to complete (10s default prep). The work
-      // phase shows the big MM:SS display over a "REMAINING" caption.
+      // phase shows the big M:SS clock over the AMRAP TAP TO COUNT slot.
       print('Waiting for prep countdown to complete...');
       var transitionedToWork = false;
       for (var i = 0; i < 150; i++) {
         await tester.pump(const Duration(milliseconds: 100));
-        if (find.text('REMAINING').evaluate().isNotEmpty) {
+        if (find.text('TAP TO COUNT').evaluate().isNotEmpty) {
           print('✓ Transitioned to WORK phase after ${(i + 1) * 100}ms');
           transitionedToWork = true;
           break;
@@ -102,14 +104,14 @@ void main() {
       expect(
         transitionedToWork,
         isTrue,
-        reason: 'Should transition from STARTS IN to the REMAINING display',
+        reason: 'Should transition from GET READY to the work display',
       );
 
       String? findClockText() {
         for (final element in find.byType(Text).evaluate()) {
           final widget = element.widget as Text;
           final data = widget.data;
-          if (data != null && RegExp(r'^\d{2}:\d{2}$').hasMatch(data)) {
+          if (data != null && RegExp(r'^\d{1,2}:\d{2}$').hasMatch(data)) {
             return data;
           }
         }
@@ -132,13 +134,16 @@ void main() {
 
       // Stop the workout so audio players are released before teardown
       // (a still-running session leaves audioplayers frame callbacks
-      // pending). Ending is hold-to-confirm: long-press (500ms) arms it,
-      // then an 800ms ring fill confirms.
+      // pending). Stop lives on the paused screen (1.3.0) and is
+      // hold-to-confirm: the 800ms ring starts on pointer down.
+      await tester.tap(find.byIcon(Icons.pause_rounded));
+      await tester.pump(const Duration(milliseconds: 400));
       final stopButton = find.byIcon(Icons.stop);
       expect(stopButton, findsOneWidget, reason: 'Should find stop button');
       final gesture = await tester.startGesture(tester.getCenter(stopButton));
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.pump(const Duration(milliseconds: 900));
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       await gesture.up();
       await tester.pump(const Duration(milliseconds: 500));
       // Release the pooled audio players. Their frame-based position
@@ -151,7 +156,7 @@ void main() {
 
       print('\n=== TIMER INTEGRATION TEST PASSED ===');
       print('The timer:');
-      print('  - Counts down during the STARTS IN prep phase ✓');
+      print('  - Counts down during the GET READY prep phase ✓');
       print('  - Transitions to the work phase and ticks ✓');
     });
   });

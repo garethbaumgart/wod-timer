@@ -17,7 +17,9 @@ String voiceShortLabel(VoiceOption voice) {
     case VoiceOption.random:
       return 'Random';
     case VoiceOption.off:
-      return 'Off';
+      return 'Beeps';
+    case VoiceOption.silent:
+      return 'Silent';
   }
 }
 
@@ -33,20 +35,9 @@ String voiceLabel(VoiceOption voice) {
     case VoiceOption.random:
       return 'Random (mix it up each cue)';
     case VoiceOption.off:
-      return 'Off (beeps only)';
-  }
-}
-
-IconData _voiceIcon(VoiceOption voice) {
-  switch (voice) {
-    case VoiceOption.major:
-    case VoiceOption.liam:
-    case VoiceOption.holly:
-      return Icons.record_voice_over;
-    case VoiceOption.random:
-      return Icons.shuffle;
-    case VoiceOption.off:
-      return Icons.volume_off;
+      return 'Beeps only';
+    case VoiceOption.silent:
+      return 'Silent';
   }
 }
 
@@ -62,6 +53,7 @@ String? _previewPack(VoiceOption voice) {
     case VoiceOption.random:
       return 'random';
     case VoiceOption.off:
+    case VoiceOption.silent:
       return null;
   }
 }
@@ -69,7 +61,9 @@ String? _previewPack(VoiceOption voice) {
 /// Shared voice-pack picker bottom sheet.
 ///
 /// Every row with a voice can be auditioned via its play button before
-/// selecting (the app's wedge feature shouldn't be a blind choice).
+/// selecting (the app's wedge feature shouldn't be a blind choice). Preview
+/// leads the row and the check trails it, so "listen" and "choose" sit at
+/// opposite ends and a thumb can't confuse them; the rest of the row picks.
 Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
   ref.read(hapticServiceProvider).selectionClick();
   return showModalBottomSheet<void>(
@@ -98,11 +92,28 @@ Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
                   final pack = _previewPack(voice);
                   final isSelected = settings.voice == voice;
                   return ListTile(
-                    leading: Icon(
-                      _voiceIcon(voice),
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textPrimaryDark,
+                    // Same 48pt slot on every row, empty where there is
+                    // nothing to preview, so the labels line up.
+                    leading: SizedBox.square(
+                      dimension: 48,
+                      child: pack == null
+                          ? null
+                          : IconButton(
+                              icon: const Icon(
+                                Icons.play_circle_outline,
+                                color: AppColors.textPrimaryDark,
+                                size: 28,
+                              ),
+                              tooltip: 'Preview ${voiceShortLabel(voice)}',
+                              onPressed: () {
+                                ref
+                                    .read(hapticServiceProvider)
+                                    .selectionClick();
+                                ref
+                                    .read(audioServiceProvider)
+                                    .playVoicePreview(pack);
+                              },
+                            ),
                     ),
                     title: Text(
                       voiceLabel(voice),
@@ -110,30 +121,9 @@ Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
                         color: AppColors.textPrimaryDark,
                       ),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (pack != null)
-                          IconButton(
-                            icon: const Icon(
-                              Icons.play_circle_outline,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                            tooltip: 'Preview',
-                            onPressed: () {
-                              ref.read(hapticServiceProvider).selectionClick();
-                              ref
-                                  .read(audioServiceProvider)
-                                  .playVoicePreview(pack);
-                            },
-                          ),
-                        if (isSelected)
-                          const Icon(Icons.check, color: AppColors.primary)
-                        else
-                          const SizedBox(width: 24),
-                      ],
-                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check, color: AppColors.primary)
+                        : const SizedBox(width: 24),
                     onTap: () {
                       ref.read(hapticServiceProvider).selectionClick();
                       ref
@@ -143,7 +133,17 @@ Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
                     },
                   );
                 }),
-                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Text(
+                    'Voice cues play through the silent switch.',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondaryDark,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
               ],
             );
           },
