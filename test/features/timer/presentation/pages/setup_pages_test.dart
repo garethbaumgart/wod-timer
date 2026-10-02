@@ -231,11 +231,53 @@ void main() {
       await tester.tap(find.text('RESET TO CLASSIC'));
       await tester.pump();
       expect(find.text('8'), findsOneWidget);
-      expect(find.text('CLASSIC TABATA'), findsOneWidget);
+      expect(find.text('RESET TO CLASSIC'), findsNothing);
 
       await tapLabel(tester, 'Increase rounds');
       expect(find.text('9'), findsOneWidget);
       expect(find.text('11'), findsNothing);
+    });
+
+    testWidgets('the classic chip is blank until a value drifts', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const TabataSetupPage());
+
+      expect(find.text('CLASSIC TABATA'), findsNothing);
+      expect(find.text('RESET TO CLASSIC'), findsNothing);
+      expect(find.byIcon(Icons.check), findsNothing);
+      final workBefore = tester.getRect(find.text('WORK'));
+      final startBefore = tester.getRect(find.text('START'));
+
+      await tapLabel(tester, 'Increase work');
+      expect(find.text('RESET TO CLASSIC'), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      final reset = tester.widget<Text>(find.text('RESET TO CLASSIC'));
+      expect(reset.style!.fontSize, 15);
+      expect(reset.style!.color, AppColors.textSecondaryDark);
+
+      // The chip filled its reserved slot: nothing below it moved.
+      expect(tester.getRect(find.text('WORK')), workBefore);
+      expect(tester.getRect(find.text('START')), startBefore);
+      expect(
+        tester.getRect(find.text('RESET TO CLASSIC')).bottom,
+        lessThan(workBefore.top),
+      );
+    });
+
+    testWidgets('phase values read 20s under a minute, 1:05 above', (
+      tester,
+    ) async {
+      await pumpSetup(
+        tester,
+        const TabataSetupPage(),
+        stored: {SetupMemory.tabataWorkKey: 65},
+      );
+
+      expect(find.text('1:05'), findsOneWidget);
+      expect(find.text('65s'), findsNothing);
+      expect(find.text('10s'), findsOneWidget);
+      expect(find.bySemanticsLabel('Work: 1 minute 5 seconds'), findsOneWidget);
     });
 
     testWidgets('each value appears once and the total is shown', (
