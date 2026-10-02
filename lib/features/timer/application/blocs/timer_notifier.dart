@@ -77,7 +77,11 @@ class TimerNotifier extends _$TimerNotifier {
   /// voice cue picks a different voice pack at random.
   void _configureVoice() {
     final voice = ref.read(appSettingsNotifierProvider).voice;
-    _audioService.setVoiceMuted(muted: voice == VoiceOption.off);
+    // Silent's full mute is synced by AppSettingsNotifier on load and on
+    // every voice change; here only the spoken cues need switching off.
+    _audioService.setVoiceMuted(
+      muted: voice == VoiceOption.off || voice == VoiceOption.silent,
+    );
     switch (voice) {
       case VoiceOption.major:
         _audioService
@@ -94,6 +98,7 @@ class TimerNotifier extends _$TimerNotifier {
       case VoiceOption.random:
         _audioService.setRandomizePerCue(enabled: true);
       case VoiceOption.off:
+      case VoiceOption.silent:
         break;
     }
   }

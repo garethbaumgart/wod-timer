@@ -17,7 +17,9 @@ String voiceShortLabel(VoiceOption voice) {
     case VoiceOption.random:
       return 'Random';
     case VoiceOption.off:
-      return 'Off';
+      return 'Beeps';
+    case VoiceOption.silent:
+      return 'Silent';
   }
 }
 
@@ -33,7 +35,9 @@ String voiceLabel(VoiceOption voice) {
     case VoiceOption.random:
       return 'Random (mix it up each cue)';
     case VoiceOption.off:
-      return 'Off (beeps only)';
+      return 'Beeps only';
+    case VoiceOption.silent:
+      return 'Silent';
   }
 }
 
@@ -46,6 +50,8 @@ IconData _voiceIcon(VoiceOption voice) {
     case VoiceOption.random:
       return Icons.shuffle;
     case VoiceOption.off:
+      return Icons.volume_down;
+    case VoiceOption.silent:
       return Icons.volume_off;
   }
 }
@@ -62,6 +68,7 @@ String? _previewPack(VoiceOption voice) {
     case VoiceOption.random:
       return 'random';
     case VoiceOption.off:
+    case VoiceOption.silent:
       return null;
   }
 }

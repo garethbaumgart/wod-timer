@@ -22,8 +22,12 @@ enum VoiceOption {
   random,
 
   /// Off - no spoken cues; timing-critical moments fall back to beeps.
-  /// (Kept last: settings persist the enum index.)
+  /// Shown as "Beeps only".
   off,
+
+  /// Silent - no voice and no beeps. Replaces the old Sound Effects switch
+  /// (1.3.0). New values go LAST: settings persist the enum index.
+  silent,
 }
 
 /// Orientation lock mode options.
@@ -54,10 +58,13 @@ class AppSettings {
   /// Whether haptic feedback is enabled.
   final bool hapticEnabled;
 
-  /// Whether sound is enabled.
+  /// Legacy Sound Effects switch (removed from the UI in 1.3.0; muting is
+  /// now the [VoiceOption.silent] voice). Still read once for the 1.3.0
+  /// migration and written back unchanged, never deleted.
   final bool soundEnabled;
 
-  /// Whether to keep screen on during workouts.
+  /// Legacy Keep Screen On switch (removed from the UI in 1.3.0: the timer
+  /// screen always holds the wakelock). Persisted unchanged, never deleted.
   final bool keepScreenOn;
 
   /// Selected voice for audio cues.
@@ -89,6 +96,9 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   static const _keyKeepScreenOn = 'app_keep_screen_on';
   static const _keyVoice = 'app_voice';
 
+  /// Set once the 1.3.0 Sound Effects -> Silent migration has run (additive).
+  static const keySilentMigrated = 'app_sound_silent_migrated_v130';
+
   @override
   AppSettings build() {
     _loadSettings();
@@ -109,13 +119,25 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       final keepScreenOn = prefs.getBool(_keyKeepScreenOn) ?? true;
       final voiceIndex = prefs.getInt(_keyVoice) ?? 0;
       final safeVoiceIndex = voiceIndex.clamp(0, VoiceOption.values.length - 1);
+      var voice = VoiceOption.values[safeVoiceIndex];
+
+      // 1.3.0: the Sound Effects switch is gone and silence is a voice.
+      // Anyone who had it off stays silent, once; the old key is kept as
+      // found and never read for muting again.
+      if (!(prefs.getBool(keySilentMigrated) ?? false)) {
+        if (!soundEnabled) {
+          voice = VoiceOption.silent;
+          await prefs.setInt(_keyVoice, voice.index);
+        }
+        await prefs.setBool(keySilentMigrated, true);
+      }
 
       state = AppSettings(
         orientationLock: OrientationLockMode.values[safeOrientationIndex],
         hapticEnabled: hapticEnabled,
         soundEnabled: soundEnabled,
         keepScreenOn: keepScreenOn,
-        voice: VoiceOption.values[safeVoiceIndex],
+        voice: voice,
       );
 
       // Apply orientation lock
@@ -124,8 +146,8 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       // Sync haptic setting with service
       _syncHapticService(hapticEnabled);
 
-      // Sync sound setting with the audio service
-      _syncAudioService(soundEnabled);
+      // Silent mutes everything; any other voice plays.
+      _syncAudioService(voice);
     } catch (e) {
       // Use defaults on error
     }
@@ -188,30 +210,18 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
     await _saveSettings();
   }
 
-  /// Toggle sound.
-  Future<void> setSoundEnabled({required bool enabled}) async {
-    state = state.copyWith(soundEnabled: enabled);
-    _syncAudioService(enabled);
-    await _saveSettings();
-  }
-
-  void _syncAudioService(bool enabled) {
+  void _syncAudioService(VoiceOption voice) {
     try {
-      getIt<IAudioService>().setMuted(muted: !enabled);
+      getIt<IAudioService>().setMuted(muted: voice == VoiceOption.silent);
     } catch (_) {
       // Ignore if service not available (e.g., in tests)
     }
   }
 
-  /// Toggle keep screen on.
-  Future<void> setKeepScreenOn({required bool enabled}) async {
-    state = state.copyWith(keepScreenOn: enabled);
-    await _saveSettings();
-  }
-
-  /// Set voice for audio cues.
+  /// Set voice for audio cues. [VoiceOption.silent] mutes all sound.
   Future<void> setVoice(VoiceOption voice) async {
     state = state.copyWith(voice: voice);
+    _syncAudioService(voice);
     await _saveSettings();
   }
 }

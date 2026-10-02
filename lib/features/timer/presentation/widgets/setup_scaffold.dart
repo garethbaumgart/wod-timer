@@ -186,9 +186,11 @@ class _VoiceChip extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    voice == VoiceOption.off
-                        ? Icons.volume_off_outlined
-                        : Icons.volume_up_outlined,
+                    switch (voice) {
+                      VoiceOption.silent => Icons.volume_off_outlined,
+                      VoiceOption.off => Icons.volume_down_outlined,
+                      _ => Icons.volume_up_outlined,
+                    },
                     size: 19,
                     color: AppColors.primary,
                   ),

@@ -124,6 +124,11 @@ String setupClock(int totalSeconds) {
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
 
+/// A phase length the way athletes say it: "20s" under a minute, "2:00"
+/// from a minute up. Used for Tabata values, config lines and Home.
+String setupPhase(int totalSeconds) =>
+    totalSeconds < 60 ? '${totalSeconds}s' : setupClock(totalSeconds);
+
 /// Spoken form of a duration: "1 minute 30 seconds", "45 seconds".
 String setupSpokenDuration(int totalSeconds) {
   final minutes = totalSeconds ~/ 60;

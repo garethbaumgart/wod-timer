@@ -82,30 +82,8 @@ class SettingsPage extends ConsumerWidget {
                     value: _getOrientationShortLabel(settings.orientationLock),
                     onTap: () => _showOrientationPicker(context, ref, settings),
                   ),
-                  _buildDivider(),
-                  _buildSwitchRow(
-                    label: 'Keep Screen On',
-                    value: settings.keepScreenOn,
-                    onChanged: (value) {
-                      ref.read(hapticServiceProvider).selectionClick();
-                      ref
-                          .read(appSettingsNotifierProvider.notifier)
-                          .setKeepScreenOn(enabled: value);
-                    },
-                  ),
                   // AUDIO section
                   _buildSectionHeader('Audio'),
-                  _buildDivider(),
-                  _buildSwitchRow(
-                    label: 'Sound Effects',
-                    value: settings.soundEnabled,
-                    onChanged: (value) {
-                      ref.read(hapticServiceProvider).selectionClick();
-                      ref
-                          .read(appSettingsNotifierProvider.notifier)
-                          .setSoundEnabled(enabled: value);
-                    },
-                  ),
                   _buildDivider(),
                   _buildTapRow(
                     label: 'Voice',
