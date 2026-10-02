@@ -23,6 +23,7 @@ class SetupScaffold extends StatefulWidget {
     required this.controls,
     required this.onStart,
     super.key,
+    this.accessory,
     this.totalSeconds,
     this.spacing = 44,
   });
@@ -30,8 +31,13 @@ class SetupScaffold extends StatefulWidget {
   /// Mode name in the header ("EMOM").
   final String title;
 
-  /// The mode's steppers / switches, top to bottom.
+  /// The mode's steppers / switches, top to bottom in portrait. In
+  /// landscape two or more sit side by side in one row, compact.
   final List<Widget> controls;
+
+  /// An optional line above the controls in both orientations (Tabata's
+  /// reset chip), kept out of the landscape stepper row.
+  final Widget? accessory;
 
   final VoidCallback onStart;
 
@@ -97,8 +103,8 @@ class _SetupScaffoldState extends State<SetupScaffold> {
         _SetupHeader(title: widget.title),
         Expanded(
           child: _SetupControls(
-            controls: widget.controls,
             spacing: widget.spacing,
+            children: [?widget.accessory, ...widget.controls],
           ),
         ),
         _SetupFooter(totalSeconds: widget.totalSeconds, onStart: _onStart),
@@ -106,45 +112,57 @@ class _SetupScaffoldState extends State<SetupScaffold> {
     );
   }
 
+  /// The portrait layout, centred: header, the controls (side by side when
+  /// there are several, so Tabata fits a 390pt tall screen without
+  /// scrolling), then the total and a full-width START at the bottom.
   Widget _buildLandscape() {
+    final controls = widget.controls;
     return Column(
       children: [
-        _SetupHeader(title: widget.title),
+        _SetupHeader(title: widget.title, verticalPadding: 4),
         Expanded(
-          child: Row(
+          child: _SetupControls(
+            spacing: 12,
+            bottomPadding: 12,
             children: [
-              Expanded(
-                flex: 3,
-                child: _SetupControls(controls: widget.controls, spacing: 20),
-              ),
-              Expanded(
-                flex: 2,
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: _SetupFooter(
-                      totalSeconds: widget.totalSeconds,
-                      onStart: _onStart,
+              ?widget.accessory,
+              if (controls.length > 1)
+                CompactSetupSteppers(
+                  // Scales down rather than overflowing on a phone narrower
+                  // than three compact steppers (iPhone SE landscape).
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 20,
+                      children: controls,
                     ),
                   ),
-                ),
-              ),
+                )
+              else
+                ...controls,
             ],
           ),
         ),
+        _SetupFooter(totalSeconds: widget.totalSeconds, onStart: _onStart),
       ],
     );
   }
 }
 
 class _SetupHeader extends StatelessWidget {
-  const _SetupHeader({required this.title});
+  const _SetupHeader({required this.title, this.verticalPadding = 12});
 
   final String title;
+
+  /// Tighter in landscape, where every point of height counts.
+  final double verticalPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
       child: Row(
         children: [
           Semantics(
@@ -250,26 +268,34 @@ class _VoiceChip extends ConsumerWidget {
 /// Controls centred in the available space; scrolls only if they can't fit
 /// (large accessibility text, landscape Tabata).
 class _SetupControls extends StatelessWidget {
-  const _SetupControls({required this.controls, required this.spacing});
+  const _SetupControls({
+    required this.children,
+    required this.spacing,
+    this.bottomPadding = 20,
+  });
 
-  final List<Widget> controls;
+  final List<Widget> children;
   final double spacing;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: (constraints.maxHeight - 20).clamp(0, double.infinity),
+              minHeight: (constraints.maxHeight - bottomPadding).clamp(
+                0,
+                double.infinity,
+              ),
             ),
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 spacing: spacing,
-                children: controls,
+                children: children,
               ),
             ),
           ),

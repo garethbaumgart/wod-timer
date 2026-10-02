@@ -56,8 +56,8 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
       totalSeconds: _setup.totalSeconds,
       spacing: 30,
       onStart: _onStart,
+      accessory: _buildClassicChip(),
       controls: [
-        _buildClassicChip(),
         SetupStepper(
           label: 'Work',
           labelColor: AppColors.work,

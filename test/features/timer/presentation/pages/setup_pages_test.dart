@@ -29,18 +29,23 @@ void main() {
 
   late _RecordingTimerNotifier timer;
 
-  /// Pumps [page] on an iPhone-16e-sized portrait screen with [stored] as
-  /// the device's SharedPreferences, then waits out the START guard unless
-  /// [waitOutGuard] is false.
+  /// Pumps [page] on a [size] screen (iPhone 16e portrait by default) with
+  /// [stored] as the device's SharedPreferences, the system text size at
+  /// [textScale] and [padding] as the safe area, then waits out the START
+  /// guard unless [waitOutGuard] is false.
   Future<SharedPreferences> pumpSetup(
     WidgetTester tester,
     Widget page, {
     Map<String, Object> stored = const {},
     bool waitOutGuard = true,
+    Size size = const Size(390, 844),
+    double textScale = 1,
+    FakeViewPadding padding = FakeViewPadding.zero,
   }) async {
     tester.view
-      ..physicalSize = const Size(1170, 2532)
-      ..devicePixelRatio = 3;
+      ..physicalSize = size * 3
+      ..devicePixelRatio = 3
+      ..padding = padding;
     addTearDown(tester.view.reset);
 
     SharedPreferences.setMockInitialValues(Map.of(stored));
@@ -66,7 +71,15 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           timerNotifierProvider.overrideWith(() => timer),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          routerConfig: router,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -412,5 +425,181 @@ void main() {
       expect(parts.last.style!.color, AppColors.textSecondaryDark);
       expect(parts.every((p) => p.style!.fontSize == 15), isTrue);
     });
+  });
+
+  group('Landscape setup', () {
+    const landscape = Size(844, 390);
+    // iPhone 16e held sideways: the notch side and the home indicator.
+    const notchedLandscape = FakeViewPadding(left: 141, right: 141, bottom: 63);
+
+    /// The scroll view around the controls: it should never need to move.
+    double controlsOverflow(WidgetTester tester) => tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .maxScrollExtent;
+
+    testWidgets('Tabata puts its three steppers in one row and fits', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const TabataSetupPage(), size: landscape);
+
+      expect(tester.takeException(), isNull);
+      expect(controlsOverflow(tester), 0);
+
+      final work = tester.getRect(find.text('WORK'));
+      final rest = tester.getRect(find.text('REST'));
+      final rounds = tester.getRect(find.text('ROUNDS'));
+      expect(rest.top, work.top);
+      expect(rounds.top, work.top);
+      expect(rest.left, greaterThan(work.right));
+      expect(rounds.left, greaterThan(rest.right));
+      // The row is centred on the screen.
+      final row = Rect.fromLTRB(
+        tester.getRect(find.bySemanticsLabel('Decrease work')).left,
+        work.top,
+        tester.getRect(find.bySemanticsLabel('Increase rounds')).right,
+        work.bottom,
+      );
+      expect(row.center.dx, closeTo(844 / 2, 2));
+
+      // Total then a full-width START along the bottom, all on screen.
+      final start = tester.getRect(
+        find.ancestor(of: find.text('START'), matching: find.byType(Container)),
+      );
+      final total = tester.getRect(find.textContaining('4:00'));
+      expect(start.width, closeTo(844 - 32, 1));
+      expect(start.bottom, lessThanOrEqualTo(390));
+      expect(total.bottom, lessThan(start.top));
+      expect(
+        tester.getRect(find.bySemanticsLabel('Increase rounds')).bottom,
+        lessThan(total.top),
+      );
+    });
+
+    testWidgets('Tabata fits a notched phone held sideways, chip showing', (
+      tester,
+    ) async {
+      await pumpSetup(
+        tester,
+        const TabataSetupPage(),
+        size: landscape,
+        padding: notchedLandscape,
+        stored: {SetupMemory.tabataWorkKey: 65},
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(controlsOverflow(tester), 0);
+      expect(find.text('RESET TO CLASSIC'), findsOneWidget);
+      final chip = tester.getRect(find.text('RESET TO CLASSIC'));
+      final work = tester.getRect(find.text('WORK'));
+      expect(chip.bottom, lessThan(work.top));
+      // Steppers sit inside the safe area, unscaled.
+      expect(
+        tester.getRect(find.bySemanticsLabel('Decrease work')).left,
+        greaterThanOrEqualTo(47),
+      );
+      expect(
+        tester.getRect(find.bySemanticsLabel('Increase rounds')).right,
+        lessThanOrEqualTo(844 - 47),
+      );
+      expect(
+        tester.getSize(find.bySemanticsLabel('Increase rounds')),
+        const Size(52, 52),
+      );
+      expect(tester.getRect(find.text('START')).bottom, lessThan(390 - 21));
+    });
+
+    testWidgets('steppers in the row are compact', (tester) async {
+      await pumpSetup(tester, const TabataSetupPage(), size: landscape);
+
+      final minus = tester.getRect(find.bySemanticsLabel('Decrease work'));
+      final plus = tester.getRect(find.bySemanticsLabel('Increase work'));
+      final value = tester.getRect(find.bySemanticsLabel('Work: 20 seconds'));
+      expect(minus.size, const Size(52, 52));
+      expect(plus.size, const Size(52, 52));
+      expect(value.width, 104);
+      expect(value.left - minus.right, 8);
+      expect(plus.left - value.right, 8);
+    });
+
+    testWidgets('EMOM puts its two steppers side by side', (tester) async {
+      await pumpSetup(tester, const EmomSetupPage(), size: landscape);
+
+      expect(tester.takeException(), isNull);
+      expect(controlsOverflow(tester), 0);
+      final every = tester.getRect(find.text('EVERY'));
+      final rounds = tester.getRect(find.text('ROUNDS'));
+      expect(rounds.top, every.top);
+      expect(rounds.left, greaterThan(every.right));
+      expect((every.center.dx + rounds.center.dx) / 2, closeTo(844 / 2, 2));
+    });
+
+    testWidgets('AMRAP keeps one full-size stepper, centred', (tester) async {
+      await pumpSetup(tester, const AmrapSetupPage(), size: landscape);
+
+      expect(tester.takeException(), isNull);
+      final value = tester.getRect(
+        find.bySemanticsLabel('Duration: 10 minutes'),
+      );
+      expect(value.center.dx, closeTo(844 / 2, 1));
+      expect(value.width, 184);
+      expect(
+        tester.getSize(find.bySemanticsLabel('Increase duration')),
+        const Size(60, 60),
+      );
+      expect(tester.getRect(find.text('START')).top, greaterThan(value.bottom));
+    });
+
+    testWidgets('For Time keeps its caption under the centred stepper', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const ForTimeSetupPage(), size: landscape);
+
+      expect(tester.takeException(), isNull);
+      expect(controlsOverflow(tester), 0);
+      final value = tester.getRect(find.text('20:00'));
+      final caption = tester.getRect(
+        find.text('COUNTS UP \u00B7 TAP TO CHANGE'),
+      );
+      expect(value.center.dx, closeTo(844 / 2, 2));
+      expect(caption.top, greaterThan(value.bottom));
+    });
+  });
+
+  // Older users run a large system text size; every setup screen must
+  // still lay out on a 375pt-wide phone, and in landscape.
+  group('Large text (1.6x)', () {
+    const pages = <String, Widget>{
+      'AMRAP': AmrapSetupPage(),
+      'For Time': ForTimeSetupPage(),
+      'EMOM': EmomSetupPage(),
+      'Tabata': TabataSetupPage(),
+    };
+    for (final entry in pages.entries) {
+      testWidgets('${entry.key} lays out at 375pt without overflow', (
+        tester,
+      ) async {
+        await pumpSetup(
+          tester,
+          entry.value,
+          size: const Size(375, 812),
+          textScale: 1.6,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('START'), findsOneWidget);
+      });
+
+      testWidgets('${entry.key} lays out in landscape without overflow', (
+        tester,
+      ) async {
+        await pumpSetup(
+          tester,
+          entry.value,
+          size: const Size(844, 390),
+          textScale: 1.6,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }
