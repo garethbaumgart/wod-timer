@@ -154,6 +154,9 @@ class _SetupHeader extends StatelessWidget {
 }
 
 /// The voice pack, choosable at setup: one chip instead of a card row.
+///
+/// Grey on purpose: START is the only green control on a setup screen, so
+/// the eye goes to it first.
 class _VoiceChip extends ConsumerWidget {
   const _VoiceChip();
 
@@ -175,12 +178,8 @@ class _VoiceChip extends ConsumerWidget {
               height: 40,
               padding: const EdgeInsets.only(left: 12, right: 15),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.38),
-                  width: 1.5,
-                ),
+                border: Border.all(color: AppColors.border, width: 1.5),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -192,13 +191,13 @@ class _VoiceChip extends ConsumerWidget {
                       _ => Icons.volume_up_outlined,
                     },
                     size: 19,
-                    color: AppColors.primary,
+                    color: AppColors.textSecondaryDark,
                   ),
                   const SizedBox(width: 7),
                   Text(
                     label,
                     style: AppTypography.summaryValue.copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.textSecondaryDark,
                       fontSize: 16,
                     ),
                   ),

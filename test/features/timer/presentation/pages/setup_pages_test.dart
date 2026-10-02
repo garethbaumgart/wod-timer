@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
+import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
@@ -163,6 +164,53 @@ void main() {
         tester.getSemantics(find.bySemanticsLabel('Decrease rounds')),
         containsSemantics(isEnabled: false),
       );
+    });
+  });
+
+  group('Setup chrome', () {
+    testWidgets('the voice chip is grey so START is the only green', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const EmomSetupPage());
+
+      final label = tester.widget<Text>(find.text('Major'));
+      expect(label.style!.color, AppColors.textSecondaryDark);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.volume_up_outlined));
+      expect(icon.color, AppColors.textSecondaryDark);
+
+      final chip = tester.widget<Container>(
+        find
+            .ancestor(of: find.text('Major'), matching: find.byType(Container))
+            .first,
+      );
+      final decoration = chip.decoration! as BoxDecoration;
+      expect(decoration.color, isNull);
+      expect(decoration.border!.top.color, AppColors.border);
+      expect(decoration.border!.top.width, 1.5);
+
+      // Same size and tap target as before.
+      final chipRect = tester.getRect(
+        find
+            .ancestor(of: find.text('Major'), matching: find.byType(SizedBox))
+            .first,
+      );
+      expect(chipRect.height, 48);
+    });
+
+    testWidgets('WORK and REST carry their colour without a dot', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const TabataSetupPage());
+
+      final work = tester.widget<Text>(find.text('WORK'));
+      expect(work.style!.color, AppColors.work);
+      final rest = tester.widget<Text>(find.text('REST'));
+      expect(rest.style!.color, AppColors.rest);
+
+      // With no dot beside it, the label centres over its value.
+      final label = tester.getRect(find.text('WORK'));
+      final value = tester.getRect(find.text('20s'));
+      expect((label.center.dx - value.center.dx).abs(), lessThan(3));
     });
   });
 

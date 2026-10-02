@@ -39,7 +39,8 @@ class SetupStepper extends StatelessWidget {
   final String decrementLabel;
   final String incrementLabel;
 
-  /// Phase colour for Tabata's WORK / REST labels; adds a matching dot.
+  /// Phase colour for Tabata's WORK / REST labels. The label carries it
+  /// alone: a dot beside it was a second signal for the same thing.
   final Color? labelColor;
 
   static const double _buttonSize = 60;
@@ -51,26 +52,13 @@ class SetupStepper extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (labelColor != null) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label.toUpperCase(),
-              style: AppTypography.labelSmall.copyWith(
-                color: color,
-                fontSize: 15,
-                letterSpacing: 2.6,
-              ),
-            ),
-          ],
+        Text(
+          label.toUpperCase(),
+          style: AppTypography.labelSmall.copyWith(
+            color: color,
+            fontSize: 15,
+            letterSpacing: 2.6,
+          ),
         ),
         const SizedBox(height: 10),
         Row(
