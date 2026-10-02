@@ -314,14 +314,19 @@ void main() {
   });
 
   group('For Time setup', () {
-    testWidgets('count direction is one switch and is remembered', (
+    testWidgets('count direction is one caption line and is remembered', (
       tester,
     ) async {
       final prefs = await pumpSetup(tester, const ForTimeSetupPage());
 
       expect(find.text('20:00'), findsOneWidget);
-      await tester.tap(find.text('COUNT DOWN'));
+      expect(find.text('COUNT UP'), findsNothing);
+      expect(find.text('COUNT DOWN'), findsNothing);
+      expect(find.text('COUNTS UP \u00B7 TAP TO CHANGE'), findsOneWidget);
+
+      await tester.tap(find.text('COUNTS UP \u00B7 TAP TO CHANGE'));
       await tester.pump();
+      expect(find.text('COUNTS DOWN \u00B7 TAP TO CHANGE'), findsOneWidget);
       await tapLabel(tester, 'Decrease time cap');
       expect(find.text('19:00'), findsOneWidget);
 
@@ -333,6 +338,39 @@ void main() {
       final type = timer.started!.timerType as ForTimeTimer;
       expect(type.countUp, isFalse);
       expect(type.timeCap.seconds, 1140);
+    });
+
+    testWidgets('the caption sits under the cap with a 44pt tap target', (
+      tester,
+    ) async {
+      await pumpSetup(
+        tester,
+        const ForTimeSetupPage(),
+        stored: {SetupMemory.forTimeCountUpKey: false},
+      );
+
+      final caption = find.text('COUNTS DOWN \u00B7 TAP TO CHANGE');
+      final value = tester.getRect(find.text('20:00'));
+      final text = tester.getRect(caption);
+      expect(text.top, greaterThan(value.bottom));
+      expect(text.top - value.bottom, lessThan(30));
+      expect((text.center.dx - value.center.dx).abs(), lessThan(3));
+
+      final target = tester.getRect(
+        find
+            .ancestor(of: caption, matching: find.byType(GestureDetector))
+            .first,
+      );
+      expect(target.height, greaterThanOrEqualTo(44));
+      expect(target.contains(text.center), isTrue);
+
+      // White direction words, grey instruction, all 15pt.
+      final span = tester.widget<Text>(caption).textSpan! as TextSpan;
+      final parts = span.children!.cast<TextSpan>();
+      expect(parts.first.text, 'COUNTS DOWN');
+      expect(parts.first.style!.color, AppColors.textPrimaryDark);
+      expect(parts.last.style!.color, AppColors.textSecondaryDark);
+      expect(parts.every((p) => p.style!.fontSize == 15), isTrue);
     });
   });
 }

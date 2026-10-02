@@ -47,79 +47,77 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
       title: 'FOR TIME',
       onStart: _onStart,
       controls: [
-        SetupStepper(
-          label: 'Time cap',
-          value: setupClock(cap),
-          semanticValue: setupSpokenDuration(cap),
-          decrementLabel: 'Decrease time cap',
-          incrementLabel: 'Increase time cap',
-          onDecrement: _cap.canDecrement(cap)
-              ? () => setState(
-                  () =>
-                      _setup = _setup.copyWith(capSeconds: _cap.decrement(cap)),
-                )
-              : null,
-          onIncrement: _cap.canIncrement(cap)
-              ? () => setState(
-                  () =>
-                      _setup = _setup.copyWith(capSeconds: _cap.increment(cap)),
-                )
-              : null,
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SetupStepper(
+              label: 'Time cap',
+              value: setupClock(cap),
+              semanticValue: setupSpokenDuration(cap),
+              decrementLabel: 'Decrease time cap',
+              incrementLabel: 'Increase time cap',
+              onDecrement: _cap.canDecrement(cap)
+                  ? () => setState(
+                      () => _setup = _setup.copyWith(
+                        capSeconds: _cap.decrement(cap),
+                      ),
+                    )
+                  : null,
+              onIncrement: _cap.canIncrement(cap)
+                  ? () => setState(
+                      () => _setup = _setup.copyWith(
+                        capSeconds: _cap.increment(cap),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            _buildCountDirection(),
+          ],
         ),
-        _buildCountDirectionSwitch(),
       ],
     );
   }
 
-  /// One two-way switch, so count direction reads as a single choice.
-  Widget _buildCountDirectionSwitch() {
-    return Container(
-      width: 310,
-      height: 54,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppColors.border, width: 1.5),
-      ),
-      child: Row(
-        children: [
-          _buildSegment(label: 'COUNT UP', countUp: true),
-          _buildSegment(label: 'COUNT DOWN', countUp: false),
-        ],
-      ),
+  /// Count direction as one caption under the cap: the setting reads as a
+  /// fact about the clock, not a second control competing with START. The
+  /// whole line is a 44pt tap target that flips it; START remembers it.
+  Widget _buildCountDirection() {
+    final countUp = _setup.countUp;
+    final direction = countUp ? 'COUNTS UP' : 'COUNTS DOWN';
+    final style = AppTypography.labelSmall.copyWith(
+      fontSize: 15,
+      letterSpacing: 1.2,
+      color: AppColors.textSecondaryDark,
     );
-  }
-
-  Widget _buildSegment({required String label, required bool countUp}) {
-    final isSelected = _setup.countUp == countUp;
-    return Expanded(
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        label: label,
-        excludeSemantics: true,
-        child: GestureDetector(
-          onTap: () =>
-              setState(() => _setup = _setup.copyWith(countUp: countUp)),
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(11),
-              color: isSelected
-                  ? AppColors.primary.withValues(alpha: 0.13)
-                  : Colors.transparent,
-            ),
+    return Semantics(
+      button: true,
+      label: countUp
+          ? 'Clock counts up. Tap to count down.'
+          : 'Clock counts down. Tap to count up.',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () =>
+            setState(() => _setup = _setup.copyWith(countUp: !countUp)),
+        behavior: HitTestBehavior.opaque,
+        child: ConstrainedBox(
+          // At least 44pt; large text may wrap it onto a second line.
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Center(
-              child: Text(
-                label,
-                style: AppTypography.labelSmall.copyWith(
-                  fontSize: 15,
-                  letterSpacing: 1.2,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondaryDark,
+              widthFactor: 1,
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: direction,
+                      style: style.copyWith(color: AppColors.textPrimaryDark),
+                    ),
+                    TextSpan(text: ' \u00B7 TAP TO CHANGE', style: style),
+                  ],
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
