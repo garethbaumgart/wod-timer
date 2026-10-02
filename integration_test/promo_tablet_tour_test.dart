@@ -1,3 +1,5 @@
+// STALE SINCE 1.3.0: written for the 1.2 live screen (REMAINING label, Stop
+// while running, DONE to Home). Captures now come from ux_review_tour_test.dart.
 // Promo tablet footage: landscape iPad, giant wall-clock digits. Scratch
 // tour for promo_video capture — run on an iPad simulator while
 // `simctl io recordVideo` rolls. Restores orientation at the end.

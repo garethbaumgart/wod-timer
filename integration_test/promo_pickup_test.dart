@@ -1,3 +1,5 @@
+// STALE SINCE 1.3.0: written for the 1.2 live screen (REMAINING label, Stop
+// while running, DONE to Home). Captures now come from ux_review_tour_test.dart.
 // Promo pickup: a believable For Time finish (~0:47). Scratch.
 // ignore_for_file: avoid_print
 
