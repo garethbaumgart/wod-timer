@@ -313,8 +313,9 @@ void main() {
       await notifier.start(amrapWorkout());
       now = now.add(const Duration(seconds: 30));
       engine.emit(const Duration(seconds: 30));
-      notifier.pause();
-      notifier.resume();
+      notifier
+        ..pause()
+        ..resume();
 
       now = now.add(const Duration(milliseconds: 200));
       notifier.countRound();

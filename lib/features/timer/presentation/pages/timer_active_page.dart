@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
@@ -12,16 +11,20 @@ import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/features/timer/application/setup/live_hints.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
+import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
+    as domain;
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
 
-/// Active timer display page - Signal design.
+/// Active timer display page - Signal design, 1.3.0 "big clock".
 ///
-/// The screen is built for the 3-metre gym glance: the phase (get ready /
-/// work / rest / paused) owns the colour of the giant digits and the
-/// background wash, and the round counter is a first-class figure.
-/// Stop is hold-to-confirm; ending early reports an honest "Stopped"
-/// state instead of a celebration.
+/// Built for the 3-metre gym glance: one phase-coloured clock filling the
+/// width, one big second number (the round, the score or the cap), one
+/// phase word when there is a phase to name, nothing under 15pt, and one
+/// control while running. Stop lives on the paused screen and is
+/// hold-to-confirm; ending early reports an honest "Stopped" state.
 class TimerActivePage extends ConsumerStatefulWidget {
   const TimerActivePage({required this.timerType, super.key});
 
@@ -38,8 +41,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// for a running one at distance.
   late final AnimationController _pausedPulse;
 
-  /// Transient "hold to end" hint shown when Stop is tapped instead of held.
+  /// Transient HOLD hint inside the Stop button (a short press, or a back
+  /// gesture while paused).
   bool _showHoldHint = false;
+
+  // Fixed slot heights (before the tablet text scale), so nothing on the
+  // screen moves when a state comes and goes.
+  static const double _phaseLineHeight = 40;
+  static const double _controlRowHeight = 96;
 
   @override
   void initState() {
@@ -50,10 +59,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       lowerBound: 0.35,
       upperBound: 0.9,
     );
-    // Keep screen on during workout (honours the settings toggle)
-    if (ref.read(appSettingsNotifierProvider).keepScreenOn) {
-      WakelockPlus.enable();
-    }
+    // A timer that sleeps mid-WOD is the app failing: the wakelock is always
+    // held while this page is open (the Keep Screen On switch went in 1.3.0).
+    WakelockPlus.enable();
     // Hide system UI for immersive experience
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -61,11 +69,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   @override
   void dispose() {
     _pausedPulse.dispose();
-    // Restore screen behavior
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
+
+  // ===================================================================
+  // Actions
+  // ===================================================================
 
   void _onPauseResume() {
     final timerNotifier = ref.read(timerNotifierProvider.notifier);
@@ -79,8 +90,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   /// Stop confirmed via hold: during prep nothing has happened yet, so
-  /// go straight back to setup; mid-workout, land on the honest
-  /// "Stopped" completion state.
+  /// go straight back to setup; otherwise land on the honest "Stopped"
+  /// completion state.
   void _onStopConfirmed() {
     final state = ref.read(timerNotifierProvider);
     if (state is TimerPreparing) {
@@ -91,7 +102,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     ref.read(timerNotifierProvider.notifier).stop();
   }
 
-  void _onStopTapped() {
+  void _flashHoldHint() {
     setState(() => _showHoldHint = true);
     Future.delayed(const Duration(milliseconds: 1600), () {
       if (mounted) setState(() => _showHoldHint = false);
@@ -102,41 +113,70 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     ref.read(timerNotifierProvider.notifier).finish();
   }
 
+  /// Tap anywhere outside the control row: skip the get-ready countdown,
+  /// count an AMRAP round, or resume a paused workout. These are the only
+  /// canvas gestures (double tap and swipes went in 1.3.0: they meant pause
+  /// in three modes and two rounds in AMRAP, and nothing showed them).
   void _onCanvasTap() {
+    final notifier = ref.read(timerNotifierProvider.notifier);
     final state = ref.read(timerNotifierProvider);
     if (state is TimerPreparing) {
       ref.read(hapticServiceProvider).mediumImpact();
-      ref.read(timerNotifierProvider.notifier).skipPrep();
+      notifier.skipPrep();
+      return;
+    }
+    if (state is TimerPaused) {
+      notifier.resume();
       return;
     }
     if (state is TimerRunning && widget.timerType == TimerTypes.amrap) {
-      ref.read(timerNotifierProvider.notifier).countRound();
+      final before = state.session.currentRound;
+      notifier.countRound();
+      final after = ref.read(timerNotifierProvider).sessionOrNull?.currentRound;
+      if (after != null && after > before) {
+        ref.read(liveHintsProvider).markCountedRound();
+      }
     }
   }
 
-  Future<void> _onReset() async {
+  /// The back gesture / Android back never leaves a live workout silently.
+  void _onPopAttempt() {
     final state = ref.read(timerNotifierProvider);
-    // Only reset if timer is not in initial state (was properly started)
+    switch (state) {
+      case TimerPreparing():
+        _onStopConfirmed();
+      case TimerPaused():
+        _flashHoldHint();
+      case TimerCompleted():
+        _onDone();
+      case TimerRunning() || TimerResting():
+        // Mid-rep: pause first, then hold Stop. A stray edge swipe does
+        // nothing.
+        break;
+      default:
+        _goToSetup();
+    }
+  }
+
+  void _goToSetup() {
+    final state = ref.read(timerNotifierProvider);
     if (state is! TimerInitial) {
       ref.read(timerNotifierProvider.notifier).reset();
     }
-    if (mounted) {
-      context.go(AppRoutes.timerSetupPath(widget.timerType));
-    }
+    if (mounted) context.go(AppRoutes.timerSetupPath(widget.timerType));
   }
 
-  Future<void> _onRestart() async {
+  Future<void> _onAgain() async {
     await ref.read(timerNotifierProvider.notifier).restart();
   }
 
-  void _onComplete() {
-    final state = ref.read(timerNotifierProvider);
-    // Only reset if timer is not in initial state (was properly started)
-    if (state is! TimerInitial) {
-      ref.read(timerNotifierProvider.notifier).reset();
-    }
-    context.go(AppRoutes.home);
-  }
+  /// DONE lands on this mode's setup with the workout just run loaded, so
+  /// fixing one number and going again is DONE, stepper, START.
+  void _onDone() => _goToSetup();
+
+  // ===================================================================
+  // Build
+  // ===================================================================
 
   @override
   Widget build(BuildContext context) {
@@ -155,64 +195,54 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       }
     }
 
-    // React to the Keep Screen On setting changing mid-workout
-    ref.listen(appSettingsNotifierProvider.select((s) => s.keepScreenOn), (
-      previous,
-      keepScreenOn,
-    ) {
-      if (keepScreenOn) {
-        WakelockPlus.enable();
-      } else {
-        WakelockPlus.disable();
-      }
-    });
-
     // Show placeholder when timer is not configured yet
     if (timerState is TimerInitial) {
       return _buildNotConfiguredState();
     }
 
-    // AMRAP counts rounds on tap, so double-tap-to-pause is disabled there
-    // (the two gestures can't coexist); swipe up/down still pauses/resumes.
     final isAmrapRunning =
         timerState is TimerRunning && widget.timerType == TimerTypes.amrap;
+    final canvasTaps =
+        timerState is TimerPreparing || timerState is TimerPaused || isAmrapRunning;
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: Semantics(
-          label: _buildTimerAccessibilityLabel(timerState),
-          liveRegion: true,
-          child: GestureDetector(
-            onTap: timerState is TimerPreparing || isAmrapRunning
-                ? _onCanvasTap
-                : null,
-            onDoubleTap:
-                !isAmrapRunning && (timerState.canPause || timerState.canResume)
-                ? _onPauseResume
-                : null,
-            // Swipe up to pause
-            onVerticalDragEnd: (details) {
-              if (details.primaryVelocity == null) return;
-
-              // Swipe up (negative velocity) to pause
-              if (details.primaryVelocity! < -300 && timerState.canPause) {
-                ref.read(hapticServiceProvider).mediumImpact();
-                _onPauseResume();
-              }
-              // Swipe down (positive velocity) to resume when paused
-              else if (details.primaryVelocity! > 300 && timerState.canResume) {
-                ref.read(hapticServiceProvider).mediumImpact();
-                _onPauseResume();
-              }
-            },
-            child: OrientationBuilder(
-              builder: (context, orientation) {
-                if (orientation == Orientation.landscape) {
-                  return _buildLandscapeLayout(timerState);
-                }
-                return _buildPortraitLayout(timerState);
-              },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onPopAttempt();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: SafeArea(
+          child: Semantics(
+            label: _buildTimerAccessibilityLabel(timerState),
+            liveRegion: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: canvasTaps ? _onCanvasTap : null,
+              child: OrientationBuilder(
+                builder: (context, orientation) {
+                  if (timerState is TimerCompleted) {
+                    return orientation == Orientation.landscape
+                        ? ContentWidthCap(
+                            maxWidth: 900,
+                            child: _buildCompletedLayout(
+                              timerState,
+                              landscape: true,
+                            ),
+                          )
+                        : ContentWidthCap(
+                            child: _buildCompletedLayout(
+                              timerState,
+                              landscape: false,
+                            ),
+                          );
+                  }
+                  if (orientation == Orientation.landscape) {
+                    return _buildLandscapeLayout(timerState);
+                  }
+                  return _buildPortraitLayout(timerState);
+                },
+              ),
             ),
           ),
         ),
@@ -220,10 +250,27 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     );
   }
 
+  /// Tablets get proportionally bigger text slots so the round keeps its
+  /// ratio to a width-filled clock; phones are 1.0.
+  double _scale(BuildContext context) =>
+      (MediaQuery.sizeOf(context).shortestSide / 390).clamp(1.0, 1.6);
+
+  // ===================================================================
+  // Session helpers
+  // ===================================================================
+
   /// Whether this session's For Time timer counts up from zero.
   bool _isCountUpForTime(TimerSession? session) {
     final type = session?.workout.timerType;
     return type is ForTimeTimer && type.countUp;
+  }
+
+  /// The phase the session is in, or paused in.
+  domain.TimerState? _effectivePhase(TimerSession? session) {
+    if (session == null) return null;
+    return session.state == domain.TimerState.paused
+        ? (session.stateBeforePause ?? session.state)
+        : session.state;
   }
 
   /// The seconds shown on the giant display: the get-ready countdown while
@@ -235,6 +282,43 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     if (state is TimerPreparing) return session.timeRemaining.seconds;
     if (_isCountUpForTime(session)) return session.elapsed.seconds;
     return session.timeRemaining.seconds;
+  }
+
+  /// Length of the phase the clock is counting through.
+  int _phaseSeconds(TimerNotifierState state, TimerSession session) {
+    if (state is TimerPreparing) return session.workout.prepCountdown.seconds;
+    final phase = _effectivePhase(session);
+    return session.workout.timerType.when(
+      amrap: (t) => t.duration.seconds,
+      forTime: (t) => t.timeCap.seconds,
+      emom: (t) => t.intervalDuration.seconds,
+      tabata: (t) => phase == domain.TimerState.resting
+          ? t.restDuration.seconds
+          : t.workDuration.seconds,
+    );
+  }
+
+  /// Clock format: "9:45", "0:11", "12:30". Never zero-padded minutes.
+  String _clock(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final secs = totalSeconds % 60;
+    return '$minutes:${secs.toString().padLeft(2, '0')}';
+  }
+
+  /// Display string for the giant digits.
+  ///
+  /// Countdowns go to bare seconds under a minute, and a phase of a minute
+  /// or less never shows "1:00" (an EMOM minute counts 60, 59 ...). Count-up
+  /// For Time always reads M:SS.
+  String _displayString(TimerNotifierState state, int seconds) {
+    final session = state.sessionOrNull;
+    final isCountUp = state is! TimerPreparing && _isCountUpForTime(session);
+    if (!isCountUp &&
+        (seconds < 60 ||
+            (session != null && _phaseSeconds(state, session) <= 60))) {
+      return '$seconds';
+    }
+    return _clock(seconds);
   }
 
   String _buildTimerAccessibilityLabel(TimerNotifierState state) {
@@ -260,19 +344,21 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
               ? ', ${session.currentRound - 1} rounds counted'
               : '');
 
-    // Only show control hints when pause/resume is available
-    final amrapHint =
-        state is TimerRunning && widget.timerType == TimerTypes.amrap
-        ? ' Tap to count a round.'
-        : '';
-    final controlsHint = (state.canPause || state.canResume)
-        ? '. Swipe up to pause, swipe down to resume. '
-              'Hold the stop button to end.$amrapHint'
-        : '';
+    final String hint;
+    if (state is TimerPreparing) {
+      hint = '. Tap to start now. Hold the stop button to go back.';
+    } else if (state is TimerPaused) {
+      hint = '. Tap anywhere to resume. Hold the stop button to end.';
+    } else if (state is TimerRunning && widget.timerType == TimerTypes.amrap) {
+      hint = '. Tap to count a round. Pause to stop.';
+    } else if (state.canPause) {
+      hint = '. Pause to stop.';
+    } else {
+      hint = '';
+    }
 
     final direction = _isCountUpForTime(session) ? 'elapsed' : 'remaining';
-    return '$phase, $minutes minutes $secs seconds $direction'
-        '$roundInfo$controlsHint';
+    return '$phase, $minutes minutes $secs seconds $direction$roundInfo$hint';
   }
 
   Widget _buildNotConfiguredState() {
@@ -301,14 +387,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                 Text(
                   'Go back to the setup page to configure and start '
                   'your workout.',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textSecondaryDark,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 ElevatedButton.icon(
-                  onPressed: _onReset,
+                  onPressed: _goToSetup,
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Go to Setup'),
                 ),
@@ -320,328 +406,271 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     );
   }
 
-  // -- Phase color helper (owns digits, wash, pill and progress) --
+  // ===================================================================
+  // Phase colour (owns the digits, the wash, the bar and the phase word)
+  // ===================================================================
 
-  Color _getPhaseColor(TimerNotifierState state) {
-    return state.maybeMap(
-      preparing: (_) => AppColors.prepare,
-      running: (_) => AppColors.work,
-      resting: (_) => AppColors.rest,
-      paused: (_) => AppColors.paused,
-      completed: (s) => s.endedEarly ? AppColors.paused : AppColors.complete,
-      orElse: () => AppColors.primary,
-    );
-  }
+  Color _phaseColorOf(domain.TimerState? phase) => switch (phase) {
+    domain.TimerState.preparing => AppColors.prepare,
+    domain.TimerState.resting => AppColors.rest,
+    _ => AppColors.work,
+  };
 
-  String _getPhaseLabel(TimerNotifierState state) {
-    return state.maybeMap(
-      preparing: (_) => 'GET READY',
-      running: (_) => 'WORK',
-      resting: (_) => 'REST',
-      paused: (_) => 'PAUSED',
-      completed: (s) => s.endedEarly ? 'STOPPED' : 'COMPLETE',
-      orElse: () => '',
-    );
-  }
+  /// Digits keep the phase they are in (or paused in): a paused Tabata
+  /// shows which phase will resume. Paused additionally dims and pulses.
+  Color _digitColor(TimerNotifierState state) => state.maybeMap(
+    preparing: (_) => AppColors.prepare,
+    running: (_) => AppColors.work,
+    resting: (_) => AppColors.rest,
+    paused: (s) => _phaseColorOf(_effectivePhase(s.session)),
+    orElse: () => Colors.white,
+  );
 
-  String _getTimerTypeLabel() {
-    switch (widget.timerType) {
-      case TimerTypes.amrap:
-        return 'AMRAP';
-      case TimerTypes.forTime:
-        return 'FOR TIME';
-      case TimerTypes.emom:
-        return 'EMOM';
-      case TimerTypes.tabata:
-        return 'TABATA';
-      default:
-        return widget.timerType.toUpperCase();
-    }
-  }
-
-  /// The pill shows only when it carries the phase (get-ready, paused and
-  /// rest always; WORK only for Tabata, the one running mode with a
-  /// contrasting phase). A pill that just says "EMOM" mid-workout tells the
-  /// athlete nothing they don't know.
-  bool _pillCarriesPhase(TimerNotifierState state) {
-    return state is TimerPreparing ||
-        state is TimerPaused ||
-        state is TimerResting ||
-        (state is TimerRunning && widget.timerType == TimerTypes.tabata);
-  }
-
-  String _pillText(TimerNotifierState state) {
-    return '${_getTimerTypeLabel()}  ·  ${_getPhaseLabel(state)}';
-  }
-
-  /// Fixed-height slot for the pill, so the digits never jump when it
-  /// comes and goes (pause, rest).
-  Widget _buildPillSlot(TimerNotifierState state, Color phaseColor) {
-    return SizedBox(
-      height: 40,
-      child: Center(
-        child: _pillCarriesPhase(state)
-            ? _buildPillBadge(state, phaseColor)
-            : null,
-      ),
-    );
-  }
+  /// Wash and bar colour: grey while paused, the phase otherwise.
+  Color _washColor(TimerNotifierState state) => state.maybeMap(
+    preparing: (_) => AppColors.prepare,
+    running: (_) => AppColors.work,
+    resting: (_) => AppColors.rest,
+    paused: (_) => AppColors.paused,
+    orElse: () => AppColors.primary,
+  );
 
   // ===================================================================
-  // Portrait Layout
+  // Portrait
   // ===================================================================
 
   Widget _buildPortraitLayout(TimerNotifierState state) {
-    // Completed state has a special layout
-    if (state is TimerCompleted) {
-      return ContentWidthCap(child: _buildCompletedLayout(state));
-    }
-
     final session = state.sessionOrNull;
-    final phaseColor = _getPhaseColor(state);
+    final s = _scale(context);
 
     return Column(
       children: [
         const SizedBox(height: AppSpacing.lg),
-
-        // Pill badge: "TABATA . REST" (only when it carries the phase)
-        _buildPillSlot(state, phaseColor),
-
-        // Giant time, scaled to fill the width (what matters from across
-        // the gym), with the direction label + round counter directly
-        // under it, the pair centred in the space.
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Flexible(
-                child: _buildTimerWithGlow(state, phaseColor, fill: true),
-              ),
+              Flexible(child: _buildClock(state)),
               const SizedBox(height: AppSpacing.sm),
-              _buildSubInfo(state, session, phaseColor),
+              SizedBox(
+                height: _phaseLineHeight * s,
+                child: _buildPhaseWord(state, session, fontSize: 34 * s),
+              ),
+              SizedBox(
+                height: _scoreSlotHeight * s,
+                child: _buildScoreSlot(state, session, s),
+              ),
             ],
           ),
         ),
-
-        const SizedBox(height: AppSpacing.xl),
-
-        // Progress bar
-        _buildProgressBar(state),
-
         const SizedBox(height: AppSpacing.lg),
-
-        // For Time: the success action is a real, labelled button
-        if (_showFinishButton(state)) ...[
-          ContentWidthCap(maxWidth: 520, child: _buildFinishButton()),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-
-        // Control buttons
-        ContentWidthCap(maxWidth: 560, child: _buildControls(state)),
-
+        _buildBarSlot(state, horizontalPadding: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.lg),
+        ContentWidthCap(
+          maxWidth: 560,
+          child: _absorbCanvasTaps(
+            SizedBox(
+              height: _controlRowHeight,
+              child: _buildControlRow(state),
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.xl),
       ],
     );
   }
 
-  bool _showFinishButton(TimerNotifierState state) {
-    return widget.timerType == TimerTypes.forTime &&
-        (state is TimerRunning || state is TimerPaused);
-  }
+  /// The control row keeps its own taps: a near miss on Pause or Stop must
+  /// never count a round or resume the workout.
+  Widget _absorbCanvasTaps(Widget child) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: () {},
+    child: child,
+  );
+
+  /// Fixed per mode, so prep and work share one layout and nothing moves
+  /// at GO.
+  double get _scoreSlotHeight => switch (widget.timerType) {
+    TimerTypes.amrap => 108,
+    TimerTypes.forTime => 44,
+    _ => 84,
+  };
 
   // ===================================================================
-  // Landscape Layout
+  // Landscape: the propped phone
   // ===================================================================
 
   Widget _buildLandscapeLayout(TimerNotifierState state) {
-    if (state is TimerCompleted) {
-      return ContentWidthCap(
-        maxWidth: 900,
-        child: _buildCompletedLayoutLandscape(state),
-      );
-    }
-
     final session = state.sessionOrNull;
-    final phaseColor = _getPhaseColor(state);
+    final s = _scale(context);
+    final isPaused = state is TimerPaused;
 
     return Column(
       children: [
         Expanded(
-          child: Row(
-            children: [
-              // Left side - Timer display
-              Expanded(
-                flex: 2,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildPillSlot(state, phaseColor),
-                    const SizedBox(height: AppSpacing.xs),
-                    // Flexible, like portrait: a fixed 180pt digit box
-                    // pushed ROUNDS / the tap hint off the bottom of a
-                    // phone held sideways (11-18px overflow since 1.1).
-                    Flexible(
-                      child: _buildTimerWithGlow(
-                        state,
-                        phaseColor,
-                        fill: true,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildSubInfo(state, session, phaseColor),
-                  ],
-                ),
-              ),
-
-              // Right side - Controls
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_showFinishButton(state)) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                        ),
-                        child: ContentWidthCap(
-                          maxWidth: 520,
-                          child: _buildFinishButton(),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    _buildControlsCompact(state),
-                  ],
-                ),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            child: Center(child: _buildClock(state)),
           ),
         ),
-        // Full-width progress bar in landscape too
-        _buildProgressBar(state),
-        const SizedBox(height: AppSpacing.md),
+        _absorbCanvasTaps(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
+            child: SizedBox(
+              height: _controlRowHeight,
+              child: Row(
+                children: [
+                  if (isPaused || state is TimerPreparing) ...[
+                    _buildStopButton(state),
+                    const SizedBox(width: AppSpacing.lg),
+                  ],
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: 56 * s,
+                          child: _buildLandscapeInfoLine(state, session, s),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _buildBarSlot(state, horizontalPadding: 0),
+                      ],
+                    ),
+                  ),
+                  if (state is! TimerPreparing) ...[
+                    const SizedBox(width: AppSpacing.lg),
+                    if (_showFinish(state)) ...[
+                      SizedBox(width: 200, child: _buildFinishButton()),
+                      const SizedBox(width: AppSpacing.md),
+                    ],
+                    _buildPauseDisc(state),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  // ===================================================================
-  // Pill Badge
-  // ===================================================================
-
-  Widget _buildPillBadge(TimerNotifierState state, Color phaseColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: phaseColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-      ),
-      child: Text(
-        _pillText(state),
-        style: AppTypography.pillBadge.copyWith(color: phaseColor),
-      ),
-    );
-  }
-
-  // ===================================================================
-  // Timer with radial glow
-  // ===================================================================
-
-  /// Display string for the giant digits.
-  ///
-  /// Sub-minute countdowns (prep countdown, Tabata/EMOM intervals, the
-  /// final minute) drop the dead "00:" prefix so the meaningful digits
-  /// render roughly twice as tall. Count-up displays keep MM:SS.
-  String _displayString(TimerNotifierState state, int seconds) {
-    final isCountUp =
-        state is! TimerPreparing && _isCountUpForTime(state.sessionOrNull);
-    if (!isCountUp && seconds < 60) {
-      return '$seconds';
-    }
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:'
-        '${secs.toString().padLeft(2, '0')}';
-  }
-
-  /// With [fill] the digits grow to the width they are given (inside a
-  /// Flexible, which caps the height on short screens).
-  Widget _buildTimerWithGlow(
+  /// One line under the landscape clock: the phase word (when there is
+  /// one) and the round, score or cap, left-aligned beside the bar.
+  Widget _buildLandscapeInfoLine(
     TimerNotifierState state,
-    Color phaseColor, {
-    bool fill = false,
-  }) {
-    final seconds = _displaySeconds(state);
-    final timeString = _displayString(state, seconds);
-    final isBareSeconds = !timeString.contains(':');
-    final isPaused = state is TimerPaused;
+    TimerSession? session,
+    double s,
+  ) {
+    if (session == null) return const SizedBox.shrink();
+    final parts = <Widget>[];
+    final phase = _phaseWord(state, session);
+    if (phase != null) {
+      parts
+        ..add(
+          Text(
+            phase.$1,
+            style: _phaseStyle(phase.$2, 34 * s),
+          ),
+        )
+        ..add(SizedBox(width: AppSpacing.md * s));
+    }
 
-    // Pulse animation for last 3 seconds of prep countdown
-    final isPulsing = state is TimerPreparing && seconds <= 3 && seconds > 0;
+    if (state is TimerPreparing) {
+      parts.add(Text('TAP TO SKIP', style: _captionStyle(15 * s)));
+    } else if (session.totalRounds != null) {
+      parts.add(
+        Text(
+          '${session.currentRound}/${session.totalRounds}',
+          style: _roundStyle(56 * s),
+        ),
+      );
+    } else if (widget.timerType == TimerTypes.amrap) {
+      if (_showTapToCount(state, session)) {
+        parts.add(Text('TAP TO COUNT', style: _hintStyle(34 * s)));
+      } else {
+        parts
+          ..add(Text('${session.currentRound - 1}', style: _roundStyle(56 * s)))
+          ..add(SizedBox(width: AppSpacing.sm * s))
+          ..add(Text('ROUNDS', style: _captionStyle(15 * s)));
+      }
+    } else if (_showCap(state, session)) {
+      parts.add(Text(_capText(session), style: _capStyle(26 * s)));
+    }
 
-    final baseSize = isBareSeconds ? 150.0 : 96.0;
-    final fontSize = isPulsing ? baseSize + 14 : baseSize;
-
-    // The phase owns the digit colour — the one channel that survives
-    // 3 metres. Paused additionally dims and pulses.
-    final digitColor = state.maybeMap(
-      preparing: (_) => AppColors.prepare,
-      running: (_) => AppColors.work,
-      resting: (_) => AppColors.rest,
-      paused: (_) => Colors.white,
-      orElse: () => Colors.white,
-    );
-
-    Widget digits = AnimatedDefaultTextStyle(
-      duration: const Duration(milliseconds: 200),
-      style: AppTypography.timerDisplay.copyWith(
-        fontSize: fontSize,
-        color: digitColor,
-      ),
-      // The digits scale UP to fill the column: from across the gym (or
-      // a phone propped on a box) a bigger clock is the whole point.
+    return Align(
+      alignment: Alignment.centerLeft,
       child: FittedBox(
-        fit: fill ? BoxFit.contain : BoxFit.scaleDown,
-        child: Text(
-          timeString,
-          semanticsLabel:
-              '${seconds ~/ 60} minutes ${seconds % 60} seconds '
-              '${_isCountUpForTime(state.sessionOrNull) ? 'elapsed' : 'remaining'}',
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: parts,
         ),
       ),
     );
+  }
 
-    // Scaled digits ignore the font-size bump, so the final-3s prep pulse
-    // is applied as a scale instead.
-    if (fill) {
-      digits = AnimatedScale(
-        scale: isPulsing ? 1.08 : 1,
-        duration: const Duration(milliseconds: 200),
-        child: digits,
-      );
-    }
+  // ===================================================================
+  // The clock
+  // ===================================================================
+
+  /// The giant digits, width-filled (and height-capped by the enclosing
+  /// Flexible / Expanded) with the phase wash behind them.
+  Widget _buildClock(TimerNotifierState state) {
+    final seconds = _displaySeconds(state);
+    final timeString = _displayString(state, seconds);
+    final isPaused = state is TimerPaused;
+
+    // Pulse for last 3 seconds of prep countdown
+    final isPulsing = state is TimerPreparing && seconds <= 3 && seconds > 0;
+
+    Widget digits = Text(
+      timeString,
+      style: AppTypography.timerDisplay.copyWith(
+        fontSize: timeString.contains(':') ? 96 : 150,
+        color: _digitColor(state),
+      ),
+      semanticsLabel:
+          '${seconds ~/ 60} minutes ${seconds % 60} seconds '
+          '${_isCountUpForTime(state.sessionOrNull) ? 'elapsed' : 'remaining'}',
+    );
+
+    // FittedBox only scales UP under a forced size: pin the width so the
+    // digits grow to it; the height follows the aspect ratio (and the
+    // enclosing Flexible caps it on short screens).
+    digits = SizedBox(
+      width: double.infinity,
+      child: FittedBox(child: digits),
+    );
+    digits = AnimatedScale(
+      scale: isPulsing ? 1.08 : 1,
+      duration: const Duration(milliseconds: 200),
+      child: digits,
+    );
     if (isPaused) {
       digits = FadeTransition(opacity: _pausedPulse, child: digits);
     }
-    if (fill) {
-      // FittedBox only scales UP under a forced size: pin the width so the
-      // digits grow to it; the height follows the aspect ratio (and the
-      // enclosing Flexible caps it on short screens).
-      digits = SizedBox(width: double.infinity, child: digits);
-    }
 
+    final wash = _washColor(state);
     return Stack(
       alignment: Alignment.center,
       children: [
         // Radial wash behind the timer carries the phase at a glance.
-        // Positioned.fill so the decoration never dictates layout height
-        // (a fixed 300px circle overflowed the landscape column).
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 radius: 0.9,
                 colors: [
-                  phaseColor.withValues(alpha: 0.18),
+                  wash.withValues(alpha: isPaused ? 0.08 : 0.18),
                   Colors.transparent,
                 ],
               ),
@@ -649,10 +678,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
           child: digits,
         ),
       ],
@@ -660,175 +686,179 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   // ===================================================================
-  // Sub info: direction label, round counter, phase preview, cap
+  // Phase word, round slot
   // ===================================================================
 
-  Widget _buildSubInfo(
+  TextStyle _phaseStyle(Color color, double size) =>
+      AppTypography.sectionHeader.copyWith(
+        color: color,
+        fontSize: size,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 4,
+        height: 1,
+      );
+
+  TextStyle _roundStyle(double size) => AppTypography.timerDisplay.copyWith(
+    color: Colors.white,
+    fontSize: size,
+    letterSpacing: -2,
+  );
+
+  TextStyle _hintStyle(double size) => AppTypography.sectionHeader.copyWith(
+    color: AppColors.textSecondaryDark,
+    fontSize: size,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 4,
+    height: 1,
+  );
+
+  TextStyle _captionStyle(double size) => AppTypography.labelSmall.copyWith(
+    color: AppColors.textSecondaryDark,
+    fontSize: size,
+    letterSpacing: 3,
+  );
+
+  TextStyle _capStyle(double size) => AppTypography.labelSmall.copyWith(
+    color: AppColors.textSecondaryDark,
+    fontSize: size,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 3,
+  );
+
+  /// The phase word and its colour, or null when there is no phase to name
+  /// (AMRAP, EMOM and For Time work).
+  (String, Color)? _phaseWord(TimerNotifierState state, TimerSession session) {
+    final isTabata = widget.timerType == TimerTypes.tabata;
+    if (state is TimerPreparing) return ('GET READY', AppColors.prepare);
+    if (state is TimerPaused) {
+      if (!isTabata) return ('PAUSED', AppColors.paused);
+      final resting = _effectivePhase(session) == domain.TimerState.resting;
+      return (resting ? 'PAUSED · REST' : 'PAUSED · WORK', AppColors.paused);
+    }
+    if (!isTabata) return null;
+
+    // Tabata: name the phase, and for its last five seconds name the next
+    // one in the next phase's colour (the digits stay in the current one).
+    final remaining = session.timeRemaining.seconds;
+    final lastRound = session.currentRound >= (session.totalRounds ?? 0);
+    if (state is TimerResting) {
+      if (lastRound) return ('LAST REST', AppColors.rest);
+      if (remaining <= 5) return ('NEXT · WORK', AppColors.work);
+      return ('REST', AppColors.rest);
+    }
+    if (state is TimerRunning) {
+      if (remaining <= 5) return ('NEXT · REST', AppColors.rest);
+      return ('WORK', AppColors.work);
+    }
+    return null;
+  }
+
+  Widget _buildPhaseWord(
+    TimerNotifierState state,
+    TimerSession? session, {
+    required double fontSize,
+  }) {
+    if (session == null) return const SizedBox.shrink();
+    final phase = _phaseWord(state, session);
+    if (phase == null) return const SizedBox.shrink();
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(phase.$1, style: _phaseStyle(phase.$2, fontSize)),
+      ),
+    );
+  }
+
+  bool _showTapToCount(TimerNotifierState state, TimerSession session) =>
+      state is TimerRunning &&
+      session.currentRound == 1 &&
+      !ref.read(liveHintsProvider).hasCountedRound;
+
+  /// The cap is the pacing number under a count-up clock, once work starts.
+  /// A count-down clock already is the cap.
+  bool _showCap(TimerNotifierState state, TimerSession session) =>
+      state is! TimerPreparing && _isCountUpForTime(session);
+
+  String _capText(TimerSession session) {
+    final type = session.workout.timerType;
+    return type is ForTimeTimer ? 'CAP ${_clock(type.timeCap.seconds)}' : '';
+  }
+
+  /// The second big number: the round (EMOM, Tabata), the score (AMRAP) or
+  /// the cap (count-up For Time). In prep it carries the skip hint.
+  Widget _buildScoreSlot(
     TimerNotifierState state,
     TimerSession? session,
-    Color phaseColor,
+    double s,
   ) {
     if (session == null) return const SizedBox.shrink();
 
-    final children = <Widget>[];
-
-    // Small direction label — every mode, not just For Time.
-    final directionLabel = state is TimerPreparing
-        ? 'STARTS IN'
-        : (_isCountUpForTime(session) ? 'ELAPSED' : 'REMAINING');
-    children.add(
-      Text(
-        directionLabel,
-        style: AppTypography.labelSmall.copyWith(
-          color: AppColors.textSecondaryDark,
-          letterSpacing: 2,
-          fontSize: 13,
-        ),
-      ),
-    );
-
-    // Round counter is co-primary information for round-based modes.
-    if (session.totalRounds != null && state is! TimerPreparing) {
-      children
-        ..add(const SizedBox(height: 6))
-        ..add(
-          Text(
-            'ROUND ${session.currentRound}/${session.totalRounds}',
-            style: AppTypography.timerDisplaySmall.copyWith(
-              color: Colors.white,
-              fontSize: 40,
-            ),
-          ),
-        );
-    }
-
-    // AMRAP: the manual tap-to-count tally.
-    if (widget.timerType == TimerTypes.amrap && state is! TimerPreparing) {
-      final counted = session.currentRound - 1;
-      children
-        ..add(const SizedBox(height: 6))
-        ..add(
-          Text(
-            'ROUNDS $counted',
-            style: AppTypography.timerDisplaySmall.copyWith(
-              color: Colors.white,
-              fontSize: 40,
-            ),
-          ),
-        );
-      if (counted == 0 && state is TimerRunning) {
-        children
-          ..add(const SizedBox(height: 4))
-          ..add(
-            Text(
-              'TAP ANYWHERE TO COUNT A ROUND',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.textHintDark,
-                letterSpacing: 1.5,
-                fontSize: 11,
-              ),
-            ),
-          );
-      }
-    }
-
-    // For Time: keep the cap in sight while pacing against it.
-    if (widget.timerType == TimerTypes.forTime) {
-      final type = session.workout.timerType;
-      if (type is ForTimeTimer) {
-        children
-          ..add(const SizedBox(height: 6))
-          ..add(
-            Text(
-              'CAP ${_clock(type.timeCap.seconds)}',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondaryDark,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          );
-      }
-    }
-
-    // Tabata: phase preview in the last seconds of a phase.
-    if (widget.timerType == TimerTypes.tabata) {
-      final preview = _buildPhasePreview(state, session);
-      if (preview != null) {
-        children
-          ..add(const SizedBox(height: 6))
-          ..add(preview);
-      }
-    }
-
-    // Prep: skip affordance.
+    Widget? child;
     if (state is TimerPreparing) {
-      children
-        ..add(const SizedBox(height: 6))
-        ..add(
-          Text(
-            'TAP TO START NOW',
-            style: AppTypography.labelSmall.copyWith(
-              color: AppColors.textHintDark,
-              letterSpacing: 1.5,
-              fontSize: 11,
-            ),
-          ),
-        );
-    }
-
-    return Column(children: children);
-  }
-
-  /// "WORK in 3s" — anticipation for the next Tabata phase flip.
-  Widget? _buildPhasePreview(TimerNotifierState state, TimerSession session) {
-    final timeRemaining = session.timeRemaining.seconds;
-
-    // Show preview when 5 or fewer seconds remain in the current phase
-    if (timeRemaining > 5) return null;
-
-    String nextPhase;
-    Color nextColor;
-
-    if (state is TimerRunning) {
-      nextPhase = 'REST';
-      nextColor = AppColors.rest;
-    } else if (state is TimerResting) {
-      if (session.currentRound >= (session.totalRounds ?? 0)) {
-        nextPhase = 'COMPLETE';
-        nextColor = AppColors.complete;
+      child = Text('TAP TO SKIP', style: _hintStyle(34 * s));
+    } else if (session.totalRounds != null) {
+      child = Text(
+        '${session.currentRound}/${session.totalRounds}',
+        style: _roundStyle(80 * s),
+      );
+    } else if (widget.timerType == TimerTypes.amrap) {
+      if (_showTapToCount(state, session)) {
+        child = Text('TAP TO COUNT', style: _hintStyle(34 * s));
       } else {
-        nextPhase = 'WORK';
-        nextColor = AppColors.work;
+        child = Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${session.currentRound - 1}', style: _roundStyle(80 * s)),
+            SizedBox(height: AppSpacing.xs * s),
+            Text('ROUNDS', style: _captionStyle(15 * s)),
+          ],
+        );
       }
-    } else {
-      return null;
+    } else if (_showCap(state, session)) {
+      child = Text(_capText(session), style: _capStyle(26 * s));
     }
 
-    return AnimatedOpacity(
-      opacity: timeRemaining <= 3 ? 1.0 : 0.7,
-      duration: const Duration(milliseconds: 200),
-      child: Text(
-        '$nextPhase in ${timeRemaining}s',
-        style: AppTypography.bodyMedium.copyWith(
-          color: nextColor,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+    if (child == null) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.topCenter,
+      child: FittedBox(fit: BoxFit.scaleDown, child: child),
     );
   }
 
   // ===================================================================
-  // Progress Bar
+  // Progress bar
   // ===================================================================
 
-  Widget _buildProgressBar(TimerNotifierState state) {
+  /// The 8pt bar (with round ticks for EMOM and Tabata). Hidden but still
+  /// sized during the get-ready countdown, where it would read 0%.
+  Widget _buildBarSlot(
+    TimerNotifierState state, {
+    required double horizontalPadding,
+  }) {
+    final bar = _buildProgressBar(state, horizontalPadding: horizontalPadding);
+    if (state is TimerPreparing) {
+      return Visibility(
+        visible: false,
+        maintainSize: true,
+        maintainAnimation: true,
+        maintainState: true,
+        child: bar,
+      );
+    }
+    return bar;
+  }
+
+  Widget _buildProgressBar(
+    TimerNotifierState state, {
+    required double horizontalPadding,
+  }) {
     final session = state.sessionOrNull;
     final progress = session?.progress ?? 0.0;
-    final phaseColor = _getPhaseColor(state);
+    final color = _washColor(state);
     final totalRounds = session?.totalRounds;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: SizedBox(
         height: 8,
         child: LayoutBuilder(
@@ -849,11 +879,11 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                   height: 8,
                   width: fillWidth,
                   decoration: BoxDecoration(
-                    color: phaseColor,
+                    color: color,
                     borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: phaseColor.withValues(alpha: 0.3),
+                        color: color.withValues(alpha: 0.3),
                         blurRadius: 8,
                       ),
                     ],
@@ -879,185 +909,96 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   // ===================================================================
-  // FINISH — For Time's success action, labelled and unmissable
+  // Controls: one Pause while running; Stop beside Resume when paused
   // ===================================================================
 
-  Widget _buildFinishButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Semantics(
-        button: true,
-        label: 'Finish workout and log your time',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _onFinish,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            child: Container(
-              width: double.infinity,
-              height: 60,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.flag, color: Colors.black, size: 22),
-                  const SizedBox(width: 10),
-                  Text(
-                    'FINISH',
-                    style: AppTypography.buttonLarge.copyWith(
-                      color: Colors.black,
-                      fontSize: 18,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  bool _showFinish(TimerNotifierState state) =>
+      widget.timerType == TimerTypes.forTime &&
+      (state is TimerRunning || state is TimerPaused);
 
-  // ===================================================================
-  // Control Buttons
-  // ===================================================================
-
-  Widget _buildControls(TimerNotifierState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Column(
-        children: [
-          if (_showHoldHint)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: Text(
-                'HOLD TO END WORKOUT',
-                style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.error,
-                  letterSpacing: 1.5,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          _buildActiveControls(state),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveControls(TimerNotifierState state) {
+  Widget _buildControlRow(TimerNotifierState state) {
+    if (state is TimerPreparing) {
+      return Center(child: _buildStopButton(state));
+    }
     final isPaused = state is TimerPaused;
-
+    if (_showFinish(state)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Row(
+          children: [
+            if (isPaused) ...[
+              _buildStopButton(state),
+              const SizedBox(width: AppSpacing.md),
+            ],
+            Expanded(child: _buildFinishButton()),
+            SizedBox(width: isPaused ? AppSpacing.md : AppSpacing.lg),
+            _buildPauseDisc(state),
+          ],
+        ),
+      );
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Stop button (hold to confirm; a tap flashes the hint above)
-        _HoldToStopButton(
-          enabled: state.canStop,
-          onConfirmed: _onStopConfirmed,
-          onTapped: _onStopTapped,
-        ),
-
-        const SizedBox(width: 44),
-
-        // Pause/Resume button (large centre; neutral so colour = phase)
-        _buildCircleButton(
-          icon: isPaused ? Icons.play_arrow : Icons.pause,
-          label: isPaused ? 'RESUME' : 'PAUSE',
-          borderColor: Colors.white70,
-          iconColor: Colors.white,
-          onPressed: state.canPause || state.canResume ? _onPauseResume : null,
-          size: 72,
-        ),
+        if (isPaused) ...[
+          _buildStopButton(state),
+          const SizedBox(width: 44),
+        ],
+        _buildPauseDisc(state),
       ],
     );
   }
 
-  Widget _buildControlsCompact(TimerNotifierState state) {
+  Widget _buildStopButton(TimerNotifierState state) => _HoldToStopButton(
+    enabled: state.canStop,
+    showHint: _showHoldHint,
+    onConfirmed: _onStopConfirmed,
+    onShortPress: _flashHoldHint,
+  );
+
+  /// Pause (running) or Resume (paused): the one fast action, so the
+  /// biggest target. 96pt, neutral so colour stays the phase's.
+  Widget _buildPauseDisc(TimerNotifierState state) {
     final isPaused = state is TimerPaused;
-
-    return Column(
-      children: [
-        if (_showHoldHint)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: Text(
-              'HOLD TO END WORKOUT',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.error,
-                letterSpacing: 1.5,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _HoldToStopButton(
-              enabled: state.canStop,
-              onConfirmed: _onStopConfirmed,
-              onTapped: _onStopTapped,
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            _buildCircleButton(
-              icon: isPaused ? Icons.play_arrow : Icons.pause,
-              label: isPaused ? 'RESUME' : 'PAUSE',
-              borderColor: Colors.white70,
-              iconColor: Colors.white,
-              onPressed: state.canPause || state.canResume
-                  ? _onPauseResume
-                  : null,
-              size: 72,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // ===================================================================
-  // Circle Button (border-only style, with a caption)
-  // ===================================================================
-
-  Widget _buildCircleButton({
-    required IconData icon,
-    required String label,
-    required Color borderColor,
-    required Color iconColor,
-    required VoidCallback? onPressed,
-    required double size,
-  }) {
-    final isDisabled = onPressed == null;
+    final enabled = state.canPause || state.canResume;
+    const size = 96.0;
 
     return Semantics(
       button: true,
-      enabled: !isDisabled,
-      label: '$label button${isDisabled ? ', disabled' : ''}',
-      // Icon only: pause / play are universal, and the caption was 11pt.
+      enabled: enabled,
+      label: '${isPaused ? 'Resume' : 'Pause'} button'
+          '${enabled ? '' : ', disabled'}',
       child: Material(
         color: Colors.transparent,
+        shape: const CircleBorder(),
         child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(size / 2),
+          onTap: enabled ? _onPauseResume : null,
+          customBorder: const CircleBorder(),
           child: Container(
             width: size,
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              color: isPaused
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.12),
               border: Border.all(
-                color: isDisabled ? AppColors.border : borderColor,
-                width: 1.5,
+                color: enabled
+                    ? Colors.white.withValues(alpha: 0.8)
+                    : AppColors.border,
+                width: 2.5,
               ),
             ),
             child: ExcludeSemantics(
-              child: Icon(
-                icon,
-                color: isDisabled ? AppColors.textDisabledDark : iconColor,
-                size: size * 0.45,
+              child: Padding(
+                padding: EdgeInsets.only(left: isPaused ? 5 : 0),
+                child: Icon(
+                  isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                  color: isPaused
+                      ? AppColors.backgroundDark
+                      : (enabled ? Colors.white : AppColors.textDisabledDark),
+                  size: isPaused ? 52 : 44,
+                ),
               ),
             ),
           ),
@@ -1066,341 +1007,342 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     );
   }
 
-  // ===================================================================
-  // Completed State Layout
-  // ===================================================================
-
-  /// Clock format for stats: "0:19", "10:00".
-  String _clock(int totalSeconds) {
-    final minutes = totalSeconds ~/ 60;
-    final secs = totalSeconds % 60;
-    return '$minutes:${secs.toString().padLeft(2, '0')}';
+  /// For Time's success action: white, labelled, beside Pause so a slip
+  /// has to travel sideways into a different shape and colour.
+  Widget _buildFinishButton() {
+    return Semantics(
+      button: true,
+      label: 'Finish workout and log your time',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        child: InkWell(
+          onTap: _onFinish,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          child: SizedBox(
+            height: 62,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.flag, color: Colors.black, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'FINISH',
+                  style: AppTypography.buttonLarge.copyWith(
+                    color: Colors.black,
+                    fontSize: 18,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
-  /// One-line record of what the workout was ("AMRAP · 10:00").
+  // ===================================================================
+  // Completion: one word, one line, one number
+  // ===================================================================
+
+  /// The config line, count first: "AMRAP · 10:00", "FOR TIME · CAP 20:00",
+  /// "EMOM · 10 × 1:00", "TABATA · 8 × 20s / 10s".
   String _configLine(TimerSession session) {
     return session.workout.timerType.when(
       amrap: (t) => 'AMRAP  ·  ${_clock(t.duration.seconds)}',
       forTime: (t) => 'FOR TIME  ·  CAP ${_clock(t.timeCap.seconds)}',
       emom: (t) =>
-          'EMOM  ·  ${t.rounds.value} × '
-          '${_clock(t.intervalDuration.seconds)}',
+          'EMOM  ·  ${t.rounds.value} × ${_clock(t.intervalDuration.seconds)}',
       tabata: (t) =>
-          'TABATA  ·  ${t.workDuration.seconds}s/'
-          '${t.restDuration.seconds}s × ${t.rounds.value}',
+          'TABATA  ·  ${t.rounds.value} × '
+          '${setupPhase(t.workDuration.seconds)} / '
+          '${setupPhase(t.restDuration.seconds)}',
     );
   }
 
-  /// The true completed fraction — a stopped workout must not render a
-  /// 100% bar.
-  double _completedFraction(TimerCompleted state) {
-    if (!state.endedEarly) return 1;
+  /// The athlete's score, or null when there is none to show (a natural
+  /// EMOM / Tabata finish is "you did it"; a time cap is a DNF).
+  _Score? _scoreOf(TimerCompleted state) {
     final session = state.session;
-    final total = session.workout.timerType.estimatedDuration.seconds;
-    if (total == 0) return 1;
-    return (session.elapsed.seconds / total).clamp(0.02, 1.0);
+    if (state.endedAtTimeCap) return null;
+    final elapsed = _clock(session.elapsed.seconds);
+    switch (widget.timerType) {
+      case TimerTypes.amrap:
+        return _Score(
+          value: '${session.currentRound - 1}',
+          label: 'ROUNDS',
+          secondary: state.endedEarly ? elapsed : null,
+          adjustable: true,
+        );
+      case TimerTypes.forTime:
+        return _Score(value: elapsed, label: 'TIME');
+      default:
+        if (!state.endedEarly) return null;
+        final total = session.totalRounds;
+        if (total == null) return _Score(value: elapsed, label: 'TIME');
+        return _Score(value: '${session.currentRound}/$total', label: 'ROUNDS');
+    }
   }
 
-  Widget _buildCompletedHeader(TimerCompleted state) {
+  Widget _buildCompletedLayout(
+    TimerCompleted state, {
+    required bool landscape,
+  }) {
     final session = state.session;
-    final endedEarly = state.endedEarly;
-    final total = session.workout.timerType.estimatedDuration.seconds;
-
-    return Column(
-      children: [
-      if (endedEarly) ...[
-        const Icon(
-          Icons.stop_circle_outlined,
-          size: 52,
-          color: AppColors.paused,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          'Stopped',
-          style: AppTypography.workoutTitle.copyWith(
-            color: Colors.white,
-            fontSize: 28,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${_clock(session.elapsed.seconds)} of ${_clock(total)}',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondaryDark,
-          ),
-        ),
-      ] else ...[
-        const Icon(Icons.check, size: 56, color: AppColors.primary),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          'Finished!',
-          style: AppTypography.workoutTitle.copyWith(
-            color: Colors.white,
-            fontSize: 28,
-          ),
-        ),
-      ],
-      const SizedBox(height: 6),
-      Text(
-        _configLine(session),
-        style: AppTypography.summaryLabel.copyWith(
-          color: AppColors.textHintDark,
-          fontSize: 12,
-          letterSpacing: 1,
-        ),
-      ),
-      ],
+    final score = _scoreOf(state);
+    final config = Text(
+      _configLine(session),
+      textAlign: TextAlign.center,
+      style: _captionStyle(15).copyWith(letterSpacing: 2.6),
     );
-  }
 
-  /// The hero stat is the athlete's score: rounds for round-based modes,
-  /// time for the others.
-  Widget _buildCompletedStats(TimerCompleted state) {
-    final session = state.session;
-    final elapsedString = _clock(session.elapsed.seconds);
-
-    String heroValue;
-    String heroLabel;
-    String? secondaryValue;
-    String? secondaryLabel;
-
-    if (session.totalRounds != null) {
-      heroValue = '${session.currentRound}/${session.totalRounds}';
-      heroLabel = 'ROUNDS';
-      secondaryValue = elapsedString;
-      secondaryLabel = 'TOTAL TIME';
-    } else if (widget.timerType == TimerTypes.amrap) {
-      final counted = session.currentRound - 1;
-      if (counted > 0) {
-        heroValue = '$counted';
-        heroLabel = 'ROUNDS';
-        secondaryValue = elapsedString;
-        secondaryLabel = 'TOTAL TIME';
-      } else {
-        heroValue = elapsedString;
-        heroLabel = 'TOTAL TIME';
-      }
+    final Widget middle;
+    if (score == null) {
+      // No number: the word is the hero.
+      final word = state.endedAtTimeCap ? 'Time cap' : 'Finished';
+      middle = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            word,
+            style: AppTypography.heroTitle.copyWith(
+              color: state.endedAtTimeCap
+                  ? AppColors.textSecondaryDark
+                  : Colors.white,
+              fontSize: 56,
+              letterSpacing: -1,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          config,
+        ],
+      );
     } else {
-      heroValue = elapsedString;
-      heroLabel = state.endedEarly ? 'TIME' : 'YOUR TIME';
+      middle = _buildHero(state, score, landscape: landscape);
     }
 
     return Column(
       children: [
-        Text(
-          heroValue,
-          style: AppTypography.timerDisplay.copyWith(
-            color: state.endedEarly ? Colors.white : AppColors.primary,
-            fontSize: 68,
-          ),
-        ),
-        Text(
-          heroLabel,
-          style: AppTypography.summaryLabel.copyWith(
-            color: AppColors.textSecondaryDark,
-            fontSize: 12,
-            letterSpacing: 2,
-          ),
-        ),
-        if (secondaryValue != null) ...[
-          const SizedBox(height: AppSpacing.md),
+        SizedBox(height: landscape ? AppSpacing.md : AppSpacing.xxxl),
+        if (score != null) ...[
           Text(
-            secondaryValue,
+            state.endedEarly ? 'Stopped' : 'Finished',
             style: AppTypography.workoutTitle.copyWith(
-              color: Colors.white,
-              fontSize: 24,
+              color: state.endedEarly
+                  ? AppColors.textSecondaryDark
+                  : Colors.white,
+              fontSize: 26,
             ),
           ),
-          Text(
-            secondaryLabel!,
-            style: AppTypography.summaryLabel.copyWith(
-              color: AppColors.textHintDark,
-              fontSize: 10,
-              letterSpacing: 2,
-            ),
-          ),
+          const SizedBox(height: AppSpacing.xs),
+          config,
         ],
+        Expanded(child: Center(child: middle)),
+        _buildCompletedButtons(),
+        SizedBox(height: landscape ? AppSpacing.md : AppSpacing.xl),
       ],
     );
   }
 
-  Widget _buildCompletedBar(TimerCompleted state) {
-    final fraction = _completedFraction(state);
-    final color = state.endedEarly ? AppColors.paused : AppColors.primary;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+  Widget _buildHero(
+    TimerCompleted state,
+    _Score score, {
+    required bool landscape,
+  }) {
+    final color = state.endedEarly ? Colors.white : AppColors.primary;
+    Widget hero = ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: landscape ? 150 : 200),
       child: SizedBox(
-        height: 8,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Stack(
-              children: [
-                Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: AppColors.progressTrack,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                Container(
-                  height: 8,
-                  width: constraints.maxWidth * fraction,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
+        width: double.infinity,
+        child: FittedBox(
+          child: Text(
+            score.value,
+            style: AppTypography.timerDisplay.copyWith(color: color),
+          ),
         ),
+      ),
+    );
+
+    if (score.adjustable) {
+      final rounds = state.session.currentRound - 1;
+      hero = Row(
+        children: [
+          _GhostStepButton(
+            icon: Icons.remove,
+            semanticsLabel: 'One round fewer',
+            onPressed: rounds > 0
+                ? () => ref
+                      .read(timerNotifierProvider.notifier)
+                      .adjustRounds(-1)
+                : null,
+          ),
+          Expanded(child: hero),
+          _GhostStepButton(
+            icon: Icons.add,
+            semanticsLabel: 'One round more',
+            onPressed: () =>
+                ref.read(timerNotifierProvider.notifier).adjustRounds(1),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(child: hero),
+          const SizedBox(height: AppSpacing.xs),
+          Text(score.label, style: _captionStyle(15)),
+          if (score.secondary != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              score.secondary!,
+              style: AppTypography.workoutTitle.copyWith(
+                color: Colors.white,
+                fontSize: 26,
+              ),
+            ),
+            Text('TIME', style: _captionStyle(15)),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildCompletedLayout(TimerCompleted state) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Spacer(flex: 2),
-        _buildCompletedHeader(state),
-        const SizedBox(height: AppSpacing.xl),
-        _buildCompletedStats(state),
-        const Spacer(flex: 2),
-        _buildCompletedBar(state),
-        const SizedBox(height: AppSpacing.xl),
-        _buildCompletedButtons(),
-        const SizedBox(height: AppSpacing.xl),
-      ],
-    );
-  }
-
-  Widget _buildCompletedLayoutLandscape(TimerCompleted state) {
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildCompletedHeader(state),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildCompletedStats(state),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [_buildCompletedButtons()],
-                ),
-              ),
-            ],
-          ),
-        ),
-        _buildCompletedBar(state),
-        const SizedBox(height: AppSpacing.md),
-      ],
-    );
-  }
-
   Widget _buildCompletedButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-      child: Row(
-        children: [
-          // Again button (bordered, readable)
-          Expanded(
-            child: Semantics(
-              button: true,
-              label: 'Run the same workout again',
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _onRestart,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                  child: Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'AGAIN',
-                      style: AppTypography.buttonMedium.copyWith(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+    Widget button(String label, String semantics, VoidCallback onTap) =>
+        Expanded(
+          child: Semantics(
+            button: true,
+            label: semantics,
+            excludeSemantics: true,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                child: Container(
+                  height: 62,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    border: Border.all(color: AppColors.borderLight, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    label,
+                    style: AppTypography.buttonLarge.copyWith(
+                      color: Colors.white,
+                      fontSize: 18,
+                      letterSpacing: 1.6,
                     ),
                   ),
                 ),
               ),
             ),
           ),
+        );
 
-          const SizedBox(width: AppSpacing.md),
-
-          // Done button (filled green)
-          Expanded(
-            child: Semantics(
-              button: true,
-              label: 'Done button',
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _onComplete,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                  child: Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'DONE',
-                      style: AppTypography.buttonMedium.copyWith(
-                        color: Colors.black,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+    return ContentWidthCap(
+      maxWidth: 520,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Row(
+          children: [
+            button('AGAIN', 'Run the same workout again', _onAgain),
+            const SizedBox(width: AppSpacing.sm),
+            button('DONE', 'Done, back to setup', _onDone),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Stop control that must be held (~0.8s) to fire.
+/// What the completion hero shows.
+class _Score {
+  const _Score({
+    required this.value,
+    required this.label,
+    this.secondary,
+    this.adjustable = false,
+  });
+
+  final String value;
+  final String label;
+
+  /// Elapsed time under a stopped AMRAP's rounds.
+  final String? secondary;
+
+  /// AMRAP rounds can be corrected with a ghosted minus / plus.
+  final bool adjustable;
+}
+
+/// Ghosted 44pt minus / plus beside the AMRAP rounds hero, so a stray tap
+/// (or a workout nobody tapped through) can be corrected after the fact.
+class _GhostStepButton extends StatelessWidget {
+  const _GhostStepButton({
+    required this.icon,
+    required this.semanticsLabel,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String semanticsLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final color = Colors.white.withValues(alpha: enabled ? 0.4 : 0.15);
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 1.5),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Stop control that must be held (0.8s) to fire.
 ///
-/// A plain tap calls [onTapped] so the page can flash a "hold to end"
-/// hint; holding fills a red ring around the button and confirms when the
-/// fill completes. This is the error-prevention guard for the app's only
-/// destructive action.
+/// The red ring starts filling the instant the finger lands (a raw pointer
+/// listener, so there is no 500ms long-press dead zone first) and confirms
+/// when it completes. Letting go early rewinds it and shows HOLD inside the
+/// button for a moment: nothing else on the screen moves. This is the
+/// error-prevention guard for the app's only destructive action.
 class _HoldToStopButton extends StatefulWidget {
   const _HoldToStopButton({
     required this.enabled,
+    required this.showHint,
     required this.onConfirmed,
-    required this.onTapped,
+    required this.onShortPress,
   });
 
   final bool enabled;
+  final bool showHint;
   final VoidCallback onConfirmed;
-  final VoidCallback onTapped;
+  final VoidCallback onShortPress;
 
   @override
   State<_HoldToStopButton> createState() => _HoldToStopButtonState();
@@ -1412,6 +1354,7 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
 
   late final AnimationController _fill;
   bool _confirmed = false;
+  bool _holding = false;
 
   @override
   void initState() {
@@ -1439,11 +1382,24 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
   void _startHold() {
     if (!widget.enabled) return;
     _confirmed = false;
+    _holding = true;
     HapticFeedback.mediumImpact();
     _fill.forward(from: 0);
   }
 
-  void _cancelHold() {
+  void _release() {
+    if (!_holding) return;
+    _holding = false;
+    if (_confirmed) return;
+    _fill
+      ..stop()
+      ..animateBack(0, duration: const Duration(milliseconds: 150));
+    widget.onShortPress();
+  }
+
+  void _cancel() {
+    if (!_holding) return;
+    _holding = false;
     if (_confirmed) return;
     _fill
       ..stop()
@@ -1453,8 +1409,9 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
+    final hint = widget.showHint && enabled;
     final ringColor = enabled
-        ? AppColors.error.withValues(alpha: 0.7)
+        ? AppColors.error.withValues(alpha: hint ? 1 : 0.7)
         : AppColors.border;
     final iconColor = enabled ? AppColors.error : AppColors.textDisabledDark;
 
@@ -1462,13 +1419,12 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
       button: true,
       enabled: enabled,
       label: 'End workout. Hold to confirm.',
-      // No caption: a tap already flashes "HOLD TO END WORKOUT" above the
-      // controls, and the filling ring teaches the hold.
-      child: GestureDetector(
-        onTap: enabled ? widget.onTapped : null,
-        onLongPressStart: enabled ? (_) => _startHold() : null,
-        onLongPressEnd: (_) => _cancelHold(),
-        onLongPressCancel: _cancelHold,
+      onLongPress: enabled ? widget.onConfirmed : null,
+      excludeSemantics: true,
+      child: Listener(
+        onPointerDown: enabled ? (_) => _startHold() : null,
+        onPointerUp: (_) => _release(),
+        onPointerCancel: (_) => _cancel(),
         child: SizedBox(
           width: _size,
           height: _size,
@@ -1485,9 +1441,19 @@ class _HoldToStopButtonState extends State<_HoldToStopButton>
                   ),
                   border: Border.all(color: ringColor, width: 1.5),
                 ),
-                child: ExcludeSemantics(
-                  child: Icon(Icons.stop, color: iconColor, size: 28),
-                ),
+                child: hint
+                    ? Center(
+                        child: Text(
+                          'HOLD',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.error,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      )
+                    : Icon(Icons.stop, color: iconColor, size: 28),
               ),
               // Hold-progress ring fills as confirmation approaches
               if (_fill.value > 0)
