@@ -39,38 +39,39 @@ class SetupStepper extends StatelessWidget {
   final String decrementLabel;
   final String incrementLabel;
 
-  /// Phase colour for Tabata's WORK / REST labels; adds a matching dot.
+  /// Phase colour for Tabata's WORK / REST labels. The label carries it
+  /// alone: a dot beside it was a second signal for the same thing.
   final Color? labelColor;
 
   static const double _buttonSize = 60;
+  static const double _gap = 12;
   static const double _valueWidth = 184;
+
+  // Compact: three across a landscape phone (Tabata) in one row.
+  static const double _compactButtonSize = 52;
+  static const double _compactGap = 8;
+  static const double _compactValueWidth = 104;
+
+  /// Fixed so steppers side by side keep their buttons level, whatever
+  /// FittedBox does to a wide value like "1:05".
+  static const double _compactValueHeight = 72;
 
   @override
   Widget build(BuildContext context) {
     final color = labelColor ?? AppColors.textSecondaryDark;
+    final compact = CompactSetupSteppers.of(context);
+    final buttonSize = compact ? _compactButtonSize : _buttonSize;
+    final gap = compact ? _compactGap : _gap;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (labelColor != null) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label.toUpperCase(),
-              style: AppTypography.labelSmall.copyWith(
-                color: color,
-                fontSize: 15,
-                letterSpacing: 2.6,
-              ),
-            ),
-          ],
+        Text(
+          label.toUpperCase(),
+          style: AppTypography.labelSmall.copyWith(
+            color: color,
+            fontSize: 15,
+            letterSpacing: 2.6,
+          ),
         ),
         const SizedBox(height: 10),
         Row(
@@ -80,12 +81,13 @@ class SetupStepper extends StatelessWidget {
               icon: Icons.remove,
               onPressed: onDecrement,
               semanticsLabel: decrementLabel,
-              size: _buttonSize,
-              iconSize: 26,
+              size: buttonSize,
+              iconSize: compact ? 24 : 26,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: gap),
             SizedBox(
-              width: _valueWidth,
+              width: compact ? _compactValueWidth : _valueWidth,
+              height: compact ? _compactValueHeight : null,
               child: Semantics(
                 label: '$label: $semanticValue',
                 excludeSemantics: true,
@@ -102,19 +104,33 @@ class SetupStepper extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: gap),
             RepeatingIconButton(
               icon: Icons.add,
               onPressed: onIncrement,
               semanticsLabel: incrementLabel,
-              size: _buttonSize,
-              iconSize: 26,
+              size: buttonSize,
+              iconSize: compact ? 24 : 26,
             ),
           ],
         ),
       ],
     );
   }
+}
+
+/// Steppers below this render compact (52pt buttons, 8pt gaps, a 104pt
+/// value box), so a landscape setup can put them side by side in one row.
+class CompactSetupSteppers extends InheritedWidget {
+  const CompactSetupSteppers({required super.child, super.key});
+
+  /// Whether [context] sits under a [CompactSetupSteppers].
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<CompactSetupSteppers>() !=
+      null;
+
+  @override
+  bool updateShouldNotify(CompactSetupSteppers oldWidget) => false;
 }
 
 /// Clock format used across setup: "0:45", "1:00", "10:00".

@@ -56,13 +56,13 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
       totalSeconds: _setup.totalSeconds,
       spacing: 30,
       onStart: _onStart,
+      accessory: _buildClassicChip(),
       controls: [
-        _buildClassicChip(),
         SetupStepper(
           label: 'Work',
           labelColor: AppColors.work,
-          value: '${work}s',
-          semanticValue: '$work seconds',
+          value: setupPhase(work),
+          semanticValue: setupSpokenDuration(work),
           decrementLabel: 'Decrease work',
           incrementLabel: 'Increase work',
           onDecrement: _work.canDecrement(work)
@@ -77,8 +77,8 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
         SetupStepper(
           label: 'Rest',
           labelColor: AppColors.rest,
-          value: '${rest}s',
-          semanticValue: '$rest seconds',
+          value: setupPhase(rest),
+          semanticValue: setupSpokenDuration(rest),
           decrementLabel: 'Decrease rest',
           incrementLabel: 'Increase rest',
           onDecrement: _rest.canDecrement(rest)
@@ -109,19 +109,16 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     );
   }
 
-  /// One line: lit while the values are classic 20/10 x 8, and an offer to
-  /// reset the moment they drift. The steppers already show the values.
+  /// Nothing while the values are classic 20/10 x 8 (the steppers already
+  /// say so), and an offer to reset the moment they drift. The 48pt slot is
+  /// kept either way so the steppers never jump.
   Widget _buildClassicChip() {
-    final isClassic = _setup.isClassic;
-    final accent = isClassic ? AppColors.primary : AppColors.textSecondaryDark;
+    if (_setup.isClassic) return const SizedBox(height: 48);
     return Semantics(
       button: true,
-      selected: isClassic,
-      label: isClassic
-          ? 'Classic Tabata applied: 20 seconds work, 10 seconds rest, '
-                '8 rounds'
-          : 'Reset to classic Tabata: 20 seconds work, 10 seconds rest, '
-                '8 rounds',
+      label:
+          'Reset to classic Tabata: 20 seconds work, 10 seconds rest, '
+          '8 rounds',
       excludeSemantics: true,
       child: GestureDetector(
         onTap: () => _update(TabataSetup.classic),
@@ -134,31 +131,23 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
               padding: const EdgeInsets.only(left: 12, right: 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(19),
-                border: Border.all(
-                  color: isClassic
-                      ? AppColors.primary.withValues(alpha: 0.38)
-                      : AppColors.borderLight,
-                  width: 1.5,
-                ),
-                color: isClassic
-                    ? AppColors.primary.withValues(alpha: 0.06)
-                    : Colors.transparent,
+                border: Border.all(color: AppColors.borderLight, width: 1.5),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    isClassic ? Icons.check : Icons.refresh,
+                  const Icon(
+                    Icons.refresh,
                     size: 18,
-                    color: accent,
+                    color: AppColors.textSecondaryDark,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    isClassic ? 'CLASSIC TABATA' : 'RESET TO CLASSIC',
+                    'RESET TO CLASSIC',
                     style: AppTypography.labelSmall.copyWith(
                       fontSize: 15,
                       letterSpacing: 1,
-                      color: accent,
+                      color: AppColors.textSecondaryDark,
                     ),
                   ),
                 ],
