@@ -82,6 +82,19 @@ class _SetupScaffoldState extends State<SetupScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // Setup is reached with context.go (from Home, and from DONE since 1.3.0),
+    // so it is the only route on the stack: the Android back button would
+    // close the app. Back goes Home instead, like the header chevron.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(AppRoutes.home);
+      },
+      child: _buildScaffold(),
+    );
+  }
+
+  Widget _buildScaffold() {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,7 @@ import 'package:wod_timer/core/application/providers/review_prompter_provider.da
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/presentation/pages/settings_page.dart';
+import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/review/review_prompter.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
@@ -59,6 +61,7 @@ void main() {
     double width = 390,
     double height = 844,
     double textScale = 1,
+    bool inRouter = false,
   }) async {
     tester.view
       ..physicalSize = Size(width * 3, height * 3)
@@ -92,15 +95,31 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(textScale)),
-            child: child!,
-          ),
-          home: const SettingsPage(),
-        ),
+        child: inRouter
+            ? MaterialApp.router(
+                routerConfig: GoRouter(
+                  initialLocation: AppRoutes.settings,
+                  routes: [
+                    GoRoute(
+                      path: AppRoutes.home,
+                      builder: (_, _) => const Text('HOME'),
+                    ),
+                    GoRoute(
+                      path: AppRoutes.settings,
+                      builder: (_, _) => const SettingsPage(),
+                    ),
+                  ],
+                ),
+              )
+            : MaterialApp(
+                builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: TextScaler.linear(textScale)),
+                  child: child!,
+                ),
+                home: const SettingsPage(),
+              ),
       ),
     );
     await tester.pumpAndSettle();
@@ -114,6 +133,20 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  // 1.3.0: Settings is reached with context.go, so it is the only route
+  // and the Android back button used to close the app.
+  testWidgets('system back goes Home instead of closing the app', (
+    tester,
+  ) async {
+    await pumpSettings(tester, inRouter: true);
+    expect(find.text('HOME'), findsNothing);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('HOME'), findsOneWidget);
+  });
 
   group('Rate Wharf WOD row', () {
     testWidgets('sits between Haptics and Send feedback', (tester) async {
