@@ -36,16 +36,16 @@ struct EmomSetupView: View {
     private var type: TimerType { .emom(intervalDuration: interval, rounds: roundCount) }
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 0) {
             Spacer(minLength: 0)
             Button { focusedField = .interval } label: {
                 SetupValue(label: "EVERY", value: interval.clock, labelColor: Palette.work,
-                           size: 38, focused: focusedField == .interval)
+                           size: 36, focused: focusedField == .interval)
             }
             .buttonStyle(.plain)
             Button { focusedField = .rounds } label: {
                 SetupValue(label: "ROUNDS", value: "\(Int(rounds))", labelColor: Palette.mode("amrap"),
-                           size: 38, focused: focusedField == .rounds)
+                           size: 36, focused: focusedField == .rounds)
             }
             .buttonStyle(.plain)
             Spacer(minLength: 0)

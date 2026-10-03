@@ -51,7 +51,7 @@ struct TabataSetupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 0) {
             Spacer(minLength: 0)
             HStack(spacing: 6) {
                 Button { focusedField = .work } label: {

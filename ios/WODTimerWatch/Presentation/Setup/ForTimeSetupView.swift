@@ -26,12 +26,13 @@ struct ForTimeSetupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 0) {
             Spacer(minLength: 0)
-            SetupValue(label: "TIME CAP", value: timeCap.clock, size: 46)
+            SetupValue(label: "TIME CAP", value: timeCap.clock, size: 40)
                 .focusable()
                 .digitalCrownRotation($capMinutes, from: 1, through: 60, by: 1, sensitivity: .medium)
             CountDirectionSwitch(countUp: $countUp)
+                .padding(.top, 4)
             Spacer(minLength: 0)
             StartButton(subtitle: "\(countUp ? "Counts up" : "Counts down") · cap \(timeCap.clock)") {
                 SetupMemory().save(type)

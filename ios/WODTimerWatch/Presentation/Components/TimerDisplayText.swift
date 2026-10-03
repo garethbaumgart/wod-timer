@@ -50,16 +50,18 @@ struct SetupValue: View {
     var size: CGFloat = 52
     var focused = true
 
-    /// Value sizes are drawn for the 46mm (248pt tall) and shrink with the
-    /// screen, so every setup screen fits above START on a 40mm.
+    /// Value sizes are drawn for the 46mm and shrink with the height left
+    /// under the title bar (about 58pt of every screen is title bar and
+    /// bottom margin), so every setup screen fits above START on a 40mm.
     static func scaled(_ base: CGFloat) -> CGFloat {
-        (base * min(1, WKInterfaceDevice.current().screenBounds.height / 248)).rounded()
+        let usable = WKInterfaceDevice.current().screenBounds.height - 58
+        return (base * min(1, max(0.6, usable / 190))).rounded()
     }
 
     var body: some View {
         VStack(spacing: 0) {
             Text(label)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .font(.system(size: 12, weight: .bold, design: .rounded))
                 .tracking(1.2)
                 .foregroundStyle(labelColor)
             Text(value)
