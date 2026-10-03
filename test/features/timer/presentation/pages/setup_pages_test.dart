@@ -147,12 +147,12 @@ void main() {
       expect(find.bySemanticsLabel('Start workout'), findsOneWidget);
     });
 
-    testWidgets('the mode heading is brand orange', (tester) async {
+    testWidgets('the mode heading is white (1.3.1)', (tester) async {
       await pumpSetup(tester, const EmomSetupPage());
 
       expect(
         tester.widget<Text>(find.text('EMOM')).style?.color,
-        AppColors.brand,
+        AppColors.textPrimaryDark,
       );
     });
   });

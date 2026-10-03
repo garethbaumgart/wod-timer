@@ -331,7 +331,7 @@ class _SignalStripItem extends StatelessWidget {
                 Text(
                   name,
                   style: AppTypography.stripName.copyWith(
-                    color: AppColors.brand,
+                    color: AppColors.textPrimaryDark,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                   ),

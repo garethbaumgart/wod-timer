@@ -14,8 +14,8 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
 
-/// The frame every setup screen shares: header (back, mode in brand
-/// orange, voice chip), the mode's controls centred in the space, then
+/// The frame every setup screen shares: header (back, mode in white,
+/// voice chip), the mode's controls centred in the space, then
 /// START, carrying the total where there is one. One value per control,
 /// nothing repeated.
 class SetupScaffold extends StatefulWidget {
@@ -208,7 +208,7 @@ class _SetupHeader extends StatelessWidget {
               overflow: TextOverflow.fade,
               softWrap: false,
               style: AppTypography.sectionHeader.copyWith(
-                color: AppColors.brand,
+                color: AppColors.textPrimaryDark,
                 fontSize: 24,
               ),
             ),

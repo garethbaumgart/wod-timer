@@ -143,7 +143,7 @@ void main() {
     }
   });
 
-  testWidgets('mode names are brand orange under the wordmark (1.3.1)', (
+  testWidgets('mode names are white under the wordmark (1.3.1)', (
     tester,
   ) async {
     await pumpHome(tester);
@@ -151,7 +151,7 @@ void main() {
     for (final name in ['AMRAP', 'FOR TIME', 'EMOM', 'TABATA']) {
       expect(
         tester.widget<Text>(find.text(name)).style?.color,
-        AppColors.brand,
+        AppColors.textPrimaryDark,
         reason: name,
       );
     }
