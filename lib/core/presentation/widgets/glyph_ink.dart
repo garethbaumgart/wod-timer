@@ -139,8 +139,22 @@ abstract class GlyphInk {
     },
   };
 
-  /// How far below the baseline [text] paints, in em.
-  static double belowBaselineEm(String text, FontWeight weight) {
+  /// The style a Text widget under [context] really renders [style] with:
+  /// Material's DefaultTextStyle contributes what [style] leaves null (its
+  /// even leading distribution moves the baseline), so measurements must
+  /// start from the same merged style.
+  static TextStyle resolve(BuildContext context, TextStyle style) =>
+      DefaultTextStyle.of(context).style.merge(style);
+
+  /// How far below the baseline [text] paints, in em. Overshoots under
+  /// [ignoreUnder] em count as none: a slot whose text changes (the AMRAP
+  /// count, the clock) must measure the same whichever digits show, so it
+  /// ignores the round glyphs' hair of overshoot and keeps the slash.
+  static double belowBaselineEm(
+    String text,
+    FontWeight weight, {
+    double ignoreUnder = 0,
+  }) {
     final key = (weight.value.clamp(600, 900) / 100).round() * 100;
     final table = _belowBaseline[key]!;
     var deepest = 0;
@@ -148,8 +162,37 @@ abstract class GlyphInk {
       final glyph = String.fromCharCode(rune);
       deepest = math.max(deepest, table[glyph] ?? 0);
     }
-    return deepest / 1000;
+    final em = deepest / 1000;
+    return em < ignoreUnder ? 0 : em;
   }
+
+  /// Outfit's cap height (digits are lining figures at the same height),
+  /// in em, per weight.
+  static double capHeightEm(FontWeight weight) => switch (weight.value) {
+    >= 900 => 0.712,
+    >= 800 => 0.709,
+    >= 700 => 0.706,
+    _ => 0.703,
+  };
+
+  /// Distance from the top of a laid-out line of [text] to its alphabetic
+  /// baseline.
+  static double baseline(
+    String text,
+    TextStyle style, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) => _painter(
+    text,
+    style,
+    textScaler,
+  ).computeDistanceToActualBaseline(TextBaseline.alphabetic);
+
+  /// The laid-out width of one line of [text].
+  static double boxWidth(
+    String text,
+    TextStyle style, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) => _painter(text, style, textScaler).width;
 
   /// The laid-out height of one line of [text] (what a Text widget takes).
   static double boxHeight(
@@ -164,6 +207,7 @@ abstract class GlyphInk {
     String text,
     TextStyle style, {
     TextScaler textScaler = TextScaler.noScaling,
+    double ignoreUnder = 0,
   }) {
     final painter = _painter(text, style, textScaler);
     final baseline = painter.computeDistanceToActualBaseline(
@@ -171,7 +215,8 @@ abstract class GlyphInk {
     );
     final fontSize = textScaler.scale(style.fontSize ?? 14);
     final weight = style.fontWeight ?? FontWeight.w400;
-    return baseline + belowBaselineEm(text, weight) * fontSize;
+    return baseline +
+        belowBaselineEm(text, weight, ignoreUnder: ignoreUnder) * fontSize;
   }
 
   /// Distance from the bottom of a laid-out line of [text] up to the
@@ -180,9 +225,15 @@ abstract class GlyphInk {
     String text,
     TextStyle style, {
     TextScaler textScaler = TextScaler.noScaling,
+    double ignoreUnder = 0,
   }) {
     final painter = _painter(text, style, textScaler);
-    final bottom = glyphBottom(text, style, textScaler: textScaler);
+    final bottom = glyphBottom(
+      text,
+      style,
+      textScaler: textScaler,
+      ignoreUnder: ignoreUnder,
+    );
     return math.max(0, painter.height - bottom);
   }
 

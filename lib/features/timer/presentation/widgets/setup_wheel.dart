@@ -75,27 +75,12 @@ class SetupWheel extends StatefulWidget {
         fontWeight: FontWeight.w800,
       );
 
-  /// Height of the whole column: label, gap, three rows.
-  static double heightFor(
-    double rowHeight, {
-    TextScaler textScaler = TextScaler.noScaling,
-  }) =>
-      GlyphInk.boxHeight(
-        'A',
-        labelStyle(Colors.white),
-        textScaler: textScaler,
-      ) +
-      labelGap +
-      3 * rowHeight;
-
   /// Layout rule 2: the visible bottom of a wheel is the glyph bottom of
   /// its lower row, whose text is centred in that row. Returned as the
   /// distance up from the column's bottom edge.
-  static double inkInset(
-    double rowHeight, {
-    TextScaler textScaler = TextScaler.noScaling,
-  }) {
-    final style = neighbourStyle(rowHeight);
+  static double inkInset(BuildContext context, double rowHeight) {
+    final textScaler = MediaQuery.textScalerOf(context);
+    final style = GlyphInk.resolve(context, neighbourStyle(rowHeight));
     final box = GlyphInk.boxHeight('0', style, textScaler: textScaler);
     final glyph = GlyphInk.glyphBottom('0', style, textScaler: textScaler);
     // The lower row's centre is half a row above the bottom; its text box

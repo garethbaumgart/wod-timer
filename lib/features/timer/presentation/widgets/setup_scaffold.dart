@@ -333,7 +333,6 @@ class WheelsSetupBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaler = MediaQuery.textScalerOf(context);
     final accessory = this.accessory;
     return Column(
       children: [
@@ -369,10 +368,7 @@ class WheelsSetupBody extends StatelessWidget {
         ),
         Expanded(
           child: CentredTimeline(
-            aboveInkInset: SetupWheel.inkInset(
-              rowHeight,
-              textScaler: textScaler,
-            ),
+            aboveInkInset: SetupWheel.inkInset(context, rowHeight),
             height: timelineHeight,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
