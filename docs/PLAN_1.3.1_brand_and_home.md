@@ -110,6 +110,10 @@ Review page: https://claude.ai/artifact/PXFnX8SMBKEqNbz8eo4hMh. It also
 proposes, pending his OK: For Time Up / Down switch under the bezel, the Home
 timeline under the EMOM and Tabata wheels, white setup headings.
 
+**Setup label colours (3 Oct):** EMOM EVERY green, ROUNDS blue. Tabata WORK
+green, REST pink, ROUNDS blue. Same on the watch. iPad: space between the
+Tabata timeline and START (about 30pt before scaling).
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
