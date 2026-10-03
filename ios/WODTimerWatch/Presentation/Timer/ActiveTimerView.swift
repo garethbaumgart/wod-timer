@@ -67,7 +67,9 @@ struct ActiveTimerView: View {
                         .frame(height: 38)
                 }
                 .padding(.horizontal, 6)
-                .padding(.bottom, 2)
+                // Clear of the display's curved bottom edge (1.3.1: the
+                // Pause ring sat on it on a real watch).
+                .padding(.bottom, 10)
             }
             .contentShape(Rectangle())
             .onTapGesture { canvasTap(session) }

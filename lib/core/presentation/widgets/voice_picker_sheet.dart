@@ -29,7 +29,7 @@ String voiceLabel(VoiceOption voice) {
     case VoiceOption.major:
       return 'Major (CrossFit Coach)';
     case VoiceOption.liam:
-      return 'Liam (Old British Man)';
+      return 'Liam (Male Coach)';
     case VoiceOption.holly:
       return 'Holly (Female Coach)';
     case VoiceOption.random:

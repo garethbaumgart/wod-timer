@@ -467,3 +467,78 @@ final class TimerViewModelRulesTests: XCTestCase {
     }
 }
 
+
+/// 1.3.1: every mode reopens on its last setup, saved on each change.
+final class SetupMemoryTests: XCTestCase {
+    private let keys = ["amrap", "fortime", "emom", "tabata"].map { "watch_setup_\($0)" }
+
+    override func setUp() {
+        super.setUp()
+        keys.forEach { UserDefaults.standard.removeObject(forKey: $0) }
+    }
+
+    override func tearDown() {
+        keys.forEach { UserDefaults.standard.removeObject(forKey: $0) }
+        super.tearDown()
+    }
+
+    func testEachModeRoundTripsItsLastSetup() {
+        let memory = SetupMemory()
+        memory.save(.amrap(duration: TimerDuration(seconds: 900)))
+        memory.save(.forTime(timeCap: TimerDuration(seconds: 1500), countUp: false))
+        memory.save(.emom(intervalDuration: TimerDuration(seconds: 90), rounds: RoundCount(value: 12)))
+        memory.save(.tabata(workDuration: TimerDuration(seconds: 40), restDuration: TimerDuration(seconds: 20),
+                            rounds: RoundCount(value: 6)))
+
+        let reread = SetupMemory()
+        XCTAssertEqual(reread.amrap.seconds, 900)
+        XCTAssertEqual(reread.forTime.cap.seconds, 1500)
+        XCTAssertFalse(reread.forTime.countUp)
+        XCTAssertEqual(reread.emom.interval.seconds, 90)
+        XCTAssertEqual(reread.emom.rounds, 12)
+        XCTAssertEqual(reread.tabata.work.seconds, 40)
+        XCTAssertEqual(reread.tabata.rest.seconds, 20)
+        XCTAssertEqual(reread.tabata.rounds, 6)
+        XCTAssertEqual(reread.summary("emom"), "12 × 1:30")
+        XCTAssertEqual(reread.summary("tabata"), "6 × 40s / 20s")
+        XCTAssertEqual(reread.summary("fortime"), "CAP 25:00 · DOWN")
+    }
+
+    func testTheLatestChangeWins() {
+        let memory = SetupMemory()
+        memory.save(.emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 10)))
+        memory.save(.emom(intervalDuration: TimerDuration(seconds: 75), rounds: RoundCount(value: 10)))
+        memory.save(.emom(intervalDuration: TimerDuration(seconds: 75), rounds: RoundCount(value: 14)))
+        XCTAssertEqual(SetupMemory().summary("emom"), "14 × 1:15")
+    }
+
+    func testOneModeNeverOverwritesAnother() {
+        let memory = SetupMemory()
+        memory.save(.amrap(duration: TimerDuration(seconds: 1200)))
+        memory.save(.tabata(workDuration: TimerDuration(seconds: 30), restDuration: TimerDuration(seconds: 15),
+                            rounds: RoundCount(value: 10)))
+        XCTAssertEqual(SetupMemory().amrap.seconds, 1200)
+    }
+}
+
+/// 1.3.1: Beeps only mirrors the phone's beep-fallback cues.
+final class BeepsOnlyTests: XCTestCase {
+    func testTimingCuesBeepAndEncouragementStaysQuiet() {
+        for cue in ["countdown_3", "countdown_go", "rest", "last_round", "next_round", "ten_seconds"] {
+            XCTAssertTrue(WatchAudioService.beepCues.contains(cue), cue)
+        }
+        for cue in ["halfway", "keep_going", "good_job", "come_on", "almost_there", "thats_it"] {
+            XCTAssertFalse(WatchAudioService.beepCues.contains(cue), cue)
+        }
+    }
+
+    func testTheChoicePersists() {
+        let key = "watch_voice_beeps"
+        let before = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(before, forKey: key) }
+        WatchAudioService().setBeepsOnly(true)
+        XCTAssertTrue(WatchAudioService().beepsOnly)
+        WatchAudioService().setBeepsOnly(false)
+        XCTAssertFalse(WatchAudioService().beepsOnly)
+    }
+}

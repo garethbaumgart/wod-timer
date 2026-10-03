@@ -104,6 +104,59 @@ void main() {
     });
   });
 
+  group('START (1.3.1)', () {
+    Rect startRect(WidgetTester tester) => tester.getRect(
+      find
+          .ancestor(of: find.text('START'), matching: find.byType(Container))
+          .first,
+    );
+
+    testWidgets('EMOM carries its total inside START', (tester) async {
+      await pumpSetup(tester, const EmomSetupPage());
+
+      final start = startRect(tester);
+      expect(
+        start.contains(tester.getRect(find.text('10:00 total')).center),
+        isTrue,
+      );
+      expect(start.height, 62);
+      expect(
+        find.bySemanticsLabel('Start workout. Total 10 minutes'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Tabata carries its total inside START', (tester) async {
+      await pumpSetup(tester, const TabataSetupPage());
+
+      expect(
+        startRect(
+          tester,
+        ).contains(tester.getRect(find.text('4:00 total')).center),
+        isTrue,
+      );
+    });
+
+    testWidgets('AMRAP has no total: its one value is the total', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const AmrapSetupPage());
+
+      expect(find.textContaining('total'), findsNothing);
+      expect(startRect(tester).height, 62);
+      expect(find.bySemanticsLabel('Start workout'), findsOneWidget);
+    });
+
+    testWidgets('the mode heading is brand orange', (tester) async {
+      await pumpSetup(tester, const EmomSetupPage());
+
+      expect(
+        tester.widget<Text>(find.text('EMOM')).style?.color,
+        AppColors.brand,
+      );
+    });
+  });
+
   group('EMOM setup', () {
     testWidgets('shows each number once, with nothing repeated', (
       tester,
@@ -474,17 +527,24 @@ void main() {
       );
       expect(row.center.dx, closeTo(844 / 2, 2));
 
-      // Total then a full-width START along the bottom, all on screen.
+      // A full-width START along the bottom, all on screen, carrying the
+      // total inside it under START (1.3.1).
       final start = tester.getRect(
-        find.ancestor(of: find.text('START'), matching: find.byType(Container)),
+        find
+            .ancestor(of: find.text('START'), matching: find.byType(Container))
+            .first,
       );
-      final total = tester.getRect(find.textContaining('4:00'));
+      final total = tester.getRect(find.text('4:00 total'));
       expect(start.width, closeTo(844 - 32, 1));
       expect(start.bottom, lessThanOrEqualTo(390));
-      expect(total.bottom, lessThan(start.top));
+      expect(start.contains(total.center), isTrue);
+      expect(
+        total.top,
+        greaterThan(tester.getRect(find.text('START')).bottom - 1),
+      );
       expect(
         tester.getRect(find.bySemanticsLabel('Increase rounds')).bottom,
-        lessThan(total.top),
+        lessThan(start.top),
       );
     });
 

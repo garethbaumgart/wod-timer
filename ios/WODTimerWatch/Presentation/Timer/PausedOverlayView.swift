@@ -30,7 +30,7 @@ struct PausedOverlayView: View {
                 }
             }
             .padding(.horizontal, 8)
-            .padding(.bottom, 2)
+            .padding(.bottom, 10)
             .contentShape(Rectangle())
             .onTapGesture { viewModel.resume() }
             .navigationBarBackButtonHidden(true)

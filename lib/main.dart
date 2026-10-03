@@ -9,6 +9,7 @@ import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 import 'package:wod_timer/core/presentation/router/app_router.dart';
 import 'package:wod_timer/core/presentation/theme/app_fonts.dart';
 import 'package:wod_timer/core/presentation/theme/app_theme.dart';
+import 'package:wod_timer/core/presentation/widgets/tablet_scale.dart';
 import 'package:wod_timer/injection.dart';
 
 // Per-app compile-time secrets, injected from the `wharfwod` Doppler project
@@ -83,6 +84,9 @@ class WodTimerApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
       routerConfig: router,
+      // iPad and Android tablets: the phone layout, scaled to the screen.
+      builder: (context, child) =>
+          TabletScale(child: child ?? const SizedBox.shrink()),
     );
   }
 }

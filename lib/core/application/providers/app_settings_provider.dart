@@ -12,7 +12,7 @@ enum VoiceOption {
   /// Major - CrossFit coach voice.
   major,
 
-  /// Liam - Old British Man voice.
+  /// Liam - male coach voice (shown as "Male Coach" since 1.3.1).
   liam,
 
   /// Holly - female voice.

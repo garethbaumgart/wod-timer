@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Home: the four timers, each showing the workout it will start (the last
-/// one run), and the voice. No icons, no definitions, no colour codes:
-/// colour means phase, as on the phone.
+/// Home: the Wharf WOD wordmark, the four timers (a mode-colour bar, the
+/// name in brand orange, the workout it will start), and the voice. The
+/// bars match the phone's Home strips (1.3.1).
 struct HomeView: View {
     @State private var viewModel = TimerViewModel()
     @State private var showingTimer = false
@@ -14,16 +14,16 @@ struct HomeView: View {
             let memory = SetupMemory()
             let _ = refresh
             List {
-                modeRow("AMRAP", summary: memory.summary("amrap")) {
+                modeRow("AMRAP", code: "amrap", summary: memory.summary("amrap")) {
                     AmrapSetupView(viewModel: viewModel)
                 }
-                modeRow("FOR TIME", summary: memory.summary("fortime")) {
+                modeRow("FOR TIME", code: "fortime", summary: memory.summary("fortime")) {
                     ForTimeSetupView(viewModel: viewModel)
                 }
-                modeRow("EMOM", summary: memory.summary("emom")) {
+                modeRow("EMOM", code: "emom", summary: memory.summary("emom")) {
                     EmomSetupView(viewModel: viewModel)
                 }
-                modeRow("TABATA", summary: memory.summary("tabata")) {
+                modeRow("TABATA", code: "tabata", summary: memory.summary("tabata")) {
                     TabataSetupView(viewModel: viewModel)
                 }
                 NavigationLink {
@@ -39,7 +39,15 @@ struct HomeView: View {
                     }
                 }
             }
-            .navigationTitle("Wharf WOD")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Image("Wordmark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 19)
+                        .accessibilityLabel("Wharf WOD")
+                }
+            }
             .navigationDestination(isPresented: $showingTimer) {
                 ActiveTimerView(viewModel: viewModel)
             }
@@ -61,25 +69,33 @@ struct HomeView: View {
     private var voiceLabel: String {
         let audio = viewModel.audio
         if audio.muted { return "Silent" }
+        if audio.beepsOnly { return "Beeps" }
         if audio.randomizePerCue { return "Random" }
         return audio.voicePack.rawValue.capitalized
     }
 
     private func modeRow<Destination: View>(
         _ name: String,
+        code: String,
         summary: String,
         @ViewBuilder destination: () -> Destination
     ) -> some View {
         NavigationLink(destination: destination()) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(name)
-                    .font(.system(size: 19, weight: .heavy, design: .rounded))
-                Text(summary)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+            HStack(spacing: 9) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Palette.mode(code))
+                    .frame(width: 3.5, height: 34)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(name)
+                        .font(.system(size: 19, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Palette.brand)
+                    Text(summary)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
             .padding(.vertical, 2)
         }

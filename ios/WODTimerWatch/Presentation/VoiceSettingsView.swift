@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// One list: three voices, Random, or Silent (haptics only). Choosing a
-/// voice plays a sample.
+/// One list, as on the phone: three voices, Random, Beeps only, or Silent
+/// (haptics only). Choosing one plays a sample.
 struct VoiceSettingsView: View {
     @Bindable var viewModel: TimerViewModel
 
     private var audio: WatchAudioService { viewModel.audio }
 
-    private enum Choice: Equatable { case pack(WatchAudioService.VoicePack), random, silent }
+    private enum Choice: Equatable { case pack(WatchAudioService.VoicePack), random, beeps, silent }
 
     private var current: Choice {
         if audio.muted { return .silent }
+        if audio.beepsOnly { return .beeps }
         if audio.randomizePerCue { return .random }
         return .pack(audio.voicePack)
     }
@@ -18,9 +19,10 @@ struct VoiceSettingsView: View {
     var body: some View {
         List {
             row(.pack(.major), "Major", "CrossFit coach")
-            row(.pack(.liam), "Liam", "Old British man")
+            row(.pack(.liam), "Liam", "Male coach")
             row(.pack(.holly), "Holly", "Female coach")
             row(.random, "Random", "A different voice each cue")
+            row(.beeps, "Beeps", "No voice, beeps on the count")
             row(.silent, "Silent", "Haptics only")
         }
         .navigationTitle("Voice")
@@ -52,12 +54,19 @@ struct VoiceSettingsView: View {
         switch choice {
         case let .pack(pack):
             audio.setMuted(false)
+            audio.setBeepsOnly(false)
             audio.setRandomizePerCue(false)
             audio.setVoicePack(pack)
             audio.playLetsGo()
         case .random:
             audio.setMuted(false)
+            audio.setBeepsOnly(false)
             audio.setRandomizePerCue(true)
+            audio.playLetsGo()
+        case .beeps:
+            audio.setMuted(false)
+            audio.setRandomizePerCue(false)
+            audio.setBeepsOnly(true)
             audio.playLetsGo()
         case .silent:
             audio.setMuted(true)

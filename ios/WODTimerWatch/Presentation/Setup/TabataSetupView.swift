@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Tabata setup: WORK and REST side by side, ROUNDS below; tap a value to
-/// move it with the Crown. Opens on the last Tabata started.
+/// move it with the Crown. Opens on the last Tabata set: every change is
+/// remembered (1.3.1). The total rides inside START.
 struct TabataSetupView: View {
     @Bindable var viewModel: TimerViewModel
     @State private var workSeconds: Double
@@ -14,11 +15,23 @@ struct TabataSetupView: View {
 
     init(viewModel: TimerViewModel) {
         self.viewModel = viewModel
+        let last = Self.remembered()
+        _workSeconds = State(initialValue: last.work)
+        _restSeconds = State(initialValue: last.rest)
+        _rounds = State(initialValue: last.rounds)
+    }
+
+    private static func remembered() -> (work: Double, rest: Double, rounds: Double) {
         let last = SetupMemory().tabata
         func snap(_ s: Int) -> Double { Double(min(120, max(5, s / 5 * 5))) }
-        _workSeconds = State(initialValue: snap(last.work.seconds))
-        _restSeconds = State(initialValue: snap(last.rest.seconds))
-        _rounds = State(initialValue: Double(min(20, max(1, last.rounds))))
+        return (snap(last.work.seconds), snap(last.rest.seconds), Double(min(20, max(1, last.rounds))))
+    }
+
+    private func load() {
+        let last = Self.remembered()
+        workSeconds = last.work
+        restSeconds = last.rest
+        rounds = last.rounds
     }
 
     private var work: TimerDuration { TimerDuration(seconds: Int(workSeconds)) }
@@ -27,6 +40,7 @@ struct TabataSetupView: View {
     private var total: TimerDuration {
         TimerDuration(seconds: (work.seconds + rest.seconds) * roundCount.value)
     }
+    private var type: TimerType { .tabata(workDuration: work, restDuration: rest, rounds: roundCount) }
 
     private var crownBinding: Binding<Double> {
         switch focusedField {
@@ -55,12 +69,8 @@ struct TabataSetupView: View {
                 SetupValue(label: "ROUNDS", value: "\(Int(rounds))", size: 32, focused: focusedField == .rounds)
             }
             .buttonStyle(.plain)
-            Text("\(total.clock) total")
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundStyle(Palette.label)
             Spacer(minLength: 0)
-            StartButton {
-                let type = TimerType.tabata(workDuration: work, restDuration: rest, rounds: roundCount)
+            StartButton(subtitle: "\(total.clock) total") {
                 SetupMemory().save(type)
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))
                 showingTimer = viewModel.session?.state != .ready
@@ -75,7 +85,9 @@ struct TabataSetupView: View {
             by: focusedField == .rounds ? 1 : 5,
             sensitivity: .medium
         )
-        .navigationTitle("Tabata")
+        .navigationTitle("TABATA")
+        .onAppear(perform: load)
+        .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)

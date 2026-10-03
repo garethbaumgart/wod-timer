@@ -16,6 +16,7 @@ import 'package:wod_timer/core/domain/value_objects/workout_name.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
+import 'package:wod_timer/core/presentation/widgets/tablet_scale.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
@@ -178,6 +179,7 @@ void main() {
     required String type,
     Duration elapsed = Duration.zero,
     Map<String, Object> prefs = const {},
+    bool tablet = false,
   }) async {
     SharedPreferences.setMockInitialValues(prefs);
     final sharedPrefs = await SharedPreferences.getInstance();
@@ -214,7 +216,13 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          routerConfig: router,
+          // As in the app: tablets get the phone layout scaled up.
+          builder: tablet
+              ? (context, child) => TabletScale(child: child!)
+              : null,
+        ),
       ),
     );
     if (elapsed > Duration.zero) engine.emit(elapsed);
@@ -774,6 +782,64 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       expect(tester.getRect(find.text('9:52')).height, greaterThan(180));
+    });
+  });
+
+  // 1.3.1: an iPad lays the live screen out at a 600pt shortest side and
+  // scales it to fill, so every slot grows with the screen.
+  group('iPad', () {
+    void ipad(WidgetTester tester, {bool landscape = false}) {
+      tester.view
+        ..physicalSize = landscape
+            ? const Size(2752, 2064)
+            : const Size(2064, 2752) // iPad Pro 13in
+        ..devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('portrait: the round hint is far bigger than on a phone', (
+      tester,
+    ) async {
+      phone(tester);
+      await pumpPage(tester, workout: amrap(), type: TimerTypes.amrap);
+      final onPhone = tester.getRect(find.text('TAP TO COUNT')).height;
+
+      ipad(tester);
+      await pumpPage(
+        tester,
+        workout: amrap(),
+        type: TimerTypes.amrap,
+        tablet: true,
+      );
+      expect(tester.takeException(), isNull);
+      final onIpad = tester.getRect(find.text('TAP TO COUNT'));
+      expect(onIpad.height, greaterThan(onPhone * 2));
+      final pause = tester.getRect(find.bySemanticsLabel('Pause button'));
+      expect(pause.bottom, lessThan(1376));
+    });
+
+    testWidgets('landscape live, paused and end screens fit', (tester) async {
+      ipad(tester, landscape: true);
+      final c = await pumpPage(
+        tester,
+        workout: emom(),
+        type: TimerTypes.emom,
+        elapsed: const Duration(seconds: 65),
+        tablet: true,
+      );
+      expect(tester.takeException(), isNull);
+      final pause = tester.getRect(find.bySemanticsLabel('Pause button'));
+      expect(pause.bottom, lessThanOrEqualTo(1032));
+      expect(pause.right, lessThanOrEqualTo(1376));
+
+      notifierOf(c).pause();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+
+      notifierOf(c).stop();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.text('AGAIN')).bottom, lessThan(1032));
     });
   });
 }

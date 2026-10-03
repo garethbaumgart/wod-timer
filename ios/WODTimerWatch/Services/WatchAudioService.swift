@@ -18,6 +18,10 @@ final class WatchAudioService {
     private(set) var voicePack: VoicePack = .major
     private(set) var randomizePerCue: Bool = false
     private(set) var muted: Bool = false
+    /// Beeps only (1.3.1, as on the phone): no voice; the timing cues
+    /// (countdown, GO, rest, intervals, last round, the end) beep and the
+    /// encouragement goes quiet.
+    private(set) var beepsOnly: Bool = false
     private(set) var volume: Float = 1.0
 
     // MARK: - Internal
@@ -33,6 +37,14 @@ final class WatchAudioService {
     private static let packKey = "watch_voice_pack"
     private static let randomKey = "watch_voice_random"
     private static let mutedKey = "watch_voice_muted"
+    private static let beepsKey = "watch_voice_beeps"
+
+    /// Cues that beep in Beeps only mode: the phone's beep-fallback set.
+    static let beepCues: Set<String> = [
+        "countdown_1", "countdown_2", "countdown_3", "countdown_go", "rest",
+        "complete", "interval", "get_ready", "ten_seconds", "last_round",
+        "next_round", "final_countdown", "lets_go",
+    ]
 
     init() {
         if let raw = defaults.string(forKey: Self.packKey), let pack = VoicePack(rawValue: raw) {
@@ -40,6 +52,7 @@ final class WatchAudioService {
         }
         randomizePerCue = defaults.bool(forKey: Self.randomKey)
         muted = defaults.bool(forKey: Self.mutedKey)
+        beepsOnly = defaults.bool(forKey: Self.beepsKey)
         configureAudioSession()
     }
 
@@ -62,6 +75,11 @@ final class WatchAudioService {
     func setMuted(_ muted: Bool) {
         self.muted = muted
         defaults.set(muted, forKey: Self.mutedKey)
+    }
+
+    func setBeepsOnly(_ enabled: Bool) {
+        beepsOnly = enabled
+        defaults.set(enabled, forKey: Self.beepsKey)
     }
 
     func setVolume(_ volume: Float) {
@@ -157,6 +175,12 @@ final class WatchAudioService {
     private func play(file: String, ext: String = "mp3", forcePack: VoicePack? = nil) {
         guard !muted else { return }
 
+        if beepsOnly {
+            guard Self.beepCues.contains(file) else { return }
+            playResource(Bundle.main.url(forResource: "beep", withExtension: "m4a", subdirectory: "audio/major"))
+            return
+        }
+
         let pack: VoicePack
         if let forcePack {
             pack = forcePack
@@ -167,10 +191,11 @@ final class WatchAudioService {
         }
 
         // Audio files are in the bundle under audio/{pack}/{file}.{ext}
-        guard let url = Bundle.main.url(forResource: file, withExtension: ext, subdirectory: "audio/\(pack.rawValue)") else {
-            return
-        }
+        playResource(Bundle.main.url(forResource: file, withExtension: ext, subdirectory: "audio/\(pack.rawValue)"))
+    }
 
+    private func playResource(_ url: URL?) {
+        guard let url else { return }
         do {
             activateAudioSession()
             let newPlayer = try AVAudioPlayer(contentsOf: url)

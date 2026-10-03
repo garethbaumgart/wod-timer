@@ -10,6 +10,19 @@ enum Palette {
     static let label = Color(hex: 0x9A9AA2)
     static let error = Color(hex: 0xFF4444)
     static let primary = Color(hex: 0x00FF88)
+    /// Brand neon orange (1.3.1): the wordmark and every workout heading.
+    static let brand = Color(hex: 0xFF6B1A)
+
+    /// Mode accents, the phone Home's left bars: AMRAP green, For Time
+    /// blue, EMOM magenta, Tabata amber.
+    static func mode(_ code: String) -> Color {
+        switch code {
+        case "amrap": Color(hex: 0x00FF88)
+        case "fortime": Color(hex: 0x00AAFF)
+        case "emom": Color(hex: 0xFF0088)
+        default: Color(hex: 0xFFAA00)
+        }
+    }
 
     /// Colour of the phase a session is in (or paused in).
     static func phase(_ state: TimerState) -> Color {

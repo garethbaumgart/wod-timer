@@ -14,9 +14,10 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
 
-/// The frame every setup screen shares: header (back, mode, voice chip),
-/// the mode's controls centred in the space, then an optional total line
-/// and START. One value per control, nothing repeated.
+/// The frame every setup screen shares: header (back, mode in brand
+/// orange, voice chip), the mode's controls centred in the space, then
+/// START, carrying the total where there is one. One value per control,
+/// nothing repeated.
 class SetupScaffold extends StatefulWidget {
   const SetupScaffold({
     required this.title,
@@ -207,7 +208,7 @@ class _SetupHeader extends StatelessWidget {
               overflow: TextOverflow.fade,
               softWrap: false,
               style: AppTypography.sectionHeader.copyWith(
-                color: AppColors.textPrimaryDark,
+                color: AppColors.brand,
                 fontSize: 24,
               ),
             ),
@@ -318,6 +319,9 @@ class _SetupControls extends StatelessWidget {
   }
 }
 
+/// START, full width at the bottom. EMOM and Tabata carry their computed
+/// total inside it as a subtitle ("10:00 total", 1.3.1); the button is the
+/// same height either way, so nothing moves between modes.
 class _SetupFooter extends StatelessWidget {
   const _SetupFooter({required this.totalSeconds, required this.onStart});
 
@@ -329,64 +333,50 @@ class _SetupFooter extends StatelessWidget {
     final total = totalSeconds;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (total != null) ...[
-            Semantics(
-              label: 'Total ${setupSpokenDuration(total)}',
-              excludeSemantics: true,
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: setupClock(total),
-                      style: AppTypography.workoutTitle.copyWith(
-                        color: AppColors.textPrimaryDark,
-                        fontSize: 22,
-                      ),
-                    ),
-                    TextSpan(
-                      text: '  total',
-                      style: AppTypography.bodyLarge.copyWith(
-                        color: AppColors.textSecondaryDark,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      child: Semantics(
+        button: true,
+        label: total == null
+            ? 'Start workout'
+            : 'Start workout. Total ${setupSpokenDuration(total)}',
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: onStart,
+          child: Container(
+            width: double.infinity,
+            height: 62,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 14),
-          ],
-          Semantics(
-            button: true,
-            label: 'Start workout',
-            excludeSemantics: true,
-            child: GestureDetector(
-              onTap: onStart,
-              child: Container(
-                width: double.infinity,
-                height: 62,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Text(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
                     'START',
                     style: AppTypography.buttonLarge.copyWith(
                       color: Colors.black,
                       fontSize: 18,
                       letterSpacing: 1.6,
+                      height: 1.1,
                     ),
                   ),
-                ),
+                  if (total != null)
+                    Text(
+                      '${setupClock(total)} total',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Colors.black.withValues(alpha: 0.68),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
