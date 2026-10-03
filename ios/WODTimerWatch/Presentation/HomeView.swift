@@ -24,9 +24,6 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .listRowBackground(Color.clear)
                     .accessibilityLabel("Wharf WOD")
-                modeRow("AMRAP", code: "amrap", summary: memory.summary("amrap")) {
-                    AmrapSetupView(viewModel: viewModel)
-                }
                 modeRow("FOR TIME", code: "fortime", summary: memory.summary("fortime")) {
                     ForTimeSetupView(viewModel: viewModel)
                 }
@@ -34,6 +31,9 @@ struct HomeView: View {
                     EmomSetupView(viewModel: viewModel)
                 }
                 .id("emom")
+                modeRow("AMRAP", code: "amrap", summary: memory.summary("amrap")) {
+                    AmrapSetupView(viewModel: viewModel)
+                }
                 modeRow("TABATA", code: "tabata", summary: memory.summary("tabata")) {
                     TabataSetupView(viewModel: viewModel)
                 }
@@ -113,7 +113,7 @@ struct HomeView: View {
                                 summaryText(summary)
                             }
                         }
-                        TimelineBar(parts: parts, accent: accent, height: 6)
+                        TimelineBar(parts: parts, accent: code == "tabata" ? Palette.work : accent, height: 6)
                         if v != "WA" { totalText(total) }
                     }
                 case "WC":
@@ -131,7 +131,7 @@ struct HomeView: View {
                             Spacer(minLength: 2)
                             summaryText(summary, size: 13)
                         }
-                        TimelineBar(parts: parts, accent: accent, height: 6)
+                        TimelineBar(parts: parts, accent: code == "tabata" ? Palette.work : accent, height: 6)
                         totalText(total)
                     }
                 case "WF":

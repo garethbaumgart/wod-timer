@@ -5,7 +5,7 @@ import SwiftUI
 enum Palette {
     static let prepare = Color(hex: 0xFFAA00)
     static let work = Color(hex: 0x00FF88)
-    static let rest = Color(hex: 0x00AAFF)
+    static let rest = Color(hex: 0xFF0088) // pink (1.3.1)
     static let paused = Color(hex: 0x8A8A93)
     static let label = Color(hex: 0x9A9AA2)
     static let error = Color(hex: 0xFF4444)
@@ -18,9 +18,9 @@ enum Palette {
     static func mode(_ code: String) -> Color {
         switch code {
         case "amrap": Color(hex: 0x00FF88)
-        case "fortime": Color(hex: 0x00AAFF)
+        case "fortime": Color(hex: 0xFF6B1A)
         case "emom": Color(hex: 0xFF0088)
-        default: Color(hex: 0xFFAA00)
+        default: Color(hex: 0x00AAFF)
         }
     }
 

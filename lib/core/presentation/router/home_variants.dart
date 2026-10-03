@@ -185,6 +185,8 @@ Widget _bar(Color c, {double width = 6, double? height}) => Container(
 
 Color _partColour(HomeMode m, bool rest, _Spec s, {double a = 0.9}) {
   if (rest) return AppColors.rest.withValues(alpha: a);
+  // Workouts with rest draw work green, so green is work and pink is rest.
+  if (m.shape.any((p) => p.$2)) return AppColors.work.withValues(alpha: a);
   return (s.phase ? AppColors.work : m.accent).withValues(alpha: a);
 }
 

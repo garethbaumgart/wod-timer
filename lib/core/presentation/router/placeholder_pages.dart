@@ -190,13 +190,6 @@ class PlaceholderHomePage extends ConsumerWidget {
 
     return [
       HomeMode(
-        name: 'AMRAP',
-        config: setupClock(amrap.durationSeconds),
-        accent: AppColors.amrapAccent,
-        onTap: () => go('amrap'),
-        shape: [(amrap.durationSeconds, false)],
-      ),
-      HomeMode(
         name: 'FOR TIME',
         config:
             'CAP ${setupClock(forTime.capSeconds)} \u00B7 '
@@ -211,6 +204,13 @@ class PlaceholderHomePage extends ConsumerWidget {
         accent: AppColors.emomAccent,
         onTap: () => go('emom'),
         shape: [for (var i = 0; i < emom.rounds; i++) (emom.intervalSeconds, false)],
+      ),
+      HomeMode(
+        name: 'AMRAP',
+        config: setupClock(amrap.durationSeconds),
+        accent: AppColors.amrapAccent,
+        onTap: () => go('amrap'),
+        shape: [(amrap.durationSeconds, false)],
       ),
       HomeMode(
         name: 'TABATA',
