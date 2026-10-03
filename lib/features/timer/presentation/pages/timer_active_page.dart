@@ -59,11 +59,6 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   static const double _timelineHeight = 14;
   static const double _clockShare = 0.42;
 
-  /// Round digits overshoot the baseline by 0.012em; under a point at the
-  /// second line's size, and it would move the timeline as the digits
-  /// change, so the second line ignores overshoots this small.
-  static const double _overshootFloor = 0.02;
-
   @override
   void initState() {
     super.initState();
@@ -261,6 +256,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   bool _isCountUpForTime(TimerSession? session) {
     final type = session?.workout.timerType;
     return type is ForTimeTimer && type.countUp;
+  }
+
+  /// Whether this session's For Time timer counts down from the cap.
+  bool _countsDownForTime(TimerSession session) {
+    final type = session.workout.timerType;
+    return type is ForTimeTimer && !type.countUp;
   }
 
   /// The phase the session is in, or paused in.
@@ -485,8 +486,28 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           textScaler: textScaler,
         );
 
+        final second = session == null
+            ? null
+            : _secondLine(
+                context,
+                state,
+                session,
+                bigStyle,
+                landscape: landscape,
+              );
+        // A count-down For Time has no second line while it runs, so the
+        // clock is the content above the timeline and the zone under the
+        // empty slot must still hold a centred bar.
+        final secondLineWhileRunning =
+            session == null || !_countsDownForTime(session);
+        final zoneReserve = secondLineWhileRunning
+            ? 40.0
+            : secondSlot + _timelineHeight + 24;
         final clockSlot = landscape
-            ? math.max(80.0, area - topPad - phaseSlot - secondSlot - 40)
+            ? math.max(
+                80.0,
+                area - topPad - phaseSlot - secondSlot - zoneReserve,
+              )
             : area * _clockShare;
         final clock = session == null
             ? null
@@ -496,25 +517,20 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                 slotHeight: clockSlot,
                 resolve: (style) => GlyphInk.resolve(context, style),
               );
-        final second = session == null
-            ? null
-            : _secondLine(state, session, bigStyle, landscape: landscape);
 
         // Layout rule 2: where the content above the timeline's glyphs end.
-        // Measured from what the slot is sized for (the big digits' line,
-        // the clock's longest value), never the ticking text, so it is one
-        // number per workout (layout rule 1).
+        // Measured from what the slot is sized for (the big digits' line
+        // and their overshoot, the clock's longest value), not the ticking
+        // text, so it is one number per workout (layout rule 1).
         final double aboveInset;
         if (second != null) {
-          final size = textScaler.scale(second.style.fontSize!);
-          aboveInset =
-              (secondSlot - secondBaseline) -
-              GlyphInk.belowBaselineEm(
-                    second.text,
-                    second.style.fontWeight!,
-                    ignoreUnder: _overshootFloor,
-                  ) *
-                  size;
+          final own =
+              GlyphInk.belowBaselineEm(second.text, second.style.fontWeight!) *
+              textScaler.scale(second.style.fontSize!);
+          final digits =
+              GlyphInk.belowBaselineEm('0', bigStyle.fontWeight!) *
+              textScaler.scale(bigStyle.fontSize!);
+          aboveInset = (secondSlot - secondBaseline) - math.max(own, digits);
         } else if (clock != null && session != null) {
           aboveInset =
               secondSlot +
@@ -550,7 +566,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
             ),
             Expanded(
               child: CentredTimeline(
-                aboveInkInset: math.max(0, aboveInset),
+                aboveInkInset: aboveInset,
                 height: _timelineHeight,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: _sidePad),
@@ -745,11 +761,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// For Time. The record's text and style are its lowest glyphs, for the
   /// centring rule.
   ({Widget widget, String text, TextStyle style})? _secondLine(
+    BuildContext context,
     TimerNotifierState state,
     TimerSession session,
     TextStyle big, {
     required bool landscape,
   }) {
+    // Styles resolve against the context the texts render in (inside the
+    // Scaffold's Material), so measurement and paint share one baseline.
     final hint = GlyphInk.resolve(context, _hintStyle(landscape ? 20 : 26));
     ({Widget widget, String text, TextStyle style}) line(
       String text,
@@ -872,13 +891,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         ? 'Stopped'
         : 'Finished';
     final configText = _configLine(session);
-    final configStyle = GlyphInk.resolve(context, _unitStyle(14));
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final configStyle = GlyphInk.resolve(context, _unitStyle(14));
         final hero = state.endedAtTimeCap
             ? null
             : _endHero(
+                context,
                 state,
                 maxWidth: (constraints.maxWidth - 32) * 0.86,
                 maxHeight: constraints.maxHeight * 0.22,
@@ -956,6 +976,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// its label, and the total where there is one. The record's last text
   /// and style are the block's lowest glyphs, for the centring rule.
   ({Widget widget, String lastText, TextStyle lastStyle}) _endHero(
+    BuildContext context,
     TimerCompleted state, {
     required double maxWidth,
     required double maxHeight,

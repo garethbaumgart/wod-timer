@@ -146,15 +146,8 @@ abstract class GlyphInk {
   static TextStyle resolve(BuildContext context, TextStyle style) =>
       DefaultTextStyle.of(context).style.merge(style);
 
-  /// How far below the baseline [text] paints, in em. Overshoots under
-  /// [ignoreUnder] em count as none: a slot whose text changes (the AMRAP
-  /// count, the clock) must measure the same whichever digits show, so it
-  /// ignores the round glyphs' hair of overshoot and keeps the slash.
-  static double belowBaselineEm(
-    String text,
-    FontWeight weight, {
-    double ignoreUnder = 0,
-  }) {
+  /// How far below the baseline [text] paints, in em.
+  static double belowBaselineEm(String text, FontWeight weight) {
     final key = (weight.value.clamp(600, 900) / 100).round() * 100;
     final table = _belowBaseline[key]!;
     var deepest = 0;
@@ -162,8 +155,7 @@ abstract class GlyphInk {
       final glyph = String.fromCharCode(rune);
       deepest = math.max(deepest, table[glyph] ?? 0);
     }
-    final em = deepest / 1000;
-    return em < ignoreUnder ? 0 : em;
+    return deepest / 1000;
   }
 
   /// Outfit's cap height (digits are lining figures at the same height),
@@ -207,7 +199,6 @@ abstract class GlyphInk {
     String text,
     TextStyle style, {
     TextScaler textScaler = TextScaler.noScaling,
-    double ignoreUnder = 0,
   }) {
     final painter = _painter(text, style, textScaler);
     final baseline = painter.computeDistanceToActualBaseline(
@@ -215,26 +206,19 @@ abstract class GlyphInk {
     );
     final fontSize = textScaler.scale(style.fontSize ?? 14);
     final weight = style.fontWeight ?? FontWeight.w400;
-    return baseline +
-        belowBaselineEm(text, weight, ignoreUnder: ignoreUnder) * fontSize;
+    return baseline + belowBaselineEm(text, weight) * fontSize;
   }
 
   /// Distance from the bottom of a laid-out line of [text] up to the
   /// bottom of its painted glyphs: the part of the box that is empty.
+  /// Negative when the glyphs overshoot a trimmed line box.
   static double bottomInset(
     String text,
     TextStyle style, {
     TextScaler textScaler = TextScaler.noScaling,
-    double ignoreUnder = 0,
   }) {
     final painter = _painter(text, style, textScaler);
-    final bottom = glyphBottom(
-      text,
-      style,
-      textScaler: textScaler,
-      ignoreUnder: ignoreUnder,
-    );
-    return math.max(0, painter.height - bottom);
+    return painter.height - glyphBottom(text, style, textScaler: textScaler);
   }
 
   static TextPainter _painter(
