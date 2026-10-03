@@ -72,8 +72,26 @@ in build 17). Setup screen headings: decided in the workout-screen review.
 
 ## Still to decide: the workout screens
 Next step, per Gareth: go through each workout type's screens across phone,
-tablet and watch and lock the fine-tuning before building. Add the decisions
-here.
+tablet and watch and lock the fine-tuning before building. Current-state
+sheets (setup / live / end on iPhone 17 Pro Max, iPad 13, watch 46mm) were
+sent 3 Oct. Proposals put to him, awaiting picks:
+
+1. Setup heading colour: white like Home, or keep brand orange.
+2. Setup screens show the Home timeline and total above START (fills the
+   empty middle on phone and iPad); the total then leaves START.
+3. Live progress bar becomes the same block timeline, filling as you go
+   (EMOM blocks, Tabata work and rest blocks).
+4. Live screen spacing on phone and iPad: close the gap between the round or
+   score and the bar, or grow the round slot into it.
+5. End screens show the timeline filled to where you stopped (Stopped EMOM
+   2/10 shows 2 of 10 blocks); a natural Tabata finish shows rounds and
+   total time instead of an empty screen.
+6. AMRAP: counted rounds as dots under the count on the live screen.
+7. For Time setup: the COUNTS UP / TAP TO CHANGE line is small; make it a
+   proper two-option switch.
+8. Watch: same as 1 to 3 and 5 at watch scale; add an EMOM end capture.
+
+Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
 - Phone/tablet Home, wordmark, icon, order, last-mode key; watch Home,
