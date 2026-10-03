@@ -16,7 +16,7 @@ import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
     as domain;
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
-import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
 
 /// Active timer display page - Signal design, 1.3.0 "big clock".
 ///

@@ -9,7 +9,7 @@ import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/core/presentation/widgets/wordmark.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
-import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
