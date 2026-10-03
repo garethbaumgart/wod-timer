@@ -102,6 +102,7 @@ void main() {
         SetupMemory.tabataWorkKey,
         SetupMemory.tabataRestKey,
         SetupMemory.tabataRoundsKey,
+        SetupMemory.lastModeKey,
       });
       expect(
         SetupMemory(prefs).emom,
@@ -110,20 +111,88 @@ void main() {
     });
   });
 
-  group('SetupMemory defensive reads', () {
-    test('a mistyped value reads as the default and is left in place', () async {
-      final memory = await memoryWith({
-        SetupMemory.emomRoundsKey: 'twelve',
-        SetupMemory.forTimeCountUpKey: 7,
-      });
+  group('SetupMemory last mode (1.3.1)', () {
+    test('nothing stored reads as For Time', () async {
+      final memory = await memoryWith({});
+      expect(memory.lastMode, 'fortime');
+    });
 
-      expect(memory.emom.rounds, SetupRanges.emomRounds.fallback);
-      expect(memory.forTime.countUp, isTrue);
+    test('every save records its mode, additively', () async {
+      final memory = await memoryWith({});
+      await memory.saveTabata(TabataSetup.classic);
+      expect(memory.lastMode, 'tabata');
+      await memory.saveAmrap(const AmrapSetup());
+      expect(memory.lastMode, 'amrap');
+      await memory.saveEmom(const EmomSetup());
+      expect(memory.lastMode, 'emom');
+      await memory.saveForTime(const ForTimeSetup());
+      expect(memory.lastMode, 'fortime');
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.get(SetupMemory.emomRoundsKey), 'twelve');
-      expect(prefs.get(SetupMemory.forTimeCountUpKey), 7);
+      expect(prefs.getString(SetupMemory.lastModeKey), 'fortime');
+      expect(prefs.getInt(SetupMemory.emomRoundsKey), 10);
     });
+
+    test(
+      'an unknown or mistyped value reads as For Time and is kept',
+      () async {
+        final unknown = await memoryWith({SetupMemory.lastModeKey: 'yoga'});
+        expect(unknown.lastMode, 'fortime');
+        final mistyped = await memoryWith({SetupMemory.lastModeKey: 3});
+        expect(mistyped.lastMode, 'fortime');
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.get(SetupMemory.lastModeKey), 3);
+      },
+    );
+
+    // Golden fixture: a 1.3.0 install (every setup key, no last mode) must
+    // load, save and reload with every key still exactly as it was.
+    test('a 1.3.0 prefs file gains only the last-mode key', () async {
+      const v130 = <String, Object>{
+        ..._v113Prefs,
+        SetupMemory.amrapDurationKey: 720,
+        SetupMemory.forTimeCapKey: 900,
+        SetupMemory.forTimeCountUpKey: false,
+        SetupMemory.emomIntervalKey: 90,
+        SetupMemory.emomRoundsKey: 12,
+        SetupMemory.tabataWorkKey: 40,
+        SetupMemory.tabataRestKey: 20,
+        SetupMemory.tabataRoundsKey: 6,
+      };
+      final memory = await memoryWith(Map.of(v130));
+      expect(memory.lastMode, 'fortime');
+      expect(memory.emom, const EmomSetup(intervalSeconds: 90, rounds: 12));
+
+      await memory.saveEmom(memory.emom);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      for (final entry in v130.entries) {
+        expect(prefs.get(entry.key), entry.value, reason: entry.key);
+      }
+      expect(prefs.getKeys().difference(v130.keys.toSet()), {
+        SetupMemory.lastModeKey,
+      });
+      expect(SetupMemory(prefs).lastMode, 'emom');
+    });
+  });
+
+  group('SetupMemory defensive reads', () {
+    test(
+      'a mistyped value reads as the default and is left in place',
+      () async {
+        final memory = await memoryWith({
+          SetupMemory.emomRoundsKey: 'twelve',
+          SetupMemory.forTimeCountUpKey: 7,
+        });
+
+        expect(memory.emom.rounds, SetupRanges.emomRounds.fallback);
+        expect(memory.forTime.countUp, isTrue);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.get(SetupMemory.emomRoundsKey), 'twelve');
+        expect(prefs.get(SetupMemory.forTimeCountUpKey), 7);
+      },
+    );
 
     test('out-of-range and off-step values land on a legal value', () async {
       final memory = await memoryWith({

@@ -242,6 +242,7 @@ class TimerSession with _$TimerSession {
             elapsedAtCompletion: TimerDuration.fromSeconds(
               intervalSeconds * timer.rounds.value,
             ),
+            round: round,
           ),
         );
       }
@@ -292,6 +293,7 @@ class TimerSession with _$TimerSession {
               elapsedAtCompletion: TimerDuration.fromSeconds(
                 (workSeconds + restSeconds) * timer.rounds.value,
               ),
+              round: round,
             ),
           );
         }
@@ -334,13 +336,18 @@ class TimerSession with _$TimerSession {
 
   /// [elapsedAtCompletion] pins the final elapsed time to the workout's
   /// exact boundary (e.g. 10:00 for a 10-minute AMRAP) — without it the
-  /// summary shows the previous tick's value, one tick short.
-  TimerSession _complete({TimerDuration? elapsedAtCompletion}) => copyWith(
-    state: TimerState.completed,
-    completedAt: DateTime.now(),
-    elapsed: elapsedAtCompletion ?? elapsed,
-    elapsedMillis: elapsedAtCompletion != null ? 0 : elapsedMillis,
-  );
+  /// summary shows the previous tick's value, one tick short. [round] is
+  /// the round the workout ended in: a catch-up tick after a suspension
+  /// can run through several rounds and finish in one go, and the end
+  /// screen's "8/8" must not read the round the tick started in.
+  TimerSession _complete({TimerDuration? elapsedAtCompletion, int? round}) =>
+      copyWith(
+        state: TimerState.completed,
+        completedAt: DateTime.now(),
+        elapsed: elapsedAtCompletion ?? elapsed,
+        elapsedMillis: elapsedAtCompletion != null ? 0 : elapsedMillis,
+        currentRound: round ?? currentRound,
+      );
 
   // Computed properties
 
