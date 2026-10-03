@@ -54,19 +54,31 @@ struct SetupValue: View {
     }
 }
 
-/// The green START, the only green control on a setup screen.
+/// The green START, the only green control on a setup screen. EMOM and
+/// Tabata carry their computed total inside it ("10:00 total"), where it
+/// is new information; AMRAP and For Time already show it as their value.
 struct StartButton: View {
+    var subtitle: String?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text("START")
-                .font(.system(size: 17, weight: .heavy, design: .rounded))
-                .frame(maxWidth: .infinity)
+            VStack(spacing: -1) {
+                Text("START")
+                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .opacity(0.72)
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
         .tint(Palette.primary)
         .foregroundStyle(.black)
+        .accessibilityLabel(subtitle.map { "Start, \($0)" } ?? "Start")
     }
 }
 

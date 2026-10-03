@@ -8,6 +8,10 @@ abstract class AppColors {
   static const Color primaryLight = Color(0xFF66FFB2);
   static const Color primaryDark = Color(0xFF00CC6E);
 
+  // Brand - neon orange (1.3.1): the wordmark and every workout heading.
+  // Kept clear of the amber prepare / Tabata colour (#FFAA00).
+  static const Color brand = Color(0xFFFF6B1A);
+
   // Secondary - light blue (For Time accent)
   static const Color secondary = Color(0xFF00AAFF);
   static const Color secondaryLight = Color(0xFF66CCFF);

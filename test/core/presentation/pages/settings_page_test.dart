@@ -303,7 +303,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => audio.playVoicePreview('liam')).called(1);
-      expect(find.text('Liam (Old British Man)'), findsOneWidget);
+      expect(find.text('Liam (Male Coach)'), findsOneWidget);
       expect(find.text('Major >'), findsOneWidget);
     });
 
@@ -311,10 +311,10 @@ void main() {
       await pumpSettings(tester);
       await openPicker(tester);
 
-      await tester.tap(find.text('Liam (Old British Man)'));
+      await tester.tap(find.text('Liam (Male Coach)'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Liam (Old British Man)'), findsNothing);
+      expect(find.text('Liam (Male Coach)'), findsNothing);
       expect(find.text('Liam >'), findsOneWidget);
       verifyNever(() => audio.playVoicePreview(any()));
     });

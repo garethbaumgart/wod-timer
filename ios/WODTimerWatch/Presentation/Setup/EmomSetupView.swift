@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// EMOM setup: EVERY (15s steps, as on the phone) and ROUNDS; tap a value
-/// to move it with the Crown. Opens on the last EMOM started.
+/// to move it with the Crown. Opens on the last EMOM set: every change is
+/// remembered (1.3.1). The total rides inside START.
 struct EmomSetupView: View {
     @Bindable var viewModel: TimerViewModel
     @State private var intervalSeconds: Double
@@ -13,14 +14,26 @@ struct EmomSetupView: View {
 
     init(viewModel: TimerViewModel) {
         self.viewModel = viewModel
+        let last = Self.remembered()
+        _intervalSeconds = State(initialValue: last.interval)
+        _rounds = State(initialValue: last.rounds)
+    }
+
+    private static func remembered() -> (interval: Double, rounds: Double) {
         let last = SetupMemory().emom
-        _intervalSeconds = State(initialValue: Double(min(600, max(15, last.interval.seconds / 15 * 15))))
-        _rounds = State(initialValue: Double(min(30, max(1, last.rounds))))
+        return (Double(min(600, max(15, last.interval.seconds / 15 * 15))), Double(min(30, max(1, last.rounds))))
+    }
+
+    private func load() {
+        let last = Self.remembered()
+        intervalSeconds = last.interval
+        rounds = last.rounds
     }
 
     private var interval: TimerDuration { TimerDuration(seconds: Int(intervalSeconds)) }
     private var roundCount: RoundCount { RoundCount(value: Int(rounds)) }
     private var total: TimerDuration { TimerDuration(seconds: interval.seconds * roundCount.value) }
+    private var type: TimerType { .emom(intervalDuration: interval, rounds: roundCount) }
 
     var body: some View {
         VStack(spacing: 2) {
@@ -33,12 +46,8 @@ struct EmomSetupView: View {
                 SetupValue(label: "ROUNDS", value: "\(Int(rounds))", size: 38, focused: focusedField == .rounds)
             }
             .buttonStyle(.plain)
-            Text("\(total.clock) total")
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundStyle(Palette.label)
             Spacer(minLength: 0)
-            StartButton {
-                let type = TimerType.emom(intervalDuration: interval, rounds: roundCount)
+            StartButton(subtitle: "\(total.clock) total") {
                 SetupMemory().save(type)
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))
                 showingTimer = viewModel.session?.state != .ready
@@ -54,6 +63,8 @@ struct EmomSetupView: View {
             sensitivity: .medium
         )
         .navigationTitle("EMOM")
+        .onAppear(perform: load)
+        .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)

@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/presentation/router/placeholder_pages.dart';
+import 'package:wod_timer/core/presentation/theme/app_colors.dart';
+import 'package:wod_timer/core/presentation/widgets/wordmark.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 
@@ -74,9 +76,7 @@ void main() {
     expect(find.text('›'), findsNothing);
   });
 
-  testWidgets('strips read the remembered setup for each mode', (
-    tester,
-  ) async {
+  testWidgets('strips read the remembered setup for each mode', (tester) async {
     await pumpHome(
       tester,
       stored: {
@@ -109,6 +109,58 @@ void main() {
     // Flush right inside the strip: 18pt screen + 14pt strip padding.
     expect(config.right, closeTo(390 - 18 - 14 - 1, 2));
     expect(tester.getSize(find.text('EMOM')).height, greaterThan(28));
+  });
+
+  testWidgets('each strip leads with its mode colour bar (1.3.1)', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+
+    const modes = {
+      'AMRAP': AppColors.amrapAccent,
+      'FOR TIME': AppColors.forTimeAccent,
+      'EMOM': AppColors.emomAccent,
+      'TABATA': AppColors.tabataAccent,
+    };
+    for (final MapEntry(key: name, value: color) in modes.entries) {
+      final strip = find
+          .ancestor(of: find.text(name), matching: find.byType(InkWell))
+          .first;
+      final bar = find.descendant(
+        of: strip,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.constraints?.maxWidth == 4 &&
+              (w.decoration as BoxDecoration?)?.color == color,
+        ),
+      );
+      expect(bar, findsOneWidget, reason: name);
+      expect(
+        tester.getRect(bar).right,
+        lessThan(tester.getRect(find.text(name)).left),
+      );
+    }
+  });
+
+  testWidgets('mode names are brand orange under the wordmark (1.3.1)', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+
+    for (final name in ['AMRAP', 'FOR TIME', 'EMOM', 'TABATA']) {
+      expect(
+        tester.widget<Text>(find.text(name)).style?.color,
+        AppColors.brand,
+        reason: name,
+      );
+    }
+    expect(find.byType(Wordmark), findsOneWidget);
+    expect(find.bySemanticsLabel('Wharf WOD'), findsOneWidget);
+    expect(
+      tester.getRect(find.byType(Wordmark)).bottom,
+      lessThan(tester.getRect(find.text('AMRAP')).top),
+    );
   });
 
   testWidgets('the screen reader hears the setup, not a description', (

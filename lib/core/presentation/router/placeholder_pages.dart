@@ -6,6 +6,7 @@ import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
+import 'package:wod_timer/core/presentation/widgets/wordmark.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
@@ -93,22 +94,7 @@ class PlaceholderHomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHero() {
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: 'WOD',
-            style: AppTypography.heroTitle.copyWith(color: Colors.white),
-          ),
-          TextSpan(
-            text: '.',
-            style: AppTypography.heroTitle.copyWith(color: AppColors.primary),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildHero() => const Wordmark();
 
   /// One strip per mode, each showing the remembered setup, so Home answers
   /// "what will this start?" before the tap. Read on every build: Home is
@@ -130,11 +116,13 @@ class PlaceholderHomePage extends ConsumerWidget {
       required String config,
       required String spokenConfig,
       required String timerType,
+      required Color accentColor,
     }) {
       return _SignalStripItem(
         name: name,
         config: config,
         spokenConfig: spokenConfig,
+        accentColor: accentColor,
         verticalPadding: verticalPadding,
         onTap: () {
           ref.read(hapticServiceProvider).lightImpact();
@@ -149,6 +137,7 @@ class PlaceholderHomePage extends ConsumerWidget {
         config: setupClock(amrap.durationSeconds),
         spokenConfig: setupSpokenDuration(amrap.durationSeconds),
         timerType: 'amrap',
+        accentColor: AppColors.amrapAccent,
       ),
       const SizedBox(height: 12),
       strip(
@@ -158,6 +147,7 @@ class PlaceholderHomePage extends ConsumerWidget {
             'Cap ${setupSpokenDuration(forTime.capSeconds)}, '
             'counts ${direction.toLowerCase()}',
         timerType: 'fortime',
+        accentColor: AppColors.forTimeAccent,
       ),
       const SizedBox(height: 12),
       strip(
@@ -167,6 +157,7 @@ class PlaceholderHomePage extends ConsumerWidget {
             '${emom.rounds} ${emom.rounds == 1 ? 'round' : 'rounds'} of '
             '${setupSpokenDuration(emom.intervalSeconds)}',
         timerType: 'emom',
+        accentColor: AppColors.emomAccent,
       ),
       const SizedBox(height: 12),
       strip(
@@ -179,6 +170,7 @@ class PlaceholderHomePage extends ConsumerWidget {
             '${setupSpokenDuration(tabata.workSeconds)} work, '
             '${setupSpokenDuration(tabata.restSeconds)} rest',
         timerType: 'tabata',
+        accentColor: AppColors.tabataAccent,
       ),
     ];
   }
@@ -275,18 +267,25 @@ class PlaceholderHomePage extends ConsumerWidget {
   }
 }
 
-/// One mode as a single row: the name at the left, the setup it will open
-/// on at the right. No colour bar or chevron; the whole strip is the button.
+/// One mode as a single row: the mode's colour bar, the name in brand
+/// orange, and the setup it will open on at the right. The bars came back
+/// in 1.3.1 (Gareth liked them); there is still no chevron, the whole strip
+/// is the button.
 class _SignalStripItem extends StatelessWidget {
   const _SignalStripItem({
     required this.name,
     required this.config,
     required this.spokenConfig,
+    required this.accentColor,
     required this.verticalPadding,
     required this.onTap,
   });
 
   final String name;
+
+  /// The mode's sidebar colour (AMRAP green, For Time blue, EMOM magenta,
+  /// Tabata amber).
+  final Color accentColor;
 
   /// Remembered setup as shown ("10 × 1:00").
   final String config;
@@ -320,10 +319,19 @@ class _SignalStripItem extends StatelessWidget {
             ),
             child: Row(
               children: [
+                Container(
+                  width: 4,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 14),
                 Text(
                   name,
                   style: AppTypography.stripName.copyWith(
-                    color: Colors.white,
+                    color: AppColors.brand,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                   ),

@@ -72,6 +72,11 @@ struct CaptureRoot: View {
             viewModel.debugAdvance(seconds: seconds)
         }
         switch scene {
+        case .voice:
+            viewModel.audio.setMuted(false)
+            viewModel.audio.setBeepsOnly(false)
+            viewModel.audio.setRandomizePerCue(false)
+            viewModel.audio.setVoicePack(.major)
         case .livePrep: run(Workout.defaultAmrap(), 4)
         case .liveAmrap: run(Workout.defaultAmrap(), 25); viewModel.debugCountRounds(3)
         case .liveForTime: run(Workout.defaultForTime(), 76)

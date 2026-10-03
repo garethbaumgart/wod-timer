@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// AMRAP setup: one number (the Crown moves it in whole minutes), START.
-/// Opens on the last AMRAP started.
+/// Opens on the last AMRAP set: every change is remembered (1.3.1), not
+/// only the ones that were started.
 struct AmrapSetupView: View {
     @Bindable var viewModel: TimerViewModel
     @State private var durationMinutes: Double
@@ -13,6 +14,11 @@ struct AmrapSetupView: View {
     }
 
     private var duration: TimerDuration { TimerDuration(seconds: Int(durationMinutes) * 60) }
+    private var type: TimerType { .amrap(duration: duration) }
+
+    private func load() {
+        durationMinutes = Double(max(1, SetupMemory().amrap.seconds / 60))
+    }
 
     var body: some View {
         VStack(spacing: 4) {
@@ -22,7 +28,6 @@ struct AmrapSetupView: View {
                 .digitalCrownRotation($durationMinutes, from: 1, through: 60, by: 1, sensitivity: .medium)
             Spacer(minLength: 0)
             StartButton {
-                let type = TimerType.amrap(duration: duration)
                 SetupMemory().save(type)
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))
                 showingTimer = viewModel.session?.state != .ready
@@ -30,6 +35,8 @@ struct AmrapSetupView: View {
         }
         .padding(.horizontal, 8)
         .navigationTitle("AMRAP")
+        .onAppear(perform: load)
+        .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)

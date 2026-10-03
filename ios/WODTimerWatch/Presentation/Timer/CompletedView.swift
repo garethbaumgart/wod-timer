@@ -69,7 +69,8 @@ struct CompletedView: View {
                 }
             }
             .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.top, 4)
+            .padding(.bottom, 10)
             .navigationBarBackButtonHidden(true)
         }
     }
