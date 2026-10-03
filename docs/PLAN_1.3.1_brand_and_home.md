@@ -1,0 +1,90 @@
+# 1.3.1 brand, Home and workout screens: the build list
+
+Status: **decisions logged, nothing built yet.** Gareth asked to lock the
+workout screens first, then build everything in one pass (3 Oct 2026).
+
+Where things stand on the stores: iOS 1.3.0 build 16 is WAITING_FOR_REVIEW
+(auto-release). 1.3.1 build 17 / Play internal vc11 (from main 40e4f53) is on
+TestFlight and Play internal only. The build below supersedes build 17's Home,
+wordmark and icon.
+
+Reference images: `docs/design/1.3.1/`. Throwaway preview code for every option
+shown: branch `preview/stacked-wordmark` (`lib/core/presentation/router/home_variants.dart`,
+watch `HomeView.swift`). Port the chosen pieces cleanly; do not merge that branch.
+
+## Locked
+
+### 1. Wordmark: combo 25 with a pink full stop
+- Stacked: small tracked **WHARF in white** over a heavy **WOD in neon green
+  #00FF88**, with a **pink #FF0088 full stop** (the EMOM magenta). Outfit 800 /
+  900, soft glow on the coloured parts, faint glow on white.
+- Proportions (from the preview): WHARF = 0.278 x WOD size, tracking 0.12 x
+  WOD size; WOD tracking -0.028 x size; line height 0.9.
+- Phone and tablet: replaces the one-line mark at the top of Home
+  (`lib/core/presentation/widgets/wordmark.dart`).
+- Watch: as an image (`docs/design/1.3.1/watch_wordmark_25_pink.png`) at the
+  top of the Home list, about 50pt tall, scrolling away with the list. Not in
+  the toolbar title slot (too small for a stacked mark).
+
+### 2. App icon 58
+- `docs/design/1.3.1/app_icon_58.svg`: white ring, pink timer arc, neon
+  green plates (#00FF88 / #00B862 collars), white bar, pink top and side
+  buttons, on the app's ink #050510 with a #0E0E1E dial.
+- To regenerate: iOS 1024 (no alpha, full-bleed square, iOS rounds the
+  corners), Android adaptive (foreground in the safe zone, background #050510;
+  update `adaptive_icon_background` in pubspec), Apple Watch marketing 1024 and
+  40@2x (watch masks to a circle; every element sits inside it), App Store icon.
+  Then `flutter_launcher_icons`.
+
+### 3. Home order everywhere
+**For Time, EMOM, AMRAP, Tabata** on phone, tablet and watch.
+
+### 4. Phone Home: option 13
+Reference: `home_phone_13.png`.
+- Full-width cards: mode colour bar, **white** name (28), setup at the right
+  (18), then the workout drawn as a block timeline (12pt tall, flex by
+  seconds: EMOM one block per round, Tabata work in the mode colour and rest
+  in blue #00AAFF, AMRAP and For Time one bar), then "10:00 total" right
+  aligned (13, grey).
+- Phone landscape must still fit 844 x 390 without scrolling (existing test):
+  likely drop the total line and thin the timeline there. To confirm in build.
+
+### 5. Tablet Home: last workout as the hero
+Reference: `home_tablet_hero.png` (preview option TG).
+- The last mode started gets a big tile across the top; the other three sit
+  in a row below, in the For Time, EMOM, AMRAP, Tabata order.
+- Each tile is option 13 as a tile: bar, white name, setup, timeline, total.
+- Needs a new additive key: `setup_last_mode` written on every START (all
+  four `save*` calls in `SetupMemory`). Before the first start, the hero is
+  For Time (first in the order).
+- Tablet = logical shortest side >= 560 under TabletScale. Tablet landscape
+  (logical ~800 x 600): wordmark column left, hero tiles right. To check.
+
+### 6. Watch Home: option A
+References: `home_watch_A.png`, `home_watch_A_scrolled.png`.
+- Rows keep the colour bar, **white** name and setup, plus a thin (6pt) block
+  timeline under each row. No total line.
+- `SetupMemory.shape(code)` for the parts; `TimelineBar` view.
+
+### 7. Titles
+Home mode names are **white** on all three devices (they were brand orange
+in build 17). Setup screen headings: decided in the workout-screen review.
+
+## Still to decide: the workout screens
+Next step, per Gareth: go through each workout type's screens across phone,
+tablet and watch and lock the fine-tuning before building. Add the decisions
+here.
+
+## Build checklist (when everything above is locked)
+- Phone/tablet Home, wordmark, icon, order, last-mode key; watch Home,
+  wordmark image, icon, order.
+- Tests: Home order, bars, white names, timeline and total, tablet hero picks
+  the last mode (and For Time by default), landscape fit on phone and tablet;
+  SetupMemory last-mode golden test (additive key, unknown values ignored).
+  Watch: shape() per mode, order.
+- Captures: iPhone 6.9, iPad 13, watch 46mm; exact-AAB smoke on the Pixel
+  Tablet emulator.
+- Ship 1.3.1 (next build) to TestFlight + Play internal; production only on
+  Gareth's go (cancel 1.3.0 build 16's review then).
+- Store shots (iPhone, iPad, watch, Play), site card and FAQ (new wordmark,
+  icon, Beeps), NOW.md, state file.
