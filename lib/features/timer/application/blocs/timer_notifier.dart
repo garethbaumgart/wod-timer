@@ -220,7 +220,10 @@ class TimerNotifier extends _$TimerNotifier {
         session: currentSession,
       ),
       (session) {
-        state = TimerNotifierState.completed(session: session, endedEarly: true);
+        state = TimerNotifierState.completed(
+          session: session,
+          endedEarly: true,
+        );
         _stopTicking();
         trackEvent('workout_completed', {
           'type': session.workout.timerType.typeCode,
@@ -310,13 +313,10 @@ class TimerNotifier extends _$TimerNotifier {
 
     final remaining = session.timeRemaining.seconds;
     final result = _tickTimer(session, Duration(seconds: remaining));
-    result.fold(
-      (_) {},
-      (newSession) {
-        _handleAudioCues(session, newSession);
-        state = _stateFromSession(newSession);
-      },
-    );
+    result.fold((_) {}, (newSession) {
+      _handleAudioCues(session, newSession);
+      state = _stateFromSession(newSession);
+    });
   }
 
   /// Reset the timer to initial state.
@@ -388,14 +388,7 @@ class TimerNotifier extends _$TimerNotifier {
         if (currentSession.state == domain.TimerState.completed) {
           state = TimerNotifierState.completed(session: currentSession);
           _stopTicking();
-          if (_endNaturally()) {
-            // The workout ran all the way out: the payoff, and the only
-            // unambiguous one. Deliberately NOT the manual-finish,
-            // ended-early or time-cap paths, which say nothing about whether
-            // it went well. The prompter stays quiet until the app has
-            // earned it and never throws.
-            unawaited(ref.read(reviewPrompterProvider).recordValueMoment());
-          }
+          _endNaturally();
         } else {
           state = TimerNotifierState.error(
             failure: failure,
@@ -607,9 +600,14 @@ class TimerNotifier extends _$TimerNotifier {
     }
   }
 
-  /// Cue and haptic for a workout the clock ended. Returns false when it
-  /// ran into a For Time cap: that is a DNF, so a neutral end sound and a
-  /// plain haptic, never "Good job".
+  /// Cue and haptic for a workout the clock ended, and the review payoff.
+  /// Returns false when it ran into a For Time cap: that is a DNF, so a
+  /// neutral end sound and a plain haptic, never "Good job".
+  ///
+  /// The review moment is booked here, on the one path every natural
+  /// completion takes (2.0.0: it used to sit on the tick-after-completion
+  /// branch, which the pause race guard made unreachable, so the sheet
+  /// never asked).
   bool _endNaturally() {
     if (state.endedAtTimeCap) {
       final delay = _playedFinalCountdown
@@ -625,6 +623,11 @@ class TimerNotifier extends _$TimerNotifier {
     }
     _playCompletionEncouragement();
     _hapticService.success(); // Haptic success for natural completion
+    // The workout ran all the way out: the payoff, and the only
+    // unambiguous one. Deliberately NOT the manual-finish, ended-early or
+    // time-cap paths, which say nothing about whether it went well. The
+    // prompter stays quiet until the app has earned it and never throws.
+    unawaited(ref.read(reviewPrompterProvider).recordValueMoment());
     return true;
   }
 

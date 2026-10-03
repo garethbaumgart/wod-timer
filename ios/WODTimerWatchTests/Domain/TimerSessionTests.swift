@@ -1,3 +1,5 @@
+import SwiftUI
+import WatchKit
 import XCTest
 @testable import WODTimerWatch
 
@@ -718,5 +720,561 @@ final class HomeAndTimelineTests: XCTestCase {
                          "finished-amrap", "stopped-amrap", "finished-tabata", "stopped-tabata"] {
             XCTAssertTrue(names.contains(required), "missing capture scene \(required)")
         }
+    }
+}
+
+// MARK: - 2.0.0 live rules (clock text, phase word, colours, config line)
+
+final class LiveRulesTests: XCTestCase {
+    private func workout(_ type: TimerType, prep: Int = 0) -> Workout {
+        Workout(id: UUID(), name: "t", timerType: type, prepCountdown: TimerDuration(seconds: prep), createdAt: Date())
+    }
+
+    /// A started session, `seconds` in (one catch-up tick, as the engine would after sleep).
+    private func session(_ type: TimerType, prep: Int = 0, after ms: Int = 0) -> TimerSession {
+        var s = TimerSession.fromWorkout(workout(type, prep: prep))
+        _ = s.start()
+        if ms > 0 { _ = s.tick(deltaMs: ms) }
+        return s
+    }
+
+    private let forTime = TimerType.forTime(timeCap: TimerDuration(seconds: 1200))
+    private let countDown = TimerType.forTime(timeCap: TimerDuration(seconds: 1200), countUp: false)
+    private let amrap = TimerType.amrap(duration: TimerDuration(seconds: 600))
+    private let emom = TimerType.emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 10))
+    private let tabata = TimerType.standardTabata
+
+    func testClockTextCountsUpOnACountUpForTimeAndDownOtherwise() {
+        XCTAssertEqual(LiveRules.clockText(session(forTime, after: 65_000)), "1:05")
+        XCTAssertEqual(LiveRules.clockText(session(countDown, after: 65_000)), "18:55")
+        XCTAssertEqual(LiveRules.clockText(session(amrap, after: 30_000)), "9:30")
+        XCTAssertTrue(LiveRules.isCountUp(session(forTime)))
+        XCTAssertFalse(LiveRules.isCountUp(session(countDown)))
+        XCTAssertFalse(LiveRules.isCountUp(session(amrap)))
+    }
+
+    func testClockTextIsBareSecondsUnderAMinuteOrInAMinutePhase() {
+        XCTAssertEqual(LiveRules.clockText(session(amrap, after: 545_000)), "55")
+        XCTAssertEqual(LiveRules.clockText(session(emom)), "60", "an EMOM minute never reads 1:00")
+        XCTAssertEqual(LiveRules.clockText(session(emom, after: 5_000)), "55")
+        XCTAssertEqual(LiveRules.clockText(session(tabata)), "20")
+        XCTAssertEqual(LiveRules.clockText(session(tabata, after: 22_000)), "8")
+        let longRest = TimerType.tabata(workDuration: TimerDuration(seconds: 20), restDuration: TimerDuration(seconds: 90), rounds: RoundCount(value: 2))
+        XCTAssertEqual(LiveRules.clockText(session(longRest, after: 20_000)), "1:30")
+        XCTAssertEqual(LiveRules.clockText(session(longRest, after: 50_000)), "1:00")
+        XCTAssertEqual(LiveRules.clockText(session(longRest, after: 51_000)), "59")
+    }
+
+    func testClockTextInGetReadyIsTheCountdownInEveryMode() {
+        XCTAssertEqual(LiveRules.clockText(session(amrap, prep: 10, after: 4_000)), "6")
+        XCTAssertEqual(LiveRules.clockText(session(forTime, prep: 10, after: 4_000)), "6")
+        XCTAssertEqual(LiveRules.clockText(session(forTime, prep: 10)), "10")
+    }
+
+    func testPhaseWordNamesOnlyGetReadyPausedAndTabataPhases() {
+        let prep = LiveRules.phaseWord(session(amrap, prep: 10, after: 1_000))
+        XCTAssertEqual(prep?.0, "GET READY")
+        XCTAssertEqual(prep?.1, Palette.prepare)
+        XCTAssertNil(LiveRules.phaseWord(session(amrap, after: 5_000)))
+        XCTAssertNil(LiveRules.phaseWord(session(emom, after: 5_000)))
+        XCTAssertNil(LiveRules.phaseWord(session(forTime, after: 5_000)))
+
+        let work = LiveRules.phaseWord(session(tabata, after: 5_000))
+        XCTAssertEqual(work?.0, "WORK")
+        XCTAssertEqual(work?.1, Palette.work)
+        let nextRest = LiveRules.phaseWord(session(tabata, after: 16_000))
+        XCTAssertEqual(nextRest?.0, "NEXT · REST")
+        XCTAssertEqual(nextRest?.1, Palette.rest)
+        let rest = LiveRules.phaseWord(session(tabata, after: 22_000))
+        XCTAssertEqual(rest?.0, "REST")
+        XCTAssertEqual(rest?.1, Palette.rest)
+        let nextWork = LiveRules.phaseWord(session(tabata, after: 26_000))
+        XCTAssertEqual(nextWork?.0, "NEXT · WORK")
+        XCTAssertEqual(nextWork?.1, Palette.work)
+
+        let two = TimerType.tabata(workDuration: TimerDuration(seconds: 20), restDuration: TimerDuration(seconds: 10), rounds: RoundCount(value: 2))
+        let lastRest = LiveRules.phaseWord(session(two, after: 52_000))
+        XCTAssertEqual(lastRest?.0, "LAST REST")
+        XCTAssertEqual(lastRest?.1, Palette.rest)
+    }
+
+    func testPausedPhaseWordSaysWhichTabataPhaseResumes() {
+        var plain = session(emom, after: 5_000)
+        _ = plain.pause()
+        XCTAssertEqual(LiveRules.phaseWord(plain)?.0, "PAUSED")
+        XCTAssertEqual(LiveRules.phaseWord(plain)?.1, Palette.paused)
+
+        var inWork = session(tabata, after: 5_000)
+        _ = inWork.pause()
+        XCTAssertEqual(LiveRules.phaseWord(inWork)?.0, "PAUSED · WORK")
+        var inRest = session(tabata, after: 22_000)
+        _ = inRest.pause()
+        XCTAssertEqual(LiveRules.phaseWord(inRest)?.0, "PAUSED · REST")
+        XCTAssertEqual(LiveRules.effectivePhase(inRest), .resting)
+        XCTAssertEqual(LiveRules.clockText(inRest), "8", "the clock keeps the paused phase's countdown")
+    }
+
+    func testLiveColourIsWhiteInGetReadyThenTheWorkoutsOwn() {
+        XCTAssertEqual(Palette.live(session(emom, prep: 10, after: 1_000)), Palette.prepare)
+        XCTAssertEqual(Palette.live(session(forTime, after: 1_000)), Palette.mode("fortime"))
+        XCTAssertEqual(Palette.live(session(emom, after: 1_000)), Palette.mode("emom"))
+        XCTAssertEqual(Palette.live(session(amrap, after: 1_000)), Palette.mode("amrap"))
+        XCTAssertEqual(Palette.live(session(tabata, after: 5_000)), Palette.work)
+        XCTAssertEqual(Palette.live(session(tabata, after: 22_000)), Palette.rest)
+        var paused = session(tabata, after: 22_000)
+        _ = paused.pause()
+        XCTAssertEqual(Palette.live(paused), Palette.rest, "paused keeps its phase colour")
+        XCTAssertEqual(Palette.mode(tabata), Palette.work)
+        XCTAssertEqual(Palette.mode(emom), Palette.rest, "EMOM pink is the rest pink: one hue, two names")
+    }
+
+    func testPhaseSecondsIsTheLengthTheClockCountsThrough() {
+        XCTAssertEqual(LiveRules.phaseSeconds(session(amrap, prep: 10)), 10)
+        XCTAssertEqual(LiveRules.phaseSeconds(session(amrap)), 600)
+        XCTAssertEqual(LiveRules.phaseSeconds(session(forTime)), 1200)
+        XCTAssertEqual(LiveRules.phaseSeconds(session(emom)), 60)
+        XCTAssertEqual(LiveRules.phaseSeconds(session(tabata)), 20)
+        XCTAssertEqual(LiveRules.phaseSeconds(session(tabata, after: 22_000)), 10)
+        var paused = session(tabata, after: 22_000)
+        _ = paused.pause()
+        XCTAssertEqual(LiveRules.phaseSeconds(paused), 10)
+    }
+
+    func testElapsedSecondsForTheTimelineIsZeroInPrepThenFractional() {
+        XCTAssertEqual(LiveRules.elapsedSeconds(session(amrap, prep: 10, after: 4_000)), 0)
+        XCTAssertEqual(LiveRules.elapsedSeconds(session(amrap, after: 1_700)), 1.7, accuracy: 0.0001)
+        XCTAssertEqual(LiveRules.elapsedSeconds(session(amrap, prep: 10, after: 12_500)), 2.5, accuracy: 0.0001)
+    }
+
+    func testConfigLinePerMode() {
+        XCTAssertEqual(LiveRules.configLine(amrap), "AMRAP · 10:00")
+        XCTAssertEqual(LiveRules.configLine(forTime), "FOR TIME · CAP 20:00")
+        XCTAssertEqual(LiveRules.configLine(emom), "EMOM · 10 × 1:00")
+        XCTAssertEqual(LiveRules.configLine(tabata), "TABATA · 8 × 20s / 10s")
+        let long = TimerType.tabata(workDuration: TimerDuration(seconds: 20), restDuration: TimerDuration(seconds: 90), rounds: RoundCount(value: 3))
+        XCTAssertEqual(LiveRules.configLine(long), "TABATA · 3 × 20s / 1:30")
+    }
+}
+
+// MARK: - 2.0.0 view-model rules
+
+final class TimerViewModelMoreRulesTests: XCTestCase {
+    private let hintKey = "watch_hint_amrap_counted"
+
+    private func amrap(prep: Int = 0, seconds: Int = 600) -> Workout {
+        Workout(id: UUID(), name: "t", timerType: .amrap(duration: TimerDuration(seconds: seconds)),
+                prepCountdown: TimerDuration(seconds: prep), createdAt: Date())
+    }
+
+    func testSkipPrepStartsTheClockAtZeroAndArmsTheTapCooldown() {
+        let vm = TimerViewModel()
+        vm.start(workout: amrap(prep: 10))
+        vm.debugAdvance(seconds: 2)
+        XCTAssertEqual(vm.phase, .preparing)
+        vm.skipPrep()
+        XCTAssertEqual(vm.phase, .running)
+        XCTAssertEqual(vm.session?.elapsed.seconds, 0)
+        vm.countRound()
+        XCTAssertEqual(vm.session?.countedRounds, 0, "a tap that skipped the countdown never counts")
+        vm.skipPrep()
+        XCTAssertEqual(vm.phase, .running, "no-op outside get ready")
+        vm.reset()
+    }
+
+    func testCancelPrepOnlyLeavesFromGetReady() {
+        let vm = TimerViewModel()
+        vm.start(workout: amrap(prep: 10))
+        vm.cancelPrep()
+        XCTAssertEqual(vm.phase, .ready)
+        XCTAssertNil(vm.session)
+
+        vm.start(workout: amrap())
+        vm.debugAdvance(seconds: 3)
+        vm.cancelPrep()
+        XCTAssertEqual(vm.phase, .running, "a running workout is never cancelled silently")
+        vm.reset()
+    }
+
+    func testRestartOnlyFromTheEndScreenAndResetForgetsTheWorkout() {
+        let vm = TimerViewModel()
+        vm.start(workout: amrap(seconds: 5))
+        vm.debugAdvance(seconds: 2)
+        vm.restart()
+        XCTAssertEqual(vm.session?.elapsed.seconds, 2, "restart while running is a no-op")
+        vm.debugAdvance(seconds: 5)
+        XCTAssertEqual(vm.phase, .completed)
+        vm.restart()
+        XCTAssertEqual(vm.phase, .running)
+        XCTAssertEqual(vm.session?.elapsed.seconds, 0)
+        XCTAssertFalse(vm.endedEarly)
+        vm.reset()
+        XCTAssertEqual(vm.phase, .ready)
+        vm.restart()
+        XCTAssertEqual(vm.phase, .ready, "nothing to restart after a reset")
+    }
+
+    func testStopAndFinishAfterTheEndAreNoOps() {
+        let vm = TimerViewModel()
+        vm.start(workout: amrap(seconds: 5))
+        vm.debugAdvance(seconds: 6)
+        XCTAssertEqual(vm.phase, .completed)
+        XCTAssertFalse(vm.endedEarly)
+        vm.stop()
+        XCTAssertFalse(vm.endedEarly, "Finished stands once the clock ran out")
+        vm.finish()
+        XCTAssertEqual(vm.phase, .completed)
+        vm.pause()
+        XCTAssertEqual(vm.phase, .completed)
+        vm.reset()
+    }
+
+    func testAdjustRoundsOnlyOnTheEndScreenAndNeverBelowZero() {
+        let vm = TimerViewModel()
+        vm.start(workout: amrap())
+        vm.debugAdvance(seconds: 2)
+        vm.adjustRounds(by: 3)
+        XCTAssertEqual(vm.session?.countedRounds, 0, "not while running")
+        vm.stop()
+        vm.adjustRounds(by: 3)
+        XCTAssertEqual(vm.session?.countedRounds, 3)
+        vm.adjustRounds(by: -5)
+        XCTAssertEqual(vm.session?.countedRounds, 0)
+        vm.reset()
+    }
+
+    func testCountingARoundRemembersTheHintForEver() {
+        let before = UserDefaults.standard.object(forKey: hintKey)
+        UserDefaults.standard.removeObject(forKey: hintKey)
+        defer { UserDefaults.standard.set(before, forKey: hintKey) }
+
+        let vm = TimerViewModel()
+        XCTAssertFalse(vm.hasCountedRound)
+        vm.start(workout: amrap())
+        Thread.sleep(forTimeInterval: 0.75)
+        vm.countRound()
+        XCTAssertEqual(vm.session?.countedRounds, 1)
+        XCTAssertTrue(vm.hasCountedRound)
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: hintKey))
+        XCTAssertTrue(TimerViewModel().hasCountedRound, "read back on the next launch")
+        vm.reset()
+    }
+
+    func testPauseAndResumeKeepATabataInItsPhase() {
+        let vm = TimerViewModel()
+        vm.start(workout: Workout(id: UUID(), name: "t", timerType: .standardTabata, prepCountdown: .zero, createdAt: Date()))
+        vm.debugAdvance(seconds: 22)
+        XCTAssertEqual(vm.phase, .resting)
+        vm.pause()
+        XCTAssertEqual(vm.phase, .paused)
+        XCTAssertEqual(vm.session?.stateBeforePause, .resting)
+        vm.resume()
+        XCTAssertEqual(vm.phase, .resting)
+        XCTAssertEqual(vm.session?.timeRemaining.seconds, 8)
+        vm.reset()
+    }
+
+    func testTimeCapOnlyWhenTheClockRanOutOnAForTime() {
+        let vm = TimerViewModel()
+        let cap = Workout(id: UUID(), name: "t", timerType: .forTime(timeCap: TimerDuration(seconds: 30)), prepCountdown: .zero, createdAt: Date())
+        vm.start(workout: cap)
+        vm.debugAdvance(seconds: 10)
+        vm.stop()
+        XCTAssertFalse(vm.endedAtTimeCap, "stopped early, not capped")
+        vm.reset()
+        vm.start(workout: amrap(seconds: 5))
+        vm.debugAdvance(seconds: 6)
+        XCTAssertFalse(vm.endedAtTimeCap, "an AMRAP running out is a finish")
+        vm.reset()
+    }
+}
+
+// MARK: - Setup memory, recents and the voice settings store
+
+final class SetupMemoryMoreTests: XCTestCase {
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: "SetupMemoryMoreTests")
+        defaults.removePersistentDomain(forName: "SetupMemoryMoreTests")
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: "SetupMemoryMoreTests")
+        super.tearDown()
+    }
+
+    func testSummariesOfAFreshInstall() {
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.summary("amrap"), "10:00")
+        XCTAssertEqual(memory.summary("fortime"), "CAP 20:00 · UP")
+        XCTAssertEqual(memory.summary("emom"), "10 × 1:00")
+        XCTAssertEqual(memory.summary("tabata"), "8 × 20s / 10s")
+    }
+
+    func testTypeOfEachModeIsWhatWasSaved() {
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.type("amrap"), .amrap(duration: TimerDuration(seconds: 600)))
+        XCTAssertEqual(memory.type("fortime"), .forTime(timeCap: TimerDuration(seconds: 1200), countUp: true))
+        XCTAssertEqual(memory.type("emom"), .emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 10)))
+        XCTAssertEqual(memory.type("tabata"), .standardTabata)
+        let saved = TimerType.forTime(timeCap: TimerDuration(seconds: 300), countUp: false)
+        memory.save(saved)
+        XCTAssertEqual(memory.type("fortime"), saved)
+        XCTAssertEqual(memory.summary("fortime"), "CAP 5:00 · DOWN")
+    }
+
+    func testCorruptDataUnderAKeyReadsAsTheDefaultAndIsLeftAlone() {
+        defaults.set(Data("not json".utf8), forKey: "watch_setup_emom")
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.emom.interval.seconds, 60)
+        XCTAssertEqual(memory.emom.rounds, 10)
+        XCTAssertEqual(defaults.data(forKey: "watch_setup_emom"), Data("not json".utf8))
+    }
+
+    func testAModeNeverStartedSinceOneThreeFallsBackToItsNewestRecent() {
+        let recents = RecentWorkoutsStore(defaults: defaults)
+        recents.save(Workout(id: UUID(), name: "old", timerType: .amrap(duration: TimerDuration(seconds: 480)),
+                             prepCountdown: .zero, createdAt: Date()))
+        recents.save(Workout(id: UUID(), name: "older emom", timerType: .emom(intervalDuration: TimerDuration(seconds: 45), rounds: RoundCount(value: 8)),
+                             prepCountdown: .zero, createdAt: Date()))
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.amrap.seconds, 480)
+        XCTAssertEqual(memory.emom.interval.seconds, 45)
+        XCTAssertEqual(memory.emom.rounds, 8)
+        XCTAssertEqual(memory.tabata.rounds, 8, "no recent Tabata: the default")
+        // A save wins over the recents from then on.
+        memory.save(.amrap(duration: TimerDuration(seconds: 900)))
+        XCTAssertEqual(SetupMemory(defaults: defaults).amrap.seconds, 900)
+    }
+}
+
+final class RecentWorkoutsStoreTests: XCTestCase {
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: "RecentWorkoutsStoreTests")
+        defaults.removePersistentDomain(forName: "RecentWorkoutsStoreTests")
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: "RecentWorkoutsStoreTests")
+        super.tearDown()
+    }
+
+    private func workout(_ type: TimerType) -> Workout {
+        Workout(id: UUID(), name: type.displayLabel, timerType: type, prepCountdown: .zero, createdAt: Date())
+    }
+
+    func testEmptyUntilSaved() {
+        XCTAssertEqual(RecentWorkoutsStore(defaults: defaults).load(), [])
+    }
+
+    func testNewestFirstSameSetupDedupedAtMostThree() {
+        let store = RecentWorkoutsStore(defaults: defaults)
+        let a = workout(.amrap(duration: TimerDuration(seconds: 600)))
+        let b = workout(.emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 10)))
+        let c = workout(.standardTabata)
+        let d = workout(.forTime(timeCap: TimerDuration(seconds: 1200)))
+        store.save(a)
+        store.save(b)
+        XCTAssertEqual(store.load().map(\.timerType), [b.timerType, a.timerType])
+        store.save(workout(a.timerType))
+        XCTAssertEqual(store.load().map(\.timerType), [a.timerType, b.timerType], "the same setup moves to the front once")
+        store.save(c)
+        store.save(d)
+        XCTAssertEqual(store.load().map(\.timerType), [d.timerType, c.timerType, a.timerType])
+    }
+
+    func testCorruptDataReadsAsEmpty() {
+        defaults.set(Data("{oops".utf8), forKey: "recent_workouts")
+        XCTAssertEqual(RecentWorkoutsStore(defaults: defaults).load(), [])
+    }
+}
+
+final class WatchAudioSettingsTests: XCTestCase {
+    private let keys = ["watch_voice_pack", "watch_voice_random", "watch_voice_muted", "watch_voice_beeps"]
+    private var saved: [String: Any?] = [:]
+
+    override func setUp() {
+        super.setUp()
+        for key in keys {
+            saved[key] = UserDefaults.standard.object(forKey: key)
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
+
+    override func tearDown() {
+        for key in keys {
+            if let value = saved[key] ?? nil {
+                UserDefaults.standard.set(value, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        super.tearDown()
+    }
+
+    func testAFreshInstallIsMajorWithVoiceOn() {
+        let audio = WatchAudioService()
+        XCTAssertEqual(audio.voicePack, .major)
+        XCTAssertFalse(audio.randomizePerCue)
+        XCTAssertFalse(audio.muted)
+        XCTAssertFalse(audio.beepsOnly)
+        XCTAssertEqual(audio.volume, 1)
+    }
+
+    func testEveryChoicePersistsAcrossLaunches() {
+        let audio = WatchAudioService()
+        audio.setVoicePack(.holly)
+        audio.setRandomizePerCue(true)
+        audio.setMuted(true)
+        let again = WatchAudioService()
+        XCTAssertEqual(again.voicePack, .holly)
+        XCTAssertTrue(again.randomizePerCue)
+        XCTAssertTrue(again.muted)
+        again.setMuted(false)
+        again.setRandomizePerCue(false)
+        XCTAssertFalse(WatchAudioService().muted)
+        XCTAssertFalse(WatchAudioService().randomizePerCue)
+    }
+
+    func testAnUnknownStoredPackReadsAsMajorAndIsLeftAlone() {
+        UserDefaults.standard.set("siri", forKey: "watch_voice_pack")
+        XCTAssertEqual(WatchAudioService().voicePack, .major)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "watch_voice_pack"), "siri")
+    }
+
+    func testVolumeClampsToTheUnitRange() {
+        let audio = WatchAudioService()
+        audio.setVolume(3)
+        XCTAssertEqual(audio.volume, 1)
+        audio.setVolume(-2)
+        XCTAssertEqual(audio.volume, 0)
+        audio.setVolume(0.4)
+        XCTAssertEqual(audio.volume, 0.4, accuracy: 0.0001)
+    }
+}
+
+// MARK: - Palette, geometry and the domain's small types
+
+final class PaletteAndGeometryTests: XCTestCase {
+    func testPaletteHasOneMeaningPerColour() {
+        XCTAssertEqual(Palette.work, Color(hex: 0x00FF88))
+        XCTAssertEqual(Palette.primary, Palette.work, "START is work green")
+        XCTAssertEqual(Palette.rest, Color(hex: 0xFF0088))
+        XCTAssertEqual(Palette.prepare, .white)
+        XCTAssertEqual(Palette.brand, Palette.mode("fortime"))
+        XCTAssertEqual(Palette.track, Color(hex: 0x24253A))
+        XCTAssertEqual(Palette.soft, Color(hex: 0x16172A))
+        XCTAssertEqual(Palette.stopInk, Color(hex: 0x1A0E14))
+        XCTAssertEqual(Palette.error, Color(hex: 0xFF4444))
+        XCTAssertEqual(Palette.wheelDim, Color(hex: 0x3A3D58))
+        XCTAssertEqual(Palette.mode("yoga"), Palette.mode("tabata"), "unknown codes fall back to green")
+    }
+
+    func testBottomCapsulesAreInsetNotEdgeSlabs() {
+        XCTAssertEqual(CapsuleGeometry.height, 44)
+        XCTAssertEqual(CapsuleGeometry.startHeight, 48)
+        XCTAssertEqual(CapsuleGeometry.sideMargin, 9)
+        XCTAssertEqual(CapsuleGeometry.gap, 6)
+        XCTAssertGreaterThanOrEqual(CapsuleGeometry.bottomMargin, 10)
+        XCTAssertLessThanOrEqual(CapsuleGeometry.bottomMargin, 12)
+    }
+
+    func testBigClockWidthEstimateTreatsColonAndSlashAsNarrow() {
+        XCTAssertEqual(BigClock.ems("10:00"), 4 * 0.64 + 0.34, accuracy: 0.0001)
+        XCTAssertEqual(BigClock.ems("8/8"), 2 * 0.64 + 0.42, accuracy: 0.0001)
+        XCTAssertEqual(BigClock.ems("55"), 1.28, accuracy: 0.0001)
+        XCTAssertLessThan(BigClock.ems("9:45"), BigClock.ems("12:30"))
+    }
+
+    func testGlyphMetricsKnowTheSlashDescendsAndDigitsDoNot() {
+        let slash = GlyphMetrics.descent(of: "2/10", size: 28, weight: .heavy)
+        let digits = GlyphMetrics.descent(of: "2410", size: 28, weight: .heavy)
+        XCTAssertGreaterThan(slash, 1)
+        XCTAssertLessThan(digits, 1)
+        XCTAssertGreaterThan(GlyphMetrics.baselineInset(size: 11, weight: .bold), 0)
+        XCTAssertGreaterThan(GlyphMetrics.glyphInset(text: "ROUNDS", size: 11, weight: .bold), 0)
+    }
+
+    func testScoreSlotInsetIsSmallerWhenTheRoundSlashDescends() {
+        let rounds = ScoreSlot.glyphInset(for: Workout.defaultEmom())
+        let plain = ScoreSlot.glyphInset(for: Workout.defaultAmrap())
+        XCTAssertLessThan(rounds, plain)
+        XCTAssertEqual(ScoreSlot.glyphInset(for: Workout.defaultTabata()), rounds)
+        XCTAssertEqual(ScoreSlot.glyphInset(for: Workout.defaultForTime()), plain)
+        XCTAssertEqual(ScoreSlot.height, 30)
+    }
+
+    func testTimelineZoneAndSetupValueScaleWithTheScreen() {
+        XCTAssertGreaterThan(TimelineZone<Color>.standardHeight, 0)
+        XCTAssertEqual(TimelineZone<Color>.standardHeight, (WKInterfaceDevice.current().screenBounds.height * 0.1).rounded())
+        let scaled = SetupValue.scaled(52)
+        XCTAssertGreaterThanOrEqual(scaled, 31)
+        XCTAssertLessThanOrEqual(scaled, 52)
+        XCTAssertEqual(RoundsWheel.heroReference, "10:00")
+    }
+}
+
+final class DomainTypesTests: XCTestCase {
+    func testTimerTypeLabelsCodesAndTotals() {
+        XCTAssertEqual(TimerType.standardTabata.displayLabel, "TABATA")
+        XCTAssertEqual(TimerType.standardTabata.typeCode, "tabata")
+        XCTAssertEqual(TimerType.standardTabata.estimatedDuration.seconds, 240)
+        let emom = TimerType.emom(intervalDuration: TimerDuration(seconds: 90), rounds: RoundCount(value: 4))
+        XCTAssertEqual(emom.displayLabel, "EMOM")
+        XCTAssertEqual(emom.typeCode, "emom")
+        XCTAssertEqual(emom.estimatedDuration.seconds, 360)
+        let forTime = TimerType.forTime(timeCap: TimerDuration(seconds: 1200))
+        XCTAssertEqual(forTime.displayLabel, "FOR TIME")
+        XCTAssertEqual(forTime.typeCode, "fortime")
+        XCTAssertEqual(forTime.estimatedDuration.seconds, 1200)
+        let amrap = TimerType.amrap(duration: TimerDuration(seconds: 600))
+        XCTAssertEqual(amrap.displayLabel, "AMRAP")
+        XCTAssertEqual(amrap.typeCode, "amrap")
+        XCTAssertEqual(amrap.estimatedDuration.seconds, 600)
+    }
+
+    func testWorkoutTotalsRestAndRounds() {
+        let tabata = Workout.defaultTabata()
+        XCTAssertEqual(tabata.totalDuration.seconds, 250)
+        XCTAssertTrue(tabata.hasRestPeriods)
+        XCTAssertTrue(tabata.isIntervalBased)
+        XCTAssertEqual(tabata.roundCount, 8)
+        XCTAssertEqual(tabata.timerTypeLabel, "TABATA")
+        let amrap = Workout.defaultAmrap()
+        XCTAssertEqual(amrap.totalDuration.seconds, 610)
+        XCTAssertFalse(amrap.hasRestPeriods)
+        XCTAssertNil(amrap.roundCount)
+        XCTAssertEqual(Workout.defaultEmom().roundCount, 10)
+        XCTAssertNil(Workout.defaultForTime().roundCount)
+        XCTAssertEqual(WorkoutFactory.create(timerType: .standardTabata).prepCountdown.seconds, 10)
+        XCTAssertEqual(WorkoutFactory.create(timerType: .standardTabata, prepCountdown: .zero).name, "TABATA")
+    }
+
+    func testTimerStateFlagsAndLabels() {
+        XCTAssertTrue(TimerState.ready.canStart)
+        XCTAssertFalse(TimerState.running.canStart)
+        for active in [TimerState.preparing, .running, .resting] {
+            XCTAssertTrue(active.isActive)
+            XCTAssertTrue(active.canPause)
+            XCTAssertFalse(active.canResume)
+        }
+        for idle in [TimerState.ready, .paused, .completed] {
+            XCTAssertFalse(idle.isActive)
+            XCTAssertFalse(idle.canPause)
+        }
+        XCTAssertTrue(TimerState.paused.canResume)
+        XCTAssertTrue(TimerState.completed.isFinished)
+        XCTAssertEqual(TimerState.preparing.displayLabel, "Get Ready")
+        XCTAssertEqual(TimerState.completed.displayLabel, "Complete")
+    }
+
+    func testTimerErrorMessages() {
+        XCTAssertEqual(TimerError.invalidStateTransition(from: .ready, to: .paused).message, "Cannot transition from Ready to Paused")
+        XCTAssertEqual(TimerError.timerNotActive.message, "Timer is not active")
+        XCTAssertEqual(TimerError.alreadyCompleted.message, "Workout is already completed")
     }
 }

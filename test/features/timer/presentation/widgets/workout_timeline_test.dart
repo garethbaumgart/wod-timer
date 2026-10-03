@@ -8,6 +8,7 @@ import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
 
 void main() {
+  _timelinePartsAndShapes();
   group('WorkoutShape', () {
     test('For Time and AMRAP are one bar in their colour', () {
       final forTime = WorkoutShape.ofSetup(const ForTimeSetup());
@@ -126,6 +127,41 @@ void main() {
         );
         expect(tester.takeException(), isNull, reason: '$elapsed');
       }
+    });
+  });
+}
+
+void _timelinePartsAndShapes() {
+  group('TimelinePart and WorkoutShape value semantics', () {
+    test('parts compare by seconds and rest', () {
+      expect(const TimelinePart(20), const TimelinePart(20));
+      expect(const TimelinePart(20).hashCode, const TimelinePart(20).hashCode);
+      expect(const TimelinePart(20), isNot(const TimelinePart(20, rest: true)));
+      expect(const TimelinePart(20), isNot(const TimelinePart(25)));
+    });
+
+    test('shapes compare part by part, with their accent', () {
+      final a = WorkoutShape.emom(intervalSeconds: 60, rounds: 3);
+      final b = WorkoutShape.emom(intervalSeconds: 60, rounds: 3);
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+      expect(a, isNot(WorkoutShape.emom(intervalSeconds: 60, rounds: 4)));
+      expect(a, isNot(WorkoutShape.emom(intervalSeconds: 90, rounds: 3)));
+      expect(
+        WorkoutShape.forTime(600),
+        isNot(WorkoutShape.amrap(600)),
+        reason: 'same bar, different colour',
+      );
+    });
+
+    test('ofSetup refuses anything that is not a setup', () {
+      expect(() => WorkoutShape.ofSetup('emom'), throwsArgumentError);
+    });
+
+    test('the corner radius is 3 on a Home card and 4 on the live bar', () {
+      expect(WorkoutTimeline.radiusFor(12), 3);
+      expect(WorkoutTimeline.radiusFor(8), 3);
+      expect(WorkoutTimeline.radiusFor(14), 4);
     });
   });
 }
