@@ -635,14 +635,16 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Radial wash behind the timer carries the phase at a glance.
+        // Radial wash behind the timer carries the phase at a glance. It
+        // fades out by the slot's nearest edge (0.5 of the shortest side,
+        // the prototype's closest-side gradient) so the slot has no edges.
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                radius: 0.9,
+                radius: 0.5,
                 colors: [
-                  wash.withValues(alpha: isPaused ? 0.08 : 0.18),
+                  wash.withValues(alpha: isPaused ? 0.08 : 0.22),
                   Colors.transparent,
                 ],
               ),
@@ -1053,16 +1055,25 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     );
     final lastText = detail ?? label;
     final lastStyle = detail == null ? unit : detailStyle;
+    // The hero's line box is trimmed to its cap height, so a slash or a
+    // round digit paints past its bottom: keep the label clear of it.
+    final overshoot = math.max(
+      0.0,
+      GlyphInk.glyphBottom(value, style) - GlyphInk.boxHeight(value, style),
+    );
     return (
       widget: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: 6,
         children: [
-          Text(
-            value,
-            maxLines: 1,
-            textScaler: TextScaler.noScaling,
-            style: style,
+          Padding(
+            padding: EdgeInsets.only(bottom: overshoot),
+            child: Text(
+              value,
+              maxLines: 1,
+              textScaler: TextScaler.noScaling,
+              style: style,
+            ),
           ),
           Text(label, style: unit),
           if (detail != null) Text(detail, style: detailStyle),

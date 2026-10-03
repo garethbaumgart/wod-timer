@@ -16,6 +16,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/stopwatch_bezel.dart';
@@ -351,11 +353,13 @@ void main() {
       isTrue,
     );
     await hold(tester, 'active_tabata_complete');
-    await tester.tap(find.text('DONE'));
-    await tester.pumpAndSettle();
-    // Put Tabata back on classic for the Home card.
-    await spin(tester, 'ROUNDS', 6);
-    await goBack(tester);
+    // Put Tabata back on classic for the later captures: setup only
+    // remembers on START, so write the pref directly.
+    await (await SharedPreferences.getInstance()).setInt(
+      SetupMemory.tabataRoundsKey,
+      8,
+    );
+    await doneToHome(tester);
 
     // ---------- Landscape: home, setups, active, paused, end ---------
     await tester.tap(find.byIcon(Icons.settings_outlined));
