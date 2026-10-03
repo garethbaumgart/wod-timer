@@ -897,6 +897,30 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     return LayoutBuilder(
       builder: (context, constraints) {
         final configStyle = GlyphInk.resolve(context, _unitStyle(14));
+        final wordStyle = GlyphInk.resolve(
+          context,
+          AppTypography.heroTitle.copyWith(
+            color: Colors.white,
+            fontSize: 30,
+            letterSpacing: -0.3,
+          ),
+        );
+        final topPad = landscape ? 16.0 : 40.0;
+        // What the hero block may take without squeezing the timeline zone
+        // (the bar plus a breath either side; the spacer above the block
+        // takes an equal share of what is left) or the slab.
+        final blockHeight =
+            constraints.maxHeight -
+            topPad -
+            GlyphInk.boxHeight(word, wordStyle, textScaler: textScaler) -
+            4 -
+            GlyphInk.boxHeight(
+              configText,
+              configStyle,
+              textScaler: textScaler,
+            ) -
+            BottomSlab.heightOf(context) -
+            2 * (_timelineHeight + 24);
         final hero = state.endedAtTimeCap
             ? null
             : _endHero(
@@ -904,21 +928,15 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                 state,
                 maxWidth: (constraints.maxWidth - 32) * 0.86,
                 maxHeight: constraints.maxHeight * 0.22,
+                maxBlockHeight: blockHeight,
               );
         final last = hero == null
             ? (text: configText, style: configStyle)
             : (text: hero.lastText, style: hero.lastStyle);
         return Column(
           children: [
-            SizedBox(height: landscape ? 16 : 40),
-            Text(
-              word,
-              style: AppTypography.heroTitle.copyWith(
-                color: Colors.white,
-                fontSize: 30,
-                letterSpacing: -0.3,
-              ),
-            ),
+            SizedBox(height: topPad),
+            Text(word, style: wordStyle),
             const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -982,8 +1000,10 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     TimerCompleted state, {
     required double maxWidth,
     required double maxHeight,
+    required double maxBlockHeight,
   }) {
     final session = state.session;
+    final textScaler = MediaQuery.textScalerOf(context);
     final elapsed = _clock(session.elapsed.seconds);
     final unit = GlyphInk.resolve(context, _unitStyle(16));
     final detailStyle = GlyphInk.resolve(
@@ -1008,7 +1028,22 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         ),
       );
       const hintText = 'Scroll to fix the count';
-      final size = math.min(maxWidth / 0.86 * 0.5, maxHeight / 0.22 * 0.15);
+      // The selected count is sized by the hero rule, like "2/10" on an
+      // EMOM end screen (a four-glyph round fraction is the reference so a
+      // one to three digit count reads just as big), then capped only by
+      // what the wheel's three rows can take above the timeline zone.
+      final heroSize = _ClockSpec.fontSizeFor(
+        reference: '0/00',
+        style: GlyphInk.resolve(context, _heroStyle(100)),
+        maxWidth: maxWidth,
+        slotHeight: maxHeight,
+      );
+      final labels =
+          GlyphInk.boxHeight('ROUNDS', unit, textScaler: textScaler) +
+          GlyphInk.boxHeight(hintText, hintStyle, textScaler: textScaler) +
+          12;
+      final fits = (maxBlockHeight - labels) / RoundsWheel.heightFor(1);
+      final size = math.max(24.0, math.min(heroSize, fits));
       final rounds = session.currentRound - 1;
       return (
         widget: Column(

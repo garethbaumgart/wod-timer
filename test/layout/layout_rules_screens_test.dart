@@ -19,6 +19,8 @@ import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/setup/live_hints.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
+import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
 
@@ -461,6 +463,57 @@ void main() {
           tester,
           aboveTop: underWord(tester, 'Finished'),
           reason: 'AMRAP end ${device.name}',
+        );
+        await tester.pump(const Duration(seconds: 1));
+      });
+
+      // The selected count reads as big as an EMOM "2/10": same hero rule.
+      testWidgets('AMRAP hero is as big as the EMOM hero (${device.name})', (
+        tester,
+      ) async {
+        await live.pump(
+          tester,
+          workout: emomWorkout(),
+          type: TimerTypes.emom,
+          device: device,
+          elapsed: const Duration(seconds: 65),
+        );
+        live.notifier.stop();
+        await tester.pump();
+        final emom = tester.widget<Text>(find.text('2/10')).style!;
+        final emomGlyphs =
+            emom.fontSize! * GlyphInk.capHeightEm(emom.fontWeight!);
+
+        await live.pump(
+          tester,
+          workout: amrapWorkout(seconds: 60),
+          type: TimerTypes.amrap,
+          device: device,
+          elapsed: const Duration(seconds: 5),
+        );
+        live.later();
+        live.notifier.countRound();
+        live.engine.emit(const Duration(seconds: 60));
+        await tester.pump();
+        final count = tester.widget<Text>(find.text('1')).style!;
+        final countGlyphs =
+            count.fontSize! * GlyphInk.capHeightEm(count.fontWeight!);
+        // A phone held sideways has no room for three rows at hero size:
+        // there the wheel shrinks to fit and the layout checks still hold.
+        if (device.size.height > device.size.width) {
+          expect(
+            countGlyphs,
+            closeTo(emomGlyphs, emomGlyphs * 0.1),
+            reason: 'AMRAP ${count.fontSize} vs EMOM ${emom.fontSize}',
+          );
+        }
+        expect(tester.takeException(), isNull);
+        final wheel = tester.getRect(find.byType(RoundsWheel));
+        final hint = tester.getRect(find.text('Scroll to fix the count'));
+        expect(hint.top, greaterThanOrEqualTo(wheel.bottom));
+        expect(
+          tester.getRect(find.byType(WorkoutTimeline)).top,
+          greaterThan(hint.bottom),
         );
         await tester.pump(const Duration(seconds: 1));
       });
