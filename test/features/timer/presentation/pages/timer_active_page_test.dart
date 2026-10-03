@@ -186,6 +186,7 @@ void main() {
     Duration elapsed = Duration.zero,
     Map<String, Object> prefs = const {},
     bool tablet = false,
+    double textScale = 1,
   }) async {
     SharedPreferences.setMockInitialValues(prefs);
     final sharedPrefs = await SharedPreferences.getInstance();
@@ -225,9 +226,15 @@ void main() {
         child: MaterialApp.router(
           routerConfig: router,
           // As in the app: tablets get the phone layout scaled up.
-          builder: tablet
-              ? (context, child) => TabletScale(child: child!)
-              : null,
+          builder: (context, child) {
+            final scaled = MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            );
+            return tablet ? TabletScale(child: scaled) : scaled;
+          },
         ),
       ),
     );
@@ -1060,6 +1067,34 @@ void main() {
 
       expect(find.text('SETUP emom'), findsOneWidget);
       expect(c.read(timerNotifierProvider), isA<TimerInitial>());
+    });
+
+    testWidgets('the AMRAP wheel fits a phone sideways and large text', (
+      tester,
+    ) async {
+      for (final (landscape, scale) in [(true, 1.0), (false, 1.6)]) {
+        phone(tester, landscape: landscape);
+        final c = await pumpPage(
+          tester,
+          workout: amrap(seconds: 60),
+          type: TimerTypes.amrap,
+          elapsed: const Duration(seconds: 5),
+          textScale: scale,
+        );
+        later();
+        notifierOf(c).countRound();
+        engine.emit(const Duration(seconds: 60));
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: 'landscape $landscape');
+        final wheel = tester.getRect(find.byType(RoundsWheel));
+        final hint = tester.getRect(find.text('Scroll to fix the count'));
+        final timeline = tester.getRect(find.byType(WorkoutTimeline));
+        final slab = tester.getRect(find.byType(BottomSlab));
+        expect(hint.top, greaterThanOrEqualTo(wheel.bottom - 0.01));
+        expect(timeline.top, greaterThan(hint.bottom));
+        expect(timeline.bottom, lessThan(slab.top));
+        await tester.pump(const Duration(seconds: 1));
+      }
     });
 
     testWidgets('portrait and landscape completion lay out cleanly', (
