@@ -101,6 +101,15 @@ sent 3 Oct. Proposals put to him, awaiting picks:
    total under START (suggested), B 168pt round button, C 132pt edge-to-edge
    slab. Today's is 62pt.
 
+**Picked 3 Oct:** stopwatch bezel for AMRAP and For Time (1 to 60 min,
+1 minute per 6 degrees), wheels side by side for EMOM (every 15s steps
+0:15 to 10:00, rounds 1 to 30) and Tabata (work and rest 5s steps 5s to 2:00,
+rounds 1 to 20), edge-to-edge START slab (132pt, total or direction under
+START). Watch keeps the Crown with the slab at the bottom.
+Review page: https://claude.ai/artifact/PXFnX8SMBKEqNbz8eo4hMh. It also
+proposes, pending his OK: For Time Up / Down switch under the bezel, the Home
+timeline under the EMOM and Tabata wheels, white setup headings.
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
