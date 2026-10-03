@@ -14,6 +14,15 @@ struct HomeView: View {
             let memory = SetupMemory()
             let _ = refresh
             List {
+                // Stacked wordmark as the list header: too tall for the
+                // title slot, so it scrolls away with the list.
+                Image("Wordmark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 50)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .listRowBackground(Color.clear)
+                    .accessibilityLabel("Wharf WOD")
                 modeRow("AMRAP", code: "amrap", summary: memory.summary("amrap")) {
                     AmrapSetupView(viewModel: viewModel)
                 }
@@ -37,15 +46,6 @@ struct HomeView: View {
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
                             .foregroundStyle(Palette.label)
                     }
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Image("Wordmark")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 19)
-                        .accessibilityLabel("Wharf WOD")
                 }
             }
             .navigationDestination(isPresented: $showingTimer) {
