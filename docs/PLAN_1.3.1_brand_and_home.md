@@ -114,6 +114,12 @@ timeline under the EMOM and Tabata wheels, white setup headings.
 green, REST pink, ROUNDS blue. Same on the watch. iPad: space between the
 Tabata timeline and START (about 30pt before scaling).
 
+**Rest is pink everywhere (3 Oct, Gareth):** work green #00FF88, rest pink
+#FF0088 on the Tabata timeline (Home, setup, live progress), the live REST
+phase (digits, glow, phase word, paused states) on phone, tablet and watch.
+Replaces rest blue #00AAFF (AppColors.rest, watch Palette.rest). This also
+overrides section 4's "rest in blue" for the Home timeline.
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
