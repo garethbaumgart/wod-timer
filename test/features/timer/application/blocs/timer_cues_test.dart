@@ -39,9 +39,10 @@ void main() {
         h.run(2, 6);
         expect(h.played, ['get ready'], reason: 'nothing until 3s left');
 
-        h.tick(7);
-        h.tick(8);
-        h.tick(9);
+        h
+          ..tick(7)
+          ..tick(8)
+          ..tick(9);
         expect(h.played, [
           'get ready',
           'countdown 3',
@@ -75,8 +76,9 @@ void main() {
       await h.notifier.start(amrapWorkout(seconds: 60, prep: 3));
       h.tick(0, 100);
       expect(h.played, ['get ready']);
-      h.tick(1);
-      h.tick(2);
+      h
+        ..tick(1)
+        ..tick(2);
       expect(h.played, ['get ready', 'countdown 2', 'countdown 1']);
     });
 
@@ -157,8 +159,9 @@ void main() {
     test('a finish the final-countdown clip never preceded celebrates at '
         'once (the app slept through the end)', () async {
       await h.notifier.start(amrapWorkout(seconds: 60));
-      h.tick(1);
-      h.tick(60);
+      h
+        ..tick(1)
+        ..tick(60);
       expect(h.state, isA<TimerCompleted>());
       expect(h.played, isNot(contains('final countdown')));
       await settle();
@@ -183,19 +186,23 @@ void main() {
       h.tick(90);
       expect(h.played.last, 'halfway');
 
-      h.run(91, 119);
-      h.tick(120);
+      h
+        ..run(91, 119)
+        ..tick(120);
       expect(h.state.sessionOrNull!.currentRound, 3);
       expect(h.played.last, 'last round');
 
-      h.run(121, 152);
-      h.tick(153);
+      h
+        ..run(121, 152)
+        ..tick(153);
       expect(h.played.last, 'almost there');
-      h.run(154, 169);
-      h.tick(170);
+      h
+        ..run(154, 169)
+        ..tick(170);
       expect(h.played.last, 'ten seconds');
-      h.run(171, 174);
-      h.tick(175);
+      h
+        ..run(171, 174)
+        ..tick(175);
       expect(h.played.last, 'final countdown');
       h.run(176, 179);
       expect(h.state, isA<TimerRunning>());
@@ -208,9 +215,10 @@ void main() {
       'a catch-up tick across several rounds cues once and lands right',
       () async {
         await h.notifier.start(emomWorkout(rounds: 5));
-        h.tick(1);
-        // The app was suspended for three minutes.
-        h.tick(181);
+        // One tick, then the app was suspended for three minutes.
+        h
+          ..tick(1)
+          ..tick(181);
         final session = h.state.sessionOrNull!;
         expect(session.currentRound, 4);
         expect(session.currentIntervalElapsed.seconds, 1);
@@ -237,27 +245,31 @@ void main() {
       expect(h.played.last, 'rest');
       expect(h.felt.last, 'warning');
 
-      h.run(21, 29);
-      h.tick(30);
+      h
+        ..run(21, 29)
+        ..tick(30);
       expect(h.state, isA<TimerRunning>());
       expect(h.state.sessionOrNull!.currentRound, 2);
       expect(h.played.last, 'last round');
       // Back to work thumps, and the new round thumps.
       expect(h.felt.sublist(h.felt.length - 2), ['heavy', 'heavy']);
 
-      h.run(31, 49);
-      h.tick(50);
+      h
+        ..run(31, 49)
+        ..tick(50);
       expect(h.state, isA<TimerResting>());
       expect(h.played.last, 'rest');
       h.tick(51);
       expect(h.played.last, 'almost there');
       h.tick(52);
       expect(h.played.last, 'ten seconds');
-      h.run(53, 54);
-      h.tick(55);
+      h
+        ..run(53, 54)
+        ..tick(55);
       expect(h.played.last, 'final countdown', reason: 'resting counts');
-      h.run(56, 59);
-      h.tick(60);
+      h
+        ..run(56, 59)
+        ..tick(60);
       expect(h.state, isA<TimerCompleted>());
       expect(h.state.sessionOrNull!.currentRound, 2);
       expect(h.felt.last, 'success');
@@ -267,9 +279,10 @@ void main() {
       'no Rest cue when the rest ends in the same tick as the round',
       () async {
         await h.notifier.start(tabataWorkout(rounds: 3));
-        h.tick(1);
         // Suspended through the end of round 1's rest, into round 2's work.
-        h.tick(32);
+        h
+          ..tick(1)
+          ..tick(32);
         expect(h.state, isA<TimerRunning>());
         expect(h.state.sessionOrNull!.currentRound, 2);
         expect(h.played, [go, 'next round']);
@@ -404,15 +417,17 @@ void main() {
       'only a running AMRAP counts; the end screen only corrects AMRAP',
       () async {
         await h.notifier.start(emomWorkout());
-        h.tick(5);
-        h.later();
-        h.notifier.countRound();
+        h
+          ..tick(5)
+          ..later()
+          ..notifier.countRound();
         expect(h.state.sessionOrNull!.currentRound, 1);
 
         await h.notifier.start(amrapWorkout(seconds: 60, prep: 10));
-        h.tick(1);
-        h.later();
-        h.notifier.countRound();
+        h
+          ..tick(1)
+          ..later()
+          ..notifier.countRound();
         expect(h.state.sessionOrNull!.currentRound, 1, reason: 'preparing');
 
         h.notifier.adjustRounds(1);
@@ -428,10 +443,11 @@ void main() {
 
     test('counting a round taps and ignores the cooldown window', () async {
       await h.notifier.start(amrapWorkout(seconds: 60));
-      h.tick(5);
-      h.later();
-      h.felt.clear();
-      h.notifier.countRound();
+      h
+        ..tick(5)
+        ..later()
+        ..felt.clear()
+        ..notifier.countRound();
       expect(h.felt, ['medium']);
       h.notifier.countRound();
       expect(h.state.sessionOrNull!.currentRound, 2);
