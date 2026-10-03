@@ -1,4 +1,7 @@
-# Wharf WOD 1.3.1: build spec
+# Wharf WOD 2.0.0 (built as 1.3.1): build spec
+
+Version: Gareth asked for a major bump (3 Oct 2026): ships as **2.0.0**
+(phone, tablet and watch MARKETING_VERSION). Branch names keep 1.3.1.
 
 Single source of truth for the 1.3.1 build. Every decision below was made
 by Gareth on 3 Oct 2026 (history in `docs/PLAN_1.3.1_brand_and_home.md`; where
