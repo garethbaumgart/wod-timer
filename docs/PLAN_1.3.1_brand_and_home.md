@@ -130,6 +130,10 @@ colour, current) or green (work).
 **Setup timeline position:** on EMOM and Tabata setup, the timeline sits
 halfway between the wheels and START (prototype updated).
 
+**Mode colours revised (3 Oct, Gareth):** AMRAP blue #00AAFF, Tabata green
+#00FF88 (bar), For Time orange, EMOM pink. Supersedes the four-colour note
+above. Tabata timeline stays work green / rest pink. Captures sent.
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
