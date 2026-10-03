@@ -80,6 +80,20 @@ struct SetupMemory {
         return (TimerDuration(seconds: 20), TimerDuration(seconds: 10), 8)
     }
 
+    /// Preview only: the workout's parts for the Home timeline.
+    func shape(_ code: String) -> [(Int, Bool)] {
+        switch code {
+        case "amrap": return [(amrap.seconds, false)]
+        case "fortime": return [(forTime.cap.seconds, false)]
+        case "emom":
+            let e = emom
+            return Array(repeating: (e.interval.seconds, false), count: e.rounds)
+        default:
+            let t = tabata
+            return (0 ..< t.rounds).flatMap { _ in [(t.work.seconds, false), (t.rest.seconds, true)] }
+        }
+    }
+
     /// One-line summary for Home: "10:00", "CAP 20:00 · UP", "10 × 1:00",
     /// "8 × 20s / 10s".
     func summary(_ code: String) -> String {

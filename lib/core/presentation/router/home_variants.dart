@@ -53,10 +53,12 @@ class _Spec {
     this.phase = false,
     this.total = false,
     this.compact = false,
+    this.thick = false,
+    this.totalTop = false,
   });
 
   final bool tile, tint, outline, hero, play, watermark, split, heroFirst;
-  final bool phase, total, compact;
+  final bool phase, total, compact, thick, totalTop;
 
   /// Timeline: none, bottom, bg, vertical, dots, ticks, leftbar.
   final String line;
@@ -75,6 +77,14 @@ const _specs = <String, _Spec>{
   'T8': _Spec(tile: true, tint: true, heroFirst: true, line: 'bottom'),
   'T9': _Spec(tile: true, line: 'bg'),
   'T10': _Spec(tile: true, tint: true, line: 'dots', hero: true),
+  'TA': _Spec(tile: true, line: 'bottom', total: true),
+  'TB': _Spec(tile: true, tint: true, line: 'bottom', total: true),
+  'TC': _Spec(tile: true, hero: true, line: 'bottom', total: true),
+  'TD': _Spec(tile: true, tint: true, hero: true, line: 'bottom', total: true),
+  'TE': _Spec(tile: true, outline: true, line: 'bottom', total: true),
+  'TF': _Spec(tile: true, line: 'bottom', total: true, thick: true),
+  'TG': _Spec(tile: true, heroFirst: true, line: 'bottom', total: true),
+  'TH': _Spec(tile: true, line: 'bottom', totalTop: true),
   'P0': _Spec(line: 'bottom'),
   'P1': _Spec(line: 'bg'),
   'P2': _Spec(line: 'leftbar'),
@@ -342,6 +352,13 @@ class _Tile extends StatelessWidget {
         ],
         if (s.split)
           const SizedBox.shrink()
+        else if (s.totalTop)
+          Row(
+            children: [
+              Expanded(child: _fit(Text(m.name, style: _name(nameSize)))),
+              Text('${setupClock(m.totalSeconds)} total', style: _muted(18)),
+            ],
+          )
         else
           _fit(Text(m.name, style: _name(nameSize))),
         const Spacer(),
@@ -358,7 +375,22 @@ class _Tile extends StatelessWidget {
         ),
         if (s.line == 'bottom' || s.line == 'dots') ...[
           const SizedBox(height: 16),
-          _timeline(m, s, height: s.line == 'dots' ? 12 : 12, dots: s.line == 'dots'),
+          _timeline(
+            m,
+            s,
+            height: s.thick ? 24 : 14,
+            dots: s.line == 'dots',
+          ),
+        ],
+        if (s.total) ...[
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${setupClock(m.totalSeconds)} total',
+              style: _muted(big ? 18 : 16),
+            ),
+          ),
         ],
       ],
     );
