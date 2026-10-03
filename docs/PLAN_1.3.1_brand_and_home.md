@@ -147,6 +147,18 @@ slab with AGAIN in the workout's colour; progress bar and end screens use the
 Home timeline (done blocks filled, current filling, rest dim); EMOM end shows
 rounds and time, Tabata finish shows 8/8 and 4:00 total.
 
+**Button rule (proposed 3 Oct, after Gareth flagged inconsistency):** every
+screen's main actions sit at the bottom in one place. Phone and iPad:
+edge-to-edge slab (START; PAUSE, with FINISH on For Time; HOLD TO STOP and
+RESUME when paused; AGAIN and DONE). Watch: the same buttons as full-width
+inset capsules with a small margin, because the rounded screen clips an edge
+slab (Gareth: edge buttons "look squashed on watch"). AGAIN and RESUME in the
+workout's colour.
+
+**AMRAP end:** no plus and minus beside the count (Gareth: odd). The count is
+a wheel you scroll to fix, like the setup wheels, with "Scroll to fix the
+count" under ROUNDS. Watch: the Crown fixes it.
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
