@@ -21,7 +21,7 @@ struct AmrapSetupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 0) {
             Spacer(minLength: 0)
             SetupValue(label: "DURATION", value: duration.clock)
                 .focusable()
@@ -33,11 +33,14 @@ struct AmrapSetupView: View {
                 showingTimer = viewModel.session?.state != .ready
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, CapsuleGeometry.sideMargin)
+        .padding(.bottom, CapsuleGeometry.bottomMargin)
         .navigationTitle("AMRAP")
         .onAppear(perform: load)
         .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
+        // Last, outside the Crown focus container, so it reaches the edge.
+        .ignoresSafeArea(edges: .bottom)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)
         }

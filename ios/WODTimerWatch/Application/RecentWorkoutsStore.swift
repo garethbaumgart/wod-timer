@@ -2,9 +2,13 @@ import Foundation
 
 /// Persists recent workouts to UserDefaults for quick re-launch.
 final class RecentWorkoutsStore {
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
     private let key = "recent_workouts"
     private let maxRecents = 3
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
 
     func load() -> [Workout] {
         guard let data = defaults.data(forKey: key),
@@ -40,8 +44,13 @@ final class RecentWorkoutsStore {
 /// 1.3.0 it falls back to that mode's newest recent workout, then the
 /// default. Nothing here deletes or rewrites the recents list.
 struct SetupMemory {
-    private let defaults = UserDefaults.standard
-    private let recents = RecentWorkoutsStore()
+    private let defaults: UserDefaults
+    private let recents: RecentWorkoutsStore
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        recents = RecentWorkoutsStore(defaults: defaults)
+    }
 
     private func key(_ code: String) -> String { "watch_setup_\(code)" }
 
@@ -78,6 +87,28 @@ struct SetupMemory {
     var tabata: (work: TimerDuration, rest: TimerDuration, rounds: Int) {
         if case let .tabata(w, r, n) = last("tabata") { return (w, r, n.value) }
         return (TimerDuration(seconds: 20), TimerDuration(seconds: 10), 8)
+    }
+
+    /// The remembered workout of a mode as a TimerType (the default until
+    /// one is saved).
+    func type(_ code: String) -> TimerType {
+        switch code {
+        case "amrap": return .amrap(duration: amrap)
+        case "fortime":
+            let f = forTime
+            return .forTime(timeCap: f.cap, countUp: f.countUp)
+        case "emom":
+            let e = emom
+            return .emom(intervalDuration: e.interval, rounds: RoundCount(value: e.rounds))
+        default:
+            let t = tabata
+            return .tabata(workDuration: t.work, restDuration: t.rest, rounds: RoundCount(value: t.rounds))
+        }
+    }
+
+    /// The remembered workout's blocks for the Home timeline (1.3.1).
+    func shape(_ code: String) -> [TimelinePart] {
+        type(code).timelineParts
     }
 
     /// One-line summary for Home: "10:00", "CAP 20:00 · UP", "10 × 1:00",

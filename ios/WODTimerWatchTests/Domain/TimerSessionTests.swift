@@ -542,3 +542,180 @@ final class BeepsOnlyTests: XCTestCase {
         XCTAssertFalse(WatchAudioService().beepsOnly)
     }
 }
+
+// MARK: - 1.3.1 Home, timeline and end-screen rules
+
+final class HomeAndTimelineTests: XCTestCase {
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: "HomeAndTimelineTests")
+        defaults.removePersistentDomain(forName: "HomeAndTimelineTests")
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: "HomeAndTimelineTests")
+        super.tearDown()
+    }
+
+    // Home order: For Time, EMOM, AMRAP, Tabata on every Home screen.
+
+    func testHomeOrderIsForTimeEmomAmrapTabata() {
+        XCTAssertEqual(HomeView.modeOrder, ["fortime", "emom", "amrap", "tabata"])
+        XCTAssertEqual(Palette.modeOrder, HomeView.modeOrder)
+    }
+
+    func testHomeTitlesAreTheModeNames() {
+        XCTAssertEqual(HomeView.modeOrder.map(HomeView.title), ["FOR TIME", "EMOM", "AMRAP", "TABATA"])
+    }
+
+    func testModeColoursHaveOneMeaningEach() {
+        XCTAssertEqual(Palette.modeHex("fortime"), 0xFF6B1A)
+        XCTAssertEqual(Palette.modeHex("emom"), 0xFF0088)
+        XCTAssertEqual(Palette.modeHex("amrap"), 0x00AAFF)
+        XCTAssertEqual(Palette.modeHex("tabata"), 0x00FF88)
+    }
+
+    // SetupMemory.shape per mode: the remembered workout as timeline blocks.
+
+    func testShapeForTimeIsOneBarOfTheCap() {
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.shape("fortime"), [TimelinePart(seconds: 1200, isRest: false)])
+        memory.save(.forTime(timeCap: TimerDuration(seconds: 300), countUp: false))
+        XCTAssertEqual(memory.shape("fortime"), [TimelinePart(seconds: 300, isRest: false)])
+    }
+
+    func testShapeAmrapIsOneBarOfTheDuration() {
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.shape("amrap"), [TimelinePart(seconds: 600, isRest: false)])
+        memory.save(.amrap(duration: TimerDuration(seconds: 720)))
+        XCTAssertEqual(memory.shape("amrap"), [TimelinePart(seconds: 720, isRest: false)])
+    }
+
+    func testShapeEmomIsOneBlockPerRound() {
+        let memory = SetupMemory(defaults: defaults)
+        XCTAssertEqual(memory.shape("emom"), Array(repeating: TimelinePart(seconds: 60, isRest: false), count: 10))
+        memory.save(.emom(intervalDuration: TimerDuration(seconds: 90), rounds: RoundCount(value: 3)))
+        XCTAssertEqual(memory.shape("emom"), Array(repeating: TimelinePart(seconds: 90, isRest: false), count: 3))
+    }
+
+    func testShapeTabataIsWorkRestPairs() {
+        let memory = SetupMemory(defaults: defaults)
+        let pair = [TimelinePart(seconds: 20, isRest: false), TimelinePart(seconds: 10, isRest: true)]
+        XCTAssertEqual(memory.shape("tabata"), (0 ..< 8).flatMap { _ in pair })
+        memory.save(.tabata(workDuration: TimerDuration(seconds: 40), restDuration: TimerDuration(seconds: 20),
+                            rounds: RoundCount(value: 2)))
+        let longPair = [TimelinePart(seconds: 40, isRest: false), TimelinePart(seconds: 20, isRest: true)]
+        XCTAssertEqual(memory.shape("tabata"), longPair + longPair)
+    }
+
+    func testShapeIgnoresAnotherModeSavedUnderTheKey() {
+        let memory = SetupMemory(defaults: defaults)
+        memory.save(.emom(intervalDuration: TimerDuration(seconds: 30), rounds: RoundCount(value: 4)))
+        XCTAssertEqual(memory.shape("amrap"), [TimelinePart(seconds: 600, isRest: false)])
+    }
+
+    // Timeline fill: finished parts 1, the current part partial, the rest 0.
+
+    func testFillFractionsEmom() {
+        let parts = Workout.defaultEmom().timerType.timelineParts
+        let fractions = TimerType.fillFractions(parts, elapsed: 125)
+        XCTAssertEqual(fractions.count, 10)
+        XCTAssertEqual(fractions[0], 1)
+        XCTAssertEqual(fractions[1], 1)
+        XCTAssertEqual(fractions[2], 5.0 / 60, accuracy: 0.0001)
+        XCTAssertEqual(fractions[3], 0)
+        XCTAssertEqual(fractions[9], 0)
+    }
+
+    func testFillFractionsTabataAndBounds() {
+        let parts = Workout.defaultTabata().timerType.timelineParts
+        XCTAssertEqual(TimerType.fillFractions(parts, elapsed: 0), Array(repeating: 0, count: 16))
+        let mid = TimerType.fillFractions(parts, elapsed: 33)
+        XCTAssertEqual(mid[0], 1)
+        XCTAssertEqual(mid[1], 1)
+        XCTAssertEqual(mid[2], 0.15, accuracy: 0.0001)
+        XCTAssertEqual(mid[3], 0)
+        XCTAssertEqual(TimerType.fillFractions(parts, elapsed: 240), Array(repeating: 1, count: 16))
+        XCTAssertEqual(TimerType.fillFractions(parts, elapsed: 999), Array(repeating: 1, count: 16))
+    }
+
+    // The clock's size comes from the workout's longest value, once.
+
+    func testReferenceClockPerMode() {
+        XCTAssertEqual(LiveRules.referenceClock(.forTime(timeCap: TimerDuration(seconds: 1200))), "20:00")
+        XCTAssertEqual(LiveRules.referenceClock(.amrap(duration: TimerDuration(seconds: 600))), "10:00")
+        XCTAssertEqual(LiveRules.referenceClock(.emom(intervalDuration: TimerDuration(seconds: 60), rounds: .one)), "60")
+        XCTAssertEqual(LiveRules.referenceClock(.emom(intervalDuration: TimerDuration(seconds: 90), rounds: .one)), "1:30")
+        XCTAssertEqual(LiveRules.referenceClock(.standardTabata), "20")
+        XCTAssertEqual(LiveRules.referenceClock(.tabata(workDuration: TimerDuration(seconds: 30),
+                                                        restDuration: TimerDuration(seconds: 90), rounds: .one)), "1:30")
+    }
+
+    // End screen: word, hero and the one label line.
+
+    func testEndSummaryEmomStoppedAndFinished() {
+        var session = TimerSession.fromWorkout(Workout.defaultEmom())
+        _ = session.start()
+        _ = session.tick(deltaMs: 10_000)
+        _ = session.tick(deltaMs: 125_000)
+        _ = session.complete()
+        let stopped = LiveRules.endSummary(session, endedEarly: true, endedAtTimeCap: false)
+        XCTAssertEqual(stopped, .init(word: "Stopped", hero: "3/10", label: "ROUNDS · 2:05"))
+
+        var full = TimerSession.fromWorkout(Workout.defaultEmom())
+        _ = full.start()
+        _ = full.tick(deltaMs: 10_000)
+        _ = full.tick(deltaMs: 600_000)
+        let finished = LiveRules.endSummary(full, endedEarly: false, endedAtTimeCap: false)
+        XCTAssertEqual(finished, .init(word: "Finished", hero: "10/10", label: "ROUNDS · 10:00"))
+    }
+
+    func testEndSummaryTabataFinishedPutsTheTotalOnTheLabel() {
+        var session = TimerSession.fromWorkout(Workout.defaultTabata())
+        _ = session.start()
+        _ = session.tick(deltaMs: 10_000)
+        _ = session.tick(deltaMs: 240_000)
+        XCTAssertEqual(session.state, .completed)
+        let summary = LiveRules.endSummary(session, endedEarly: false, endedAtTimeCap: false)
+        XCTAssertEqual(summary, .init(word: "Finished", hero: "8/8", label: "ROUNDS · 4:00"))
+    }
+
+    func testEndSummaryForTimeAndTimeCap() {
+        var session = TimerSession.fromWorkout(Workout.defaultForTime())
+        _ = session.start()
+        _ = session.tick(deltaMs: 10_000)
+        _ = session.tick(deltaMs: 754_000)
+        _ = session.complete()
+        XCTAssertEqual(LiveRules.endSummary(session, endedEarly: false, endedAtTimeCap: false),
+                       .init(word: "Finished", hero: "12:34", label: "TIME"))
+        XCTAssertEqual(LiveRules.endSummary(session, endedEarly: false, endedAtTimeCap: true),
+                       .init(word: "Time cap", hero: nil, label: ""))
+    }
+
+    func testEndSummaryAmrap() {
+        var session = TimerSession.fromWorkout(Workout.defaultAmrap())
+        _ = session.start()
+        _ = session.tick(deltaMs: 10_000)
+        _ = session.tick(deltaMs: 29_000)
+        session.countRound(); session.countRound(); session.countRound()
+        _ = session.complete()
+        XCTAssertEqual(LiveRules.endSummary(session, endedEarly: true, endedAtTimeCap: false),
+                       .init(word: "Stopped", hero: "3", label: "ROUNDS · 0:29"))
+        XCTAssertEqual(LiveRules.endSummary(session, endedEarly: false, endedAtTimeCap: false),
+                       .init(word: "Finished", hero: "3", label: "ROUNDS"))
+    }
+
+    func testCaptureScenesCoverEveryState() {
+        let names = Set(CaptureScene.allCases.map(\.rawValue))
+        for required in ["home", "home-scrolled", "setup-fortime", "setup-emom", "setup-amrap", "setup-tabata",
+                         "live-prep", "live-fortime", "live-emom", "live-amrap",
+                         "live-tabata-work", "live-tabata-rest", "live-tabata-next",
+                         "paused-fortime", "paused-emom", "paused-amrap", "paused-tabata",
+                         "finished-fortime", "timecap-fortime", "finished-emom", "stopped-emom",
+                         "finished-amrap", "stopped-amrap", "finished-tabata", "stopped-tabata"] {
+            XCTAssertTrue(names.contains(required), "missing capture scene \(required)")
+        }
+    }
+}

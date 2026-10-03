@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// EMOM setup: EVERY (15s steps, as on the phone) and ROUNDS; tap a value
-/// to move it with the Crown. Opens on the last EMOM set: every change is
+/// EMOM setup: EVERY (green, 15s steps as on the phone) and ROUNDS (blue);
+/// tap a value to move it with the Crown. Opens on the last EMOM set: every change is
 /// remembered (1.3.1). The total rides inside START.
 struct EmomSetupView: View {
     @Bindable var viewModel: TimerViewModel
@@ -39,11 +39,13 @@ struct EmomSetupView: View {
         VStack(spacing: 2) {
             Spacer(minLength: 0)
             Button { focusedField = .interval } label: {
-                SetupValue(label: "EVERY", value: interval.clock, size: 38, focused: focusedField == .interval)
+                SetupValue(label: "EVERY", value: interval.clock, labelColor: Palette.work,
+                           size: 38, focused: focusedField == .interval)
             }
             .buttonStyle(.plain)
             Button { focusedField = .rounds } label: {
-                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", size: 38, focused: focusedField == .rounds)
+                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", labelColor: Palette.mode("amrap"),
+                           size: 38, focused: focusedField == .rounds)
             }
             .buttonStyle(.plain)
             Spacer(minLength: 0)
@@ -53,7 +55,8 @@ struct EmomSetupView: View {
                 showingTimer = viewModel.session?.state != .ready
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, CapsuleGeometry.sideMargin)
+        .padding(.bottom, CapsuleGeometry.bottomMargin)
         .focusable()
         .digitalCrownRotation(
             focusedField == .interval ? $intervalSeconds : $rounds,
@@ -66,6 +69,8 @@ struct EmomSetupView: View {
         .onAppear(perform: load)
         .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
+        // Last, outside the Crown focus container, so it reaches the edge.
+        .ignoresSafeArea(edges: .bottom)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)
         }
