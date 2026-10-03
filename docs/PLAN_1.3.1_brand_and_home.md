@@ -120,6 +120,16 @@ phase (digits, glow, phase word, paused states) on phone, tablet and watch.
 Replaces rest blue #00AAFF (AppColors.rest, watch Palette.rest). This also
 overrides section 4's "rest in blue" for the Home timeline.
 
+**Four mode colours (3 Oct, Gareth):** For Time orange #FF6B1A (was blue),
+EMOM pink #FF0088, AMRAP green #00FF88, Tabata blue #00AAFF (was amber, too
+close to orange). Home bars and single-block timelines use the mode colour;
+Tabata's timeline is work green / rest pink. Preview captures sent
+(preview branch commit "four mode colours"). Open: EMOM blocks pink (mode
+colour, current) or green (work).
+
+**Setup timeline position:** on EMOM and Tabata setup, the timeline sits
+halfway between the wheels and START (prototype updated).
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
