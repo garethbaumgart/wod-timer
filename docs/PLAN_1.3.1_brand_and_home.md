@@ -155,6 +155,15 @@ inset capsules with a small margin, because the rounded screen clips an edge
 slab (Gareth: edge buttons "look squashed on watch"). AGAIN and RESUME in the
 workout's colour.
 
+**No jumping (Gareth, 3 Oct):** when numbers change or count, nothing else
+may move. Every line on the live, paused and end screens has a fixed-height
+slot; the clock's font size is set once per workout from its longest value
+(For Time cap, AMRAP duration, EMOM interval, Tabata work), not refitted
+every tick (today's BigClock / width-fill refits per string, so 9:59 to 10:00
+or 10 to 9 can change the size). Tabular figures throughout. Add a widget
+test: pump a tick across a digit-count change and assert every element's
+rect is unchanged.
+
 **AMRAP end:** no plus and minus beside the count (Gareth: odd). The count is
 a wheel you scroll to fix, like the setup wheels, with "Scroll to fix the
 count" under ROUNDS. Watch: the Crown fixes it.
