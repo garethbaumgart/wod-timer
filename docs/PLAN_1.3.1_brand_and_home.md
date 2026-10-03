@@ -138,7 +138,14 @@ above. Tabata timeline stays work green / rest pink. Captures sent.
 kept: For Time Up / Down switch under the bezel, Home timeline under the EMOM
 and Tabata wheels (halfway to START), white setup headings.
 
-Next: live and end screens per workout, themed by mode colour.
+Next: live and end screens per workout, themed by mode colour. Running
+prototype: https://claude.ai/artifact/Cnz7pnXLE9pmPrntaWoSTi (iPhone live and
+end, watch live and end, iPad Tabata live and For Time end). Proposed,
+awaiting picks: clock in the workout's colour (Tabata: work green, rest
+pink); GET READY white instead of amber; AGAIN / DONE as an edge-to-edge
+slab with AGAIN in the workout's colour; progress bar and end screens use the
+Home timeline (done blocks filled, current filling, rest dim); EMOM end shows
+rounds and time, Tabata finish shows 8/8 and 4:00 total.
 
 Record the picks here before building.
 
