@@ -91,6 +91,16 @@ sent 3 Oct. Proposals put to him, awaiting picks:
    proper two-option switch.
 8. Watch: same as 1 to 3 and 5 at watch scale; add an EMOM end capture.
 
+9. Setup input (Gareth, 3 Oct): no plus and minus buttons beside the values.
+   Eight working options in the Setup Lab (https://claude.ai/artifact/B714VFqbupZmi78EFLThn6):
+   1 scroll wheel, 2 tape ruler, 3 drag the number, 4 usual-time chips then a
+   wheel, 5 stopwatch bezel, 6 keypad, 7 two rulers (EMOM), 8 wheels side by
+   side (Tabata). Suggested: 4 for AMRAP / For Time, 8 for EMOM / Tabata.
+   Watch keeps the Digital Crown.
+10. Bigger START (Gareth: "needs to be bigger"): A 88pt tall bar with the
+   total under START (suggested), B 168pt round button, C 132pt edge-to-edge
+   slab. Today's is 62pt.
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
