@@ -153,7 +153,12 @@ rest pink); (2) GET READY is white for every workout; (3) the bottom-button
 rule below; (4) end screens keep the timeline, filled to where you finished
 or stopped; (5) no jumping, below. Layout rule: every timeline sits exactly
 midway between the content above it and the bottom buttons (live, end and
-setup screens); watch end screens must fit without scrolling (Tabata's total
+setup screens), measured from what you see: the bottom of the glyphs above
+(the wheel's lower row, the round number, the last label), not the box
+edges, to the top of the buttons. Gareth flagged the iPad Tabata setup twice.
+Build it as a layout rule, not per-screen padding, and add a widget test per
+screen and device class asserting equal gaps (within 1pt). The prototypes
+measure equal on every timeline screen at desktop and phone width; watch end screens must fit without scrolling (Tabata's total
 joins the ROUNDS line: "ROUNDS · 4:00"). Prototype matches:
 https://claude.ai/artifact/Cnz7pnXLE9pmPrntaWoSTi.
 
