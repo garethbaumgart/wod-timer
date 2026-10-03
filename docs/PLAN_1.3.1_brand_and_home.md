@@ -134,6 +134,12 @@ halfway between the wheels and START (prototype updated).
 #00FF88 (bar), For Time orange, EMOM pink. Supersedes the four-colour note
 above. Tabata timeline stays work green / rest pink. Captures sent.
 
+**Decided (3 Oct):** EMOM timeline blocks stay pink. All three setup additions
+kept: For Time Up / Down switch under the bezel, Home timeline under the EMOM
+and Tabata wheels (halfway to START), white setup headings.
+
+Next: live and end screens per workout, themed by mode colour.
+
 Record the picks here before building.
 
 ## Build checklist (when everything above is locked)
