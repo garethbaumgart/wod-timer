@@ -5,6 +5,7 @@ import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
+import 'package:meta/meta.dart';
 import 'package:wod_timer/core/domain/failures/audio_failure.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 
@@ -14,9 +15,19 @@ import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 /// during cue playback, then restore it afterwards.
 @LazySingleton(as: IAudioService)
 class AudioService implements IAudioService {
-  AudioService() {
+  AudioService() : _playAsset = null {
     unawaited(_initPlayers());
   }
+
+  /// For tests: every asset the service decides to play goes to
+  /// [playAsset] instead of the player pool, and the platform is never
+  /// touched. The cue-to-asset rules (voice pack, Beeps only, Silent) are
+  /// exactly the production ones.
+  @visibleForTesting
+  AudioService.withSink(Future<void> Function(String assetPath) playAsset)
+    : _playAsset = playAsset;
+
+  final Future<void> Function(String assetPath)? _playAsset;
 
   final Map<String, AudioPlayer> _players = {};
   final List<StreamSubscription<PlayerState>> _subscriptions = [];
@@ -235,7 +246,7 @@ class AudioService implements IAudioService {
     }
 
     // Fire and forget - don't await playback to avoid blocking UI
-    unawaited(_playAsync(assetPath));
+    unawaited((_playAsset ?? _playAsync)(assetPath));
     return right(unit);
   }
 
@@ -304,7 +315,7 @@ class AudioService implements IAudioService {
         : _validVoicePacks.elementAt(_random.nextInt(_validVoicePacks.length));
     // Deliberate user action: previews bypass mute/voice-off so the picker
     // is always auditionable.
-    unawaited(_playAsync('audio/$pack/countdown_go.mp3'));
+    unawaited((_playAsset ?? _playAsync)('audio/$pack/countdown_go.mp3'));
     return right(unit);
   }
 }
