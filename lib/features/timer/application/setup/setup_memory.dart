@@ -24,6 +24,13 @@ class SetupMemory {
   static const tabataRestKey = 'setup_tabata_rest_s';
   static const tabataRoundsKey = 'setup_tabata_rounds';
 
+  /// The mode started most recently (1.3.1): a tablet's Home shows it as
+  /// the big tile. Values are the route codes; anything else reads as
+  /// For Time.
+  static const lastModeKey = 'setup_last_mode';
+  static const lastModeValues = ['amrap', 'fortime', 'emom', 'tabata'];
+  static const lastModeFallback = 'fortime';
+
   AmrapSetup get amrap => AmrapSetup(
     durationSeconds: _readInt(amrapDurationKey, SetupRanges.amrapDuration),
   );
@@ -44,23 +51,37 @@ class SetupMemory {
     rounds: _readInt(tabataRoundsKey, SetupRanges.tabataRounds),
   );
 
+  String get lastMode {
+    try {
+      final value = _prefs.getString(lastModeKey);
+      return value != null && lastModeValues.contains(value)
+          ? value
+          : lastModeFallback;
+    } on Object {
+      return lastModeFallback;
+    }
+  }
+
   Future<void> saveAmrap(AmrapSetup setup) =>
-      _write({amrapDurationKey: setup.durationSeconds});
+      _write({amrapDurationKey: setup.durationSeconds, lastModeKey: 'amrap'});
 
   Future<void> saveForTime(ForTimeSetup setup) => _write({
     forTimeCapKey: setup.capSeconds,
     forTimeCountUpKey: setup.countUp,
+    lastModeKey: 'fortime',
   });
 
   Future<void> saveEmom(EmomSetup setup) => _write({
     emomIntervalKey: setup.intervalSeconds,
     emomRoundsKey: setup.rounds,
+    lastModeKey: 'emom',
   });
 
   Future<void> saveTabata(TabataSetup setup) => _write({
     tabataWorkKey: setup.workSeconds,
     tabataRestKey: setup.restSeconds,
     tabataRoundsKey: setup.rounds,
+    lastModeKey: 'tabata',
   });
 
   int _readInt(String key, SetupRange range) {
@@ -89,6 +110,8 @@ class SetupMemory {
           await _prefs.setInt(entry.key, value);
         } else if (value is bool) {
           await _prefs.setBool(entry.key, value);
+        } else if (value is String) {
+          await _prefs.setString(entry.key, value);
         }
       }
     } on Object {
