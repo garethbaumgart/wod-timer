@@ -18,10 +18,10 @@ abstract class AppColors {
   static const Color secondaryDark = Color(0xFF0088CC);
 
   // Timer type accent colors
-  static const Color amrapAccent = Color(0xFF00FF88); // Green
+  static const Color amrapAccent = Color(0xFF00AAFF); // Blue (1.3.1)
   static const Color forTimeAccent = Color(0xFFFF6B1A); // Orange (1.3.1)
   static const Color emomAccent = Color(0xFFFF0088); // Pink/Magenta
-  static const Color tabataAccent = Color(0xFF00AAFF); // Blue (1.3.1)
+  static const Color tabataAccent = Color(0xFF00FF88); // Green (1.3.1)
 
   // Semantic colors
   static const Color success = Color(0xFF00FF88);

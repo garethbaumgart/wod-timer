@@ -17,10 +17,10 @@ enum Palette {
     /// blue, EMOM magenta, Tabata amber.
     static func mode(_ code: String) -> Color {
         switch code {
-        case "amrap": Color(hex: 0x00FF88)
+        case "amrap": Color(hex: 0x00AAFF)
         case "fortime": Color(hex: 0xFF6B1A)
         case "emom": Color(hex: 0xFF0088)
-        default: Color(hex: 0x00AAFF)
+        default: Color(hex: 0x00FF88)
         }
     }
 
