@@ -147,7 +147,17 @@ slab with AGAIN in the workout's colour; progress bar and end screens use the
 Home timeline (done blocks filled, current filling, rest dim); EMOM end shows
 rounds and time, Tabata finish shows 8/8 and 4:00 total.
 
-**Button rule (proposed 3 Oct, after Gareth flagged inconsistency):** every
+**LOCKED 3 Oct (Gareth: "yes to all five"):** (1) the clock takes the
+workout's colour (For Time orange, EMOM pink, AMRAP blue, Tabata work green /
+rest pink); (2) GET READY is white for every workout; (3) the bottom-button
+rule below; (4) end screens keep the timeline, filled to where you finished
+or stopped; (5) no jumping, below. Layout rule: every timeline sits exactly
+midway between the content above it and the bottom buttons (live, end and
+setup screens); watch end screens must fit without scrolling (Tabata's total
+joins the ROUNDS line: "ROUNDS · 4:00"). Prototype matches:
+https://claude.ai/artifact/Cnz7pnXLE9pmPrntaWoSTi.
+
+**Button rule (locked):** every
 screen's main actions sit at the bottom in one place. Phone and iPad:
 edge-to-edge slab (START; PAUSE, with FINISH on For Time; HOLD TO STOP and
 RESUME when paused; AGAIN and DONE). Watch: the same buttons as full-width
