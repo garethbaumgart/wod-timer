@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
+import 'package:wod_timer/core/presentation/router/home_variants.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
@@ -175,6 +176,59 @@ class PlaceholderHomePage extends ConsumerWidget {
     ];
   }
 
+  /// Preview only: the four modes for the HOME card variants.
+  List<HomeMode> _modes(WidgetRef ref) {
+    final memory = ref.watch(setupMemoryProvider);
+    final amrap = memory.amrap;
+    final forTime = memory.forTime;
+    final emom = memory.emom;
+    final tabata = memory.tabata;
+    void go(String type) {
+      ref.read(hapticServiceProvider).lightImpact();
+      onTimerSelected(type);
+    }
+
+    return [
+      HomeMode(
+        name: 'AMRAP',
+        config: setupClock(amrap.durationSeconds),
+        accent: AppColors.amrapAccent,
+        onTap: () => go('amrap'),
+        shape: [(amrap.durationSeconds, false)],
+      ),
+      HomeMode(
+        name: 'FOR TIME',
+        config:
+            'CAP ${setupClock(forTime.capSeconds)} \u00B7 '
+            '${forTime.countUp ? 'UP' : 'DOWN'}',
+        accent: AppColors.forTimeAccent,
+        onTap: () => go('fortime'),
+        shape: [(forTime.capSeconds, false)],
+      ),
+      HomeMode(
+        name: 'EMOM',
+        config: '${emom.rounds} \u00D7 ${setupClock(emom.intervalSeconds)}',
+        accent: AppColors.emomAccent,
+        onTap: () => go('emom'),
+        shape: [for (var i = 0; i < emom.rounds; i++) (emom.intervalSeconds, false)],
+      ),
+      HomeMode(
+        name: 'TABATA',
+        config:
+            '${tabata.rounds} \u00D7 ${setupPhase(tabata.workSeconds)} / '
+            '${setupPhase(tabata.restSeconds)}',
+        accent: AppColors.tabataAccent,
+        onTap: () => go('tabata'),
+        shape: [
+          for (var i = 0; i < tabata.rounds; i++) ...[
+            (tabata.workSeconds, false),
+            (tabata.restSeconds, true),
+          ],
+        ],
+      ),
+    ];
+  }
+
   Widget _buildSettingsButton(BuildContext context) {
     return IconButton(
       icon: const Icon(
@@ -197,6 +251,17 @@ class PlaceholderHomePage extends ConsumerWidget {
             _buildHero(),
             const SizedBox(height: 20),
 
+            if (homeVariant.isNotEmpty)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: HomeVariant(
+                    variant: homeVariant,
+                    modes: _modes(ref),
+                  ),
+                ),
+              )
+            else
             // Timer type strip list; scrolls only when large text can't fit.
             Expanded(
               child: LayoutBuilder(
