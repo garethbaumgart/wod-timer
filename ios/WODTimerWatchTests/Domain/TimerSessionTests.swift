@@ -710,7 +710,8 @@ final class HomeAndTimelineTests: XCTestCase {
     func testCaptureScenesCoverEveryState() {
         let names = Set(CaptureScene.allCases.map(\.rawValue))
         for required in ["home", "home-scrolled", "setup-fortime", "setup-emom", "setup-amrap", "setup-tabata",
-                         "live-prep", "live-fortime", "live-emom", "live-amrap",
+                         "live-prep", "live-prep-fortime", "live-prep-emom", "live-prep-tabata",
+                         "live-fortime", "live-emom", "live-amrap",
                          "live-tabata-work", "live-tabata-rest", "live-tabata-next",
                          "paused-fortime", "paused-emom", "paused-amrap", "paused-tabata",
                          "finished-fortime", "timecap-fortime", "finished-emom", "stopped-emom",

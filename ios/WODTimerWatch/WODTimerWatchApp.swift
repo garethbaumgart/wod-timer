@@ -28,6 +28,8 @@ enum CaptureScene: String, CaseIterable {
     case setupAmrap = "setup-amrap", setupForTime = "setup-fortime"
     case setupEmom = "setup-emom", setupTabata = "setup-tabata"
     case livePrep = "live-prep", liveAmrap = "live-amrap"
+    case livePrepForTime = "live-prep-fortime", livePrepEmom = "live-prep-emom"
+    case livePrepTabata = "live-prep-tabata"
     case liveForTime = "live-fortime", liveEmom = "live-emom"
     case liveTabataWork = "live-tabata-work", liveTabataRest = "live-tabata-rest"
     case liveTabataNext = "live-tabata-next"
@@ -82,6 +84,9 @@ struct CaptureRoot: View {
             viewModel.audio.setRandomizePerCue(false)
             viewModel.audio.setVoicePack(.major)
         case .livePrep: run(Workout.defaultAmrap(), 4)
+        case .livePrepForTime: run(Workout.defaultForTime(), 4)
+        case .livePrepEmom: run(Workout.defaultEmom(), 4)
+        case .livePrepTabata: run(Workout.defaultTabata(), 4)
         case .liveAmrap: run(Workout.defaultAmrap(), 25); viewModel.debugCountRounds(3)
         case .liveForTime: run(Workout.defaultForTime(), 76)
         case .liveEmom: run(Workout.defaultEmom(), 75)

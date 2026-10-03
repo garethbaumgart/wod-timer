@@ -69,14 +69,6 @@ enum LiveRules {
         session.state == .paused ? (session.stateBeforePause ?? .running) : session.state
     }
 
-    /// Whether this session can ever show a phase word while live: Tabata
-    /// (WORK / REST / NEXT) and the get-ready countdown.
-    static func showsPhaseLine(_ session: TimerSession) -> Bool {
-        if session.state == .preparing { return true }
-        if case .tabata = session.workout.timerType { return true }
-        return false
-    }
-
     /// Length of the phase the clock is counting through.
     static func phaseSeconds(_ session: TimerSession) -> Int {
         if session.state == .preparing { return session.workout.prepCountdown.seconds }
@@ -186,8 +178,8 @@ enum LiveRules {
     }
 }
 
-/// The fixed-height phase line over the clock (blank when there is no
-/// phase), so the digits never jump.
+/// The fixed-height phase line over the clock, reserved in every mode and
+/// blank when there is no phase to name, so the digits never jump.
 struct PhaseLine: View {
     let session: TimerSession
 

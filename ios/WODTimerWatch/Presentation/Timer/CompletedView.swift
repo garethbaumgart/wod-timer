@@ -81,13 +81,20 @@ struct CompletedView: View {
 }
 
 /// The AMRAP count as a wheel the Crown turns: the selected number in AMRAP
-/// blue with its neighbours dim above and below. Focused by default, so the
-/// Crown fixes the count the moment the end screen shows.
+/// blue, sized by the same rule as the other end heroes (the time hero's
+/// width), with its neighbours dim above and below, faded and clipped to
+/// the hero's box (on a 40mm there is no room for them beside a hero-sized
+/// count). Focused by default, so the Crown fixes the count the moment the
+/// end screen shows.
 struct RoundsWheel: View {
     @Bindable var viewModel: TimerViewModel
     let accent: Color
     @State private var value: Double
     @FocusState private var focused: Bool
+
+    /// The other heroes' widest form ("12:34", "10/10"): the count takes
+    /// the same size so every end screen reads the same.
+    static let heroReference = "10:00"
 
     init(viewModel: TimerViewModel, accent: Color) {
         self.viewModel = viewModel
@@ -97,24 +104,32 @@ struct RoundsWheel: View {
 
     var body: some View {
         GeometryReader { geo in
-            let size = min(geo.size.height * 0.7, geo.size.width * 0.4)
+            let w = geo.size.width
+            let h = geo.size.height
+            let size = max(10, min(w / BigClock.ems(Self.heroReference), h / 0.76))
             let count = Int(value.rounded())
             ZStack {
-                neighbour(count - 1, size: size).offset(y: -size * 0.72)
+                ZStack {
+                    neighbour(count - 1, size: size).offset(y: -size * 0.52)
+                    neighbour(count + 1, size: size).offset(y: size * 0.52)
+                }
+                .frame(width: w, height: h)
+                .mask(
+                    LinearGradient(
+                        stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.3),
+                                .init(color: .black, location: 0.7), .init(color: .clear, location: 1)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
                 Text("\(count)")
                     .font(.system(size: size, weight: .heavy, design: .rounded))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(accent)
-                neighbour(count + 1, size: size).offset(y: size * 0.72)
+                    .frame(width: w, height: size * 1.3)
             }
-            .frame(width: geo.size.width, height: geo.size.height)
-            .mask(
-                LinearGradient(
-                    stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.3),
-                            .init(color: .black, location: 0.7), .init(color: .clear, location: 1)],
-                    startPoint: .top, endPoint: .bottom
-                )
-            )
+            .frame(width: w, height: h)
         }
         .focusable()
         .focused($focused)
@@ -143,7 +158,7 @@ struct RoundsWheel: View {
     private func neighbour(_ n: Int, size: CGFloat) -> some View {
         if n >= 0 {
             Text("\(n)")
-                .font(.system(size: size * 0.45, weight: .heavy, design: .rounded))
+                .font(.system(size: size * 0.4, weight: .heavy, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Palette.wheelDim)
         }

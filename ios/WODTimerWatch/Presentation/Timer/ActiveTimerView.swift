@@ -70,7 +70,8 @@ struct ActiveTimerView: View {
 
 /// The live layout shared by the running and paused screens: phase line,
 /// clock, second slot, the timeline placed by the centring rule, buttons.
-/// Every line has a fixed slot, so nothing moves as the numbers count.
+/// Every line has a fixed slot, so nothing moves as the numbers count or
+/// when get ready turns into the workout.
 struct LiveScreen<Buttons: View>: View {
     let session: TimerSession
     let counted: Bool
@@ -92,11 +93,10 @@ struct LiveScreen<Buttons: View>: View {
 
             VStack(spacing: 0) {
                 VStack(spacing: 0) {
-                    // Only modes that can show a phase reserve the line, so
-                    // AMRAP, EMOM and For Time give it to the clock.
-                    if LiveRules.showsPhaseLine(session) {
-                        PhaseLine(session: session)
-                    }
+                    // The phase slot is reserved in every mode (empty after
+                    // GO for AMRAP, EMOM and For Time), so the clock's box is
+                    // the same in get ready and running: nothing moves at GO.
+                    PhaseLine(session: session)
                     BigClock(
                         text: LiveRules.clockText(session),
                         reference: LiveRules.referenceClock(type),
