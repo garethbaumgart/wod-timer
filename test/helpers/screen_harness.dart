@@ -217,26 +217,27 @@ Workout forTimeWorkout({required bool countUp, int cap = 1200}) => Workout(
   createdAt: DateTime.now(),
 );
 
-Workout emomWorkout({int interval = 60, int rounds = 10}) => Workout(
-  id: UniqueId(),
-  name: WorkoutName.defaultEmom,
-  timerType: EmomTimer(
-    intervalDuration: TimerDuration.fromSeconds(interval),
-    rounds: RoundCount.fromInt(rounds),
-  ),
-  prepCountdown: TimerDuration.zero,
-  createdAt: DateTime.now(),
-);
+Workout emomWorkout({int interval = 60, int rounds = 10, int prep = 0}) =>
+    Workout(
+      id: UniqueId(),
+      name: WorkoutName.defaultEmom,
+      timerType: EmomTimer(
+        intervalDuration: TimerDuration.fromSeconds(interval),
+        rounds: RoundCount.fromInt(rounds),
+      ),
+      prepCountdown: TimerDuration.fromSeconds(prep),
+      createdAt: DateTime.now(),
+    );
 
-Workout tabataWorkout({int rounds = 8}) => Workout(
+Workout tabataWorkout({int rounds = 8, int rest = 10, int prep = 0}) => Workout(
   id: UniqueId(),
   name: WorkoutName.defaultTabata,
   timerType: TabataTimer(
     workDuration: TimerDuration.fromSeconds(20),
-    restDuration: TimerDuration.fromSeconds(10),
+    restDuration: TimerDuration.fromSeconds(rest),
     rounds: RoundCount.fromInt(rounds),
   ),
-  prepCountdown: TimerDuration.zero,
+  prepCountdown: TimerDuration.fromSeconds(prep),
   createdAt: DateTime.now(),
 );
 
@@ -318,6 +319,7 @@ class LiveHarness {
     required Device device,
     Duration elapsed = Duration.zero,
     Map<String, Object> prefs = const {},
+    double textScale = 1,
   }) async {
     device.apply(tester);
     mockPlatformChannels();
@@ -362,7 +364,15 @@ class LiveHarness {
           theme: AppTheme.dark,
           darkTheme: AppTheme.dark,
           themeMode: ThemeMode.dark,
-          builder: (context, child) => appShell(child!, device: device),
+          builder: (context, child) => appShell(
+            MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
+            device: device,
+          ),
         ),
       ),
     );
