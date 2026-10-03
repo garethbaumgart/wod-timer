@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,48 +8,41 @@ import 'package:wod_timer/core/application/providers/app_settings_provider.dart'
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
-import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
+import 'package:wod_timer/core/presentation/widgets/bottom_slab.dart';
+import 'package:wod_timer/core/presentation/widgets/centred_timeline.dart';
 import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
-import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/stopwatch_bezel.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
 
-/// The frame every setup screen shares: header (back, mode in brand
-/// orange, voice chip), the mode's controls centred in the space, then
-/// START, carrying the total where there is one. One value per control,
-/// nothing repeated.
+/// The frame every setup screen shares (1.3.1): header (back, mode in
+/// white, voice chip), the mode's controls, then the edge-to-edge START
+/// slab carrying the total (EMOM, Tabata) or the count direction (For
+/// Time) as its subtitle. One value per control, nothing repeated.
 class SetupScaffold extends StatefulWidget {
   const SetupScaffold({
     required this.title,
-    required this.controls,
+    required this.body,
     required this.onStart,
     super.key,
-    this.accessory,
-    this.totalSeconds,
-    this.spacing = 44,
+    this.startSubtitle,
   });
 
   /// Mode name in the header ("EMOM").
   final String title;
 
-  /// The mode's steppers / switches, top to bottom in portrait. In
-  /// landscape two or more sit side by side in one row, compact.
-  final List<Widget> controls;
-
-  /// An optional line above the controls in both orientations (Tabata's
-  /// reset chip), kept out of the landscape stepper row.
-  final Widget? accessory;
+  /// The mode's controls between the header and START, built for the
+  /// orientation.
+  final Widget Function(BuildContext context, {required bool landscape}) body;
 
   final VoidCallback onStart;
 
-  /// Computed workout length, shown only where it is new information
-  /// (EMOM, Tabata). AMRAP and For Time leave it null: their one value
-  /// already is the total.
-  final int? totalSeconds;
-
-  /// Vertical gap between controls in portrait.
-  final double spacing;
+  /// Under START: "10:00 total", "Counts up · cap 20:00", or nothing
+  /// (AMRAP, whose one value already is the total).
+  final String? startSubtitle;
 
   /// How long START ignores taps after the screen appears. DONE on the
   /// completion screen lands here, so the second tap of a double tap on
@@ -60,8 +54,8 @@ class SetupScaffold extends StatefulWidget {
 }
 
 class _SetupScaffoldState extends State<SetupScaffold> {
-  // Lives here, not in the footer, so rotating the phone (which rebuilds
-  // the footer in a new place) doesn't re-arm it.
+  // Lives here, not in the slab, so rotating the phone (which rebuilds
+  // the slab in a new place) doesn't re-arm it.
   late final Timer _guard;
 
   @override
@@ -91,76 +85,44 @@ class _SetupScaffoldState extends State<SetupScaffold> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) context.go(AppRoutes.home);
       },
-      child: _buildScaffold(),
-    );
-  }
-
-  Widget _buildScaffold() {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: OrientationBuilder(
-          builder: (context, orientation) {
-            if (orientation == Orientation.landscape) {
-              return ContentWidthCap(maxWidth: 900, child: _buildLandscape());
-            }
-            return ContentWidthCap(child: _buildPortrait());
-          },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        // The slab runs to the very bottom edge; its content keeps clear of
+        // the home indicator itself.
+        body: SafeArea(
+          bottom: false,
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final landscape = orientation == Orientation.landscape;
+              final subtitle = widget.startSubtitle;
+              return Column(
+                children: [
+                  _SetupHeader(
+                    title: widget.title,
+                    verticalPadding: landscape ? 4 : 12,
+                  ),
+                  Expanded(child: widget.body(context, landscape: landscape)),
+                  BottomSlab(
+                    cells: [
+                      SlabCell(
+                        label: 'START',
+                        labelSize: 34,
+                        subtitle: subtitle,
+                        background: AppColors.start,
+                        foreground: Colors.black,
+                        onTap: _onStart,
+                        semanticsLabel: subtitle == null
+                            ? 'Start workout'
+                            : 'Start workout. $subtitle',
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildPortrait() {
-    return Column(
-      children: [
-        _SetupHeader(title: widget.title),
-        Expanded(
-          child: _SetupControls(
-            spacing: widget.spacing,
-            children: [?widget.accessory, ...widget.controls],
-          ),
-        ),
-        _SetupFooter(totalSeconds: widget.totalSeconds, onStart: _onStart),
-      ],
-    );
-  }
-
-  /// The portrait layout, centred: header, the controls (side by side when
-  /// there are several, so Tabata fits a 390pt tall screen without
-  /// scrolling), then the total and a full-width START at the bottom.
-  Widget _buildLandscape() {
-    final controls = widget.controls;
-    return Column(
-      children: [
-        _SetupHeader(title: widget.title, verticalPadding: 4),
-        Expanded(
-          child: _SetupControls(
-            spacing: 12,
-            bottomPadding: 12,
-            children: [
-              ?widget.accessory,
-              if (controls.length > 1)
-                CompactSetupSteppers(
-                  // Scales down rather than overflowing on a phone narrower
-                  // than three compact steppers (iPhone SE landscape).
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 20,
-                      children: controls,
-                    ),
-                  ),
-                )
-              else
-                ...controls,
-            ],
-          ),
-        ),
-        _SetupFooter(totalSeconds: widget.totalSeconds, onStart: _onStart),
-      ],
     );
   }
 }
@@ -208,7 +170,7 @@ class _SetupHeader extends StatelessWidget {
               overflow: TextOverflow.fade,
               softWrap: false,
               style: AppTypography.sectionHeader.copyWith(
-                color: AppColors.brand,
+                color: AppColors.textPrimaryDark,
                 fontSize: 24,
               ),
             ),
@@ -279,39 +241,63 @@ class _VoiceChip extends ConsumerWidget {
   }
 }
 
-/// Controls centred in the available space; scrolls only if they can't fit
-/// (large accessibility text, landscape Tabata).
-class _SetupControls extends StatelessWidget {
-  const _SetupControls({
-    required this.children,
-    required this.spacing,
-    this.bottomPadding = 20,
+/// AMRAP and For Time: the stopwatch bezel centred in the space with one
+/// line under it (the direction switch, or a hint). The bezel is 270pt
+/// where it fits and shrinks where it doesn't (a phone held sideways,
+/// where the line moves beside it).
+class BezelSetupBody extends StatelessWidget {
+  const BezelSetupBody({
+    required this.landscape,
+    required this.bezel,
+    required this.below,
+    super.key,
   });
 
-  final List<Widget> children;
-  final double spacing;
-  final double bottomPadding;
+  final bool landscape;
+
+  /// Builds the bezel at the size the space allows.
+  final Widget Function(double size) bezel;
+
+  final Widget below;
+
+  static const double fullSize = 270;
+  static const double gap = 14;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: (constraints.maxHeight - bottomPadding).clamp(
-                0,
-                double.infinity,
-              ),
+        if (landscape) {
+          final size = math.min(
+            fullSize,
+            math.min(constraints.maxHeight - 16, constraints.maxWidth * 0.45),
+          );
+          return Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [bezel(size), const SizedBox(width: 32), below],
             ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                spacing: spacing,
-                children: children,
+          );
+        }
+        // Leave room for the line under the bezel and a breath above and
+        // below (large text makes that line taller).
+        final size = math
+            .min(
+              fullSize,
+              math.min(
+                constraints.maxHeight - gap - 96,
+                constraints.maxWidth - 32,
               ),
-            ),
+            )
+            .clamp(140.0, fullSize);
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              bezel(size),
+              const SizedBox(height: gap),
+              below,
+            ],
           ),
         );
       },
@@ -319,68 +305,185 @@ class _SetupControls extends StatelessWidget {
   }
 }
 
-/// START, full width at the bottom. EMOM and Tabata carry their computed
-/// total inside it as a subtitle ("10:00 total", 1.3.1); the button is the
-/// same height either way, so nothing moves between modes.
-class _SetupFooter extends StatelessWidget {
-  const _SetupFooter({required this.totalSeconds, required this.onStart});
+/// EMOM and Tabata: the wheels side by side, centred between the header
+/// and the timeline zone, with the Home timeline under them placed by the
+/// centring rule (layout rule 2) and redrawn live.
+class WheelsSetupBody extends StatelessWidget {
+  const WheelsSetupBody({
+    required this.landscape,
+    required this.wheels,
+    required this.shape,
+    super.key,
+    this.accessory,
+  });
 
-  final int? totalSeconds;
-  final VoidCallback onStart;
+  final bool landscape;
+
+  /// Built with the row height for the orientation.
+  final List<Widget> Function(double rowHeight) wheels;
+
+  final WorkoutShape shape;
+
+  /// An optional line just above the wheels (Tabata's reset chip).
+  final Widget? accessory;
+
+  static const double timelineHeight = 12;
+
+  double get rowHeight => landscape ? 44 : 56;
 
   @override
   Widget build(BuildContext context) {
-    final total = totalSeconds;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Semantics(
+    final accessory = this.accessory;
+    return Column(
+      children: [
+        Expanded(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: accessory == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: EdgeInsets.only(bottom: landscape ? 0 : 12),
+                    child: accessory,
+                  ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 10,
+            children: [
+              for (final wheel in wheels(rowHeight))
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: SetupWheel.width,
+                    ),
+                    child: wheel,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: CentredTimeline(
+            aboveInkInset: SetupWheel.inkInset(context, rowHeight),
+            height: timelineHeight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: WorkoutTimeline(shape: shape, height: timelineHeight),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// For Time's count direction: a two-option switch under the bezel,
+/// COUNT UP | COUNT DOWN, the selected one white with black text.
+class CountDirectionSwitch extends StatelessWidget {
+  const CountDirectionSwitch({
+    required this.countUp,
+    required this.onChanged,
+    super.key,
+  });
+
+  final bool countUp;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget option(String label, {required bool selected, required bool up}) {
+      return Semantics(
         button: true,
-        label: total == null
-            ? 'Start workout'
-            : 'Start workout. Total ${setupSpokenDuration(total)}',
+        selected: selected,
+        label: up ? 'Count up' : 'Count down',
         excludeSemantics: true,
         child: GestureDetector(
-          onTap: onStart,
+          onTap: selected ? null : () => onChanged(up),
+          behavior: HitTestBehavior.opaque,
           child: Container(
-            width: double.infinity,
-            height: 62,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(16),
+              color: selected ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'START',
-                    style: AppTypography.buttonLarge.copyWith(
-                      color: Colors.black,
-                      fontSize: 18,
-                      letterSpacing: 1.6,
-                      height: 1.1,
-                    ),
-                  ),
-                  if (total != null)
-                    Text(
-                      '${setupClock(total)} total',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: Colors.black.withValues(alpha: 0.68),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                ],
+            child: Text(
+              label,
+              maxLines: 1,
+              style: AppTypography.sectionHeader.copyWith(
+                color: selected ? Colors.black : AppColors.textSecondaryDark,
+                fontSize: 17,
+                letterSpacing: 17 * 0.06,
+                height: 1.2,
               ),
             ),
           ),
+        ),
+      );
+    }
+
+    // Scales down rather than overflowing a narrow phone at large text.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppColors.soft,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            option('COUNT UP', selected: countUp, up: true),
+            option('COUNT DOWN', selected: !countUp, up: false),
+          ],
         ),
       ),
     );
   }
 }
+
+/// The hint under AMRAP's bezel.
+class BezelHint extends StatelessWidget {
+  const BezelHint(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      style: AppTypography.labelLarge.copyWith(
+        color: AppColors.textDisabledDark,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+/// A bezel wired to a setup page: the mode colour, the haptic per minute.
+Widget setupBezel({
+  required WidgetRef ref,
+  required int minutes,
+  required String label,
+  required Color accent,
+  required double size,
+  required ValueChanged<int> onChanged,
+}) => StopwatchBezel(
+  minutes: minutes,
+  label: label,
+  accent: accent,
+  size: size,
+  onChanged: (next) {
+    ref.read(hapticServiceProvider).selectionClick();
+    onChanged(next);
+  },
+);
 
 /// Creates the workout, starts the timer and opens the active screen.
 /// Shared by all four setup screens.

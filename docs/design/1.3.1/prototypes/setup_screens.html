@@ -1,0 +1,277 @@
+<title>Wharf WOD Setup Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Figtree:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ink:#050510; --page:#08080F; --card:#0E0E1E; --line:#1F2030; --soft:#16172A;
+  --white:#FFFFFF; --label:#9A9AA2; --dim:#6A6A72;
+  --green:#00FF88; --pink:#FF0088; --blue:#00AAFF; --amber:#FFAA00;
+  --display:'Outfit','Avenir Next',system-ui,sans-serif;
+  --body:'Figtree','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--white);font-family:var(--body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:36px 64px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:900;line-height:1.05}
+h2{font-size:22px;font-weight:800}
+p{margin:0}
+.lede{color:#C9CBD6;max-width:68ch;margin-top:12px}
+.asks{margin-top:16px;border-left:4px solid var(--pink);background:var(--card);padding:12px 16px;border-radius:0 10px 10px 0;max-width:78ch;color:#DADCE5;display:grid;gap:6px}
+.asks b{font-family:var(--display);font-weight:800;color:var(--white)}
+section{margin-top:40px;display:grid;gap:14px}
+.sub{color:var(--label);max-width:72ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.opt{display:grid;gap:10px;align-content:start}
+.opt h3{font-family:var(--display);font-size:18px;font-weight:800;margin:0}
+.notes{font-size:14.5px;color:#C9CBD6}
+/* device frames; --s scales everything inside */
+.dev{--s:1;width:100%;max-width:calc(340px*var(--s));height:calc(640px*var(--s));background:var(--ink);border-radius:calc(34px*var(--s));border:1px solid var(--line);box-shadow:0 0 0 6px #121220;display:flex;flex-direction:column;overflow:hidden;user-select:none;-webkit-user-select:none}
+.dev.ipad{--s:1.45;width:100%;max-width:560px;height:auto;aspect-ratio:3/4;border-radius:28px}
+.bar{display:flex;align-items:center;gap:calc(10px*var(--s));padding:calc(22px*var(--s)) calc(18px*var(--s)) calc(4px*var(--s))}
+.bar .back{width:calc(22px*var(--s));height:calc(22px*var(--s));border-left:2.5px solid var(--white);border-bottom:2.5px solid var(--white);transform:rotate(45deg) scale(.55)}
+.bar .t{font-family:var(--display);font-weight:800;font-size:calc(22px*var(--s));flex:1}
+.chip{font-family:var(--display);font-weight:700;font-size:calc(14px*var(--s));color:var(--label);border:1.5px solid #3A3A44;border-radius:20px;padding:calc(5px*var(--s)) calc(12px*var(--s))}
+.mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow:hidden;gap:calc(14px*var(--s));padding:0 calc(16px*var(--s));min-height:0}
+.lab{font-family:var(--display);font-weight:700;font-size:calc(13px*var(--s));letter-spacing:.14em;color:var(--label);text-transform:uppercase}
+.lab.g{color:var(--green)} .lab.b{color:var(--blue)} .lab.p{color:var(--pink)}
+.dev.ipad .mid{padding-bottom:0}
+.mid.split{justify-content:flex-start;gap:0}
+.mid.split .sp,.mid.split .tlzone{flex:1;width:100%;display:flex;align-items:center;min-height:calc(12px*var(--s))}
+.mid.split{padding-bottom:0}
+.slab{height:calc(132px*var(--s));background:var(--green);color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);padding-bottom:calc(10px*var(--s));cursor:pointer;flex:none;transition:filter .08s}
+.slab:active{filter:brightness(.85)}
+.slab b{font-size:calc(34px*var(--s));font-weight:900;letter-spacing:.08em;line-height:1}
+.slab small{font-size:calc(16px*var(--s));font-weight:700;opacity:.7;margin-top:calc(5px*var(--s));font-variant-numeric:tabular-nums}
+/* bezel */
+.dialwrap{position:relative;width:calc(270px*var(--s));height:calc(270px*var(--s));max-width:100%}
+.dial{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.dialtxt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.dialtxt .v{font-family:var(--display);font-weight:900;font-size:calc(66px*var(--s));line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hint{font-family:var(--display);font-weight:600;font-size:calc(13px*var(--s));color:var(--dim)}
+.seg{display:flex;background:var(--soft);border-radius:calc(16px*var(--s));padding:calc(4px*var(--s))}
+.seg button{font-family:var(--display);font-weight:800;font-size:calc(17px*var(--s));letter-spacing:.06em;border:0;background:transparent;color:var(--label);padding:calc(10px*var(--s)) calc(16px*var(--s));border-radius:calc(12px*var(--s));cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--white);color:#000}
+/* wheels */
+.wheels{display:flex;gap:calc(10px*var(--s));justify-content:center;width:100%}
+.wcol{display:grid;justify-items:center;gap:calc(8px*var(--s));flex:1;max-width:calc(130px*var(--s))}
+.wwrap{position:relative;width:100%}
+.wwrap::before{content:"";position:absolute;left:0;right:0;top:calc(56px*var(--s));height:calc(56px*var(--s));border-radius:calc(14px*var(--s));background:var(--soft);pointer-events:none}
+.wheel{position:relative;height:calc(168px*var(--s));width:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;touch-action:pan-y}
+.wheel::-webkit-scrollbar{display:none}
+.wheel .pad{height:calc(56px*var(--s))}
+.wheel .it{height:calc(56px*var(--s));display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-family:var(--display);font-weight:800;font-size:calc(28px*var(--s));color:var(--dim);font-variant-numeric:tabular-nums}
+.wheel .it.on{color:var(--white);font-size:calc(42px*var(--s));font-weight:900}
+.tl{width:100%;display:grid;gap:calc(6px*var(--s))}
+.tlbar{display:flex;gap:calc(3px*var(--s));height:calc(12px*var(--s))}
+.tlbar i{border-radius:3px;display:block}
+/* watch */
+.wgrid{display:flex;flex-wrap:wrap;gap:22px}
+.watch{width:198px;height:242px;background:#000;border-radius:44px;box-shadow:0 0 0 7px #1a1a1f,0 0 0 8px #2a2a33;display:flex;flex-direction:column;overflow:hidden;font-family:var(--display);position:relative}
+.watch .wt{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 0 22px}
+.watch .wt b{font-size:17px;font-weight:800}
+.watch .wt span{font-size:14px;font-weight:600}
+.watch .wm{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.watch .wv{font-size:44px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.watch .row{display:flex;gap:12px;align-items:flex-end}
+.watch .row div{display:grid;justify-items:center}
+.watch .row .wv{font-size:28px}
+.watch .wl{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--label)}
+.watch .wslab{height:48px;margin:0 9px 10px;border-radius:24px;background:var(--green);color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.watch .wslab b{font-size:18px;font-weight:900;letter-spacing:.06em;line-height:1}
+.watch .wslab small{font-size:11px;font-weight:700;opacity:.7}
+.watch .crown{font-size:10px;color:var(--dim);font-weight:600}
+.dec{margin-top:6px;font-size:14.5px;color:#C9CBD6;display:grid;gap:4px;max-width:76ch}
+.dec b{color:var(--white);font-family:var(--display)}
+@media (prefers-reduced-motion:reduce){.slab{transition:none}}
+</style>
+
+<div class="wrap">
+  <h1>Bezel, wheels and a full-width START</h1>
+  <p class="lede">Your three picks put together: the stopwatch bezel for AMRAP and For Time, wheels side by side for EMOM and Tabata, and START as an edge-to-edge slab. Every screen works, so try them on your phone. Steps match the app: whole minutes on the bezel, 15 seconds for the EMOM interval, 5 seconds for Tabata work and rest.</p>
+  <div class="asks">
+    <p><b>Three things I added, each easy to drop:</b></p>
+    <p>1. For Time's count direction is an Up / Down switch under the bezel, replacing the small "tap to change" line.</p>
+    <p>2. EMOM and Tabata show the Home timeline under the wheels, redrawn as you change them.</p>
+    <p>3. Headings are white to match the new Home. Today they're orange.</p>
+  </div>
+
+  <section>
+    <div><h2>iPhone</h2><p class="sub">The slab shows the total for EMOM and Tabata, and the direction for For Time.</p></div>
+    <div class="grid">
+      <div class="opt">
+        <div class="dev"><div class="bar"><i class="back"></i><span class="t">FOR TIME</span><span class="chip">Major</span></div>
+          <div class="mid"><div class="dialwrap"><svg class="dial" data-mode="fortime" data-val="20" data-ring="#00AAFF" viewBox="0 0 270 270"></svg><div class="dialtxt"><span class="lab">Time cap</span><span class="v">20:00</span></div></div>
+            <div class="seg" data-target="ft1"><button class="on">COUNT UP</button><button>COUNT DOWN</button></div>
+          </div><div class="slab"><b>START</b><small id="ft1">Counts up · cap 20:00</small></div></div>
+        <h3>For Time</h3><p class="notes">Turn the bezel to set the cap. The switch picks the clock's direction.</p>
+      </div>
+      <div class="opt">
+        <div class="dev"><div class="bar"><i class="back"></i><span class="t">EMOM</span><span class="chip">Major</span></div>
+          <div class="mid split"><div class="sp"></div>
+            <div class="wheels" data-mode="emom" data-total="em1" data-tl="emtl1">
+              <div class="wcol"><span class="lab g">Every</span><div class="wwrap"><div class="wheel" data-k="every" data-min="15" data-max="600" data-step="15" data-fmt="clock" data-val="60"></div></div></div>
+              <div class="wcol"><span class="lab b">Rounds</span><div class="wwrap"><div class="wheel" data-k="rounds" data-min="1" data-max="30" data-step="1" data-fmt="n" data-val="10"></div></div></div>
+            </div>
+            <div class="tlzone"><div class="tl"><div class="tlbar" id="emtl1"></div></div></div>
+          </div><div class="slab"><b>START</b><small id="em1">10:00 total</small></div></div>
+        <h3>EMOM</h3><p class="notes">Two wheels. The timeline shows one block per round.</p>
+      </div>
+      <div class="opt">
+        <div class="dev"><div class="bar"><i class="back"></i><span class="t">AMRAP</span><span class="chip">Major</span></div>
+          <div class="mid"><div class="dialwrap"><svg class="dial" data-mode="amrap" data-val="10" data-ring="#00FF88" viewBox="0 0 270 270"></svg><div class="dialtxt"><span class="lab">Duration</span><span class="v">10:00</span></div></div>
+            <span class="hint">Turn the bezel · one turn is 60 minutes</span>
+          </div><div class="slab"><b>START</b></div></div>
+        <h3>AMRAP</h3><p class="notes">One number, so the slab is just START.</p>
+      </div>
+      <div class="opt">
+        <div class="dev"><div class="bar"><i class="back"></i><span class="t">TABATA</span><span class="chip">Major</span></div>
+          <div class="mid split"><div class="sp"></div>
+            <div class="wheels" data-mode="tabata" data-total="tb1" data-tl="tbtl1">
+              <div class="wcol"><span class="lab g">Work</span><div class="wwrap"><div class="wheel" data-k="work" data-min="5" data-max="120" data-step="5" data-fmt="phase" data-val="20"></div></div></div>
+              <div class="wcol"><span class="lab p">Rest</span><div class="wwrap"><div class="wheel" data-k="rest" data-min="5" data-max="120" data-step="5" data-fmt="phase" data-val="10"></div></div></div>
+              <div class="wcol"><span class="lab b">Rounds</span><div class="wwrap"><div class="wheel" data-k="rounds" data-min="1" data-max="20" data-step="1" data-fmt="n" data-val="8"></div></div></div>
+            </div>
+            <div class="tlzone"><div class="tl"><div class="tlbar" id="tbtl1"></div></div></div>
+          </div><div class="slab"><b>START</b><small id="tb1">4:00 total</small></div></div>
+        <h3>Tabata</h3><p class="notes">Three wheels. Work blocks green and rest blocks pink, matching the labels.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div><h2>iPad</h2><p class="sub">The same screens, drawn at tablet size. The bezel and wheels grow with the screen, as the rest of the app now does.</p></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr))">
+      <div class="opt">
+        <div class="dev ipad"><div class="bar"><i class="back"></i><span class="t">AMRAP</span><span class="chip">Major</span></div>
+          <div class="mid"><div class="dialwrap"><svg class="dial" data-mode="amrap" data-val="12" data-ring="#00FF88" viewBox="0 0 270 270"></svg><div class="dialtxt"><span class="lab">Duration</span><span class="v">12:00</span></div></div>
+            <span class="hint">Turn the bezel</span>
+          </div><div class="slab"><b>START</b></div></div>
+        <h3>AMRAP on iPad</h3>
+      </div>
+      <div class="opt">
+        <div class="dev ipad"><div class="bar"><i class="back"></i><span class="t">TABATA</span><span class="chip">Major</span></div>
+          <div class="mid split"><div class="sp"></div>
+            <div class="wheels" data-mode="tabata" data-total="tb2" data-tl="tbtl2">
+              <div class="wcol"><span class="lab g">Work</span><div class="wwrap"><div class="wheel" data-k="work" data-min="5" data-max="120" data-step="5" data-fmt="phase" data-val="20"></div></div></div>
+              <div class="wcol"><span class="lab p">Rest</span><div class="wwrap"><div class="wheel" data-k="rest" data-min="5" data-max="120" data-step="5" data-fmt="phase" data-val="10"></div></div></div>
+              <div class="wcol"><span class="lab b">Rounds</span><div class="wwrap"><div class="wheel" data-k="rounds" data-min="1" data-max="20" data-step="1" data-fmt="n" data-val="8"></div></div></div>
+            </div>
+            <div class="tlzone"><div class="tl"><div class="tlbar" id="tbtl2"></div></div></div>
+          </div><div class="slab"><b>START</b><small id="tb2">4:00 total</small></div></div>
+        <h3>Tabata on iPad</h3>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div><h2>Apple Watch</h2><p class="sub">The Digital Crown stays the control, since a watch has no room for a bezel or wheels. Tap a number to choose it, then turn the Crown. START is a full-width capsule with a small margin, because the round screen corners would clip an edge-to-edge slab.</p></div>
+    <div class="wgrid">
+      <div class="watch"><div class="wt"><b>FOR TIME</b><span>9:41</span></div><div class="wm"><span class="wl">TIME CAP</span><span class="wv">20:00</span><span class="crown">COUNT UP</span></div><div class="wslab"><b>START</b><small>Counts up</small></div></div>
+      <div class="watch"><div class="wt"><b>EMOM</b><span>9:41</span></div><div class="wm"><div class="row"><div><span class="wl" style="color:#00FF88">EVERY</span><span class="wv">1:00</span></div><div><span class="wl" style="color:#00AAFF">ROUNDS</span><span class="wv" style="color:#6A6A72">10</span></div></div><span class="crown">Turn the Crown</span></div><div class="wslab"><b>START</b><small>10:00 total</small></div></div>
+      <div class="watch"><div class="wt"><b>AMRAP</b><span>9:41</span></div><div class="wm"><span class="wl">DURATION</span><span class="wv">10:00</span><span class="crown">Turn the Crown</span></div><div class="wslab"><b>START</b></div></div>
+      <div class="watch"><div class="wt"><b>TABATA</b><span>9:41</span></div><div class="wm"><div class="row"><div><span class="wl" style="color:#00FF88">WORK</span><span class="wv">20s</span></div><div><span class="wl" style="color:#FF0088">REST</span><span class="wv" style="color:#6A6A72">10s</span></div><div><span class="wl" style="color:#00AAFF">RNDS</span><span class="wv" style="color:#6A6A72">8</span></div></div><span class="crown">Turn the Crown</span></div><div class="wslab"><b>START</b><small>4:00 total</small></div></div>
+    </div>
+    <div class="dec"><p><b>On the watch,</b> the white number is the one the Crown moves; grey ones are a tap away. Tabata's three values sit in one row, matching the phone's three wheels.</p></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  // iPad frames scale their contents to their own width (1.45 at 560px).
+  const fit=()=>document.querySelectorAll('.dev.ipad').forEach(d=>{d.style.setProperty('--s',Math.max(.8,Math.min(1.45,d.clientWidth/386)).toFixed(3))});
+  fit();try{new ResizeObserver(fit).observe(document.body)}catch(e){addEventListener('resize',fit)}
+  const clock=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  const phase=s=>s<60?s+'s':clock(s);
+  const fmt=(f,v)=>f==='clock'?clock(v):f==='phase'?phase(v):String(v);
+  const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(4)}catch(e){}};
+  function vals(el){const a=[],mn=+el.dataset.min,mx=+el.dataset.max,st=+el.dataset.step;for(let v=mn;v<=mx;v+=st)a.push(v);return a}
+
+  // wheels, grouped per mode for totals and timeline
+  document.querySelectorAll('.wheels').forEach(group=>{
+    const state={},mode=group.dataset.mode,out=document.getElementById(group.dataset.total),tl=document.getElementById(group.dataset.tl);
+    function redraw(){
+      if(mode==='emom'){const e=state.every||60,r=state.rounds||10;out.textContent=clock(e*r)+' total';tl.innerHTML=Array.from({length:r},()=>'<i style="flex:1;background:#FF0088"></i>').join('');}
+      else{const w=state.work||20,rs=state.rest||10,n=state.rounds||8;out.textContent=clock((w+rs)*n)+' total';let h='';for(let i=0;i<n;i++)h+=`<i style="flex:${w};background:#00FF88"></i><i style="flex:${rs};background:#FF0088"></i>`;tl.innerHTML=h;}
+    }
+    group.querySelectorAll('.wheel').forEach(el=>{
+      const list=vals(el),f=el.dataset.fmt;let cur=-1;
+      el.innerHTML='<div class="pad"></div>'+list.map(v=>'<div class="it">'+fmt(f,v)+'</div>').join('')+'<div class="pad"></div>';
+      const items=[...el.querySelectorAll('.it')];
+      const H=()=>items[0].getBoundingClientRect().height||56;
+      function sync(){const i=Math.max(0,Math.min(list.length-1,Math.round(el.scrollTop/H())));if(i!==cur){if(cur>=0)items[cur].classList.remove('on');items[i].classList.add('on');cur=i;buzz();state[el.dataset.k]=list[i];redraw();}}
+      el.addEventListener('scroll',()=>requestAnimationFrame(sync),{passive:true});
+      requestAnimationFrame(()=>{el.scrollTop=list.indexOf(+el.dataset.val)*H();sync()});
+    });
+  });
+
+  // bezels
+  document.querySelectorAll('.dial').forEach(svg=>{
+    const C=135,R=112,ring=svg.dataset.ring,mode=svg.dataset.mode;let m=+svg.dataset.val,drag=false;
+    const vEl=svg.parentElement.querySelector('.v');
+    const pt=a=>{const r=a*Math.PI/180;return [C+R*Math.sin(r),C-R*Math.cos(r)]};
+    function draw(){const a=Math.min(m/60*360,359.9),[x,y]=pt(a),large=a>180?1:0;let t='';
+      for(let k=0;k<60;k++){const r=k*Math.PI/30,len=k%5===0?14:7,r1=R-16,r2=R-16-len;t+=`<line x1="${C+r1*Math.sin(r)}" y1="${C-r1*Math.cos(r)}" x2="${C+r2*Math.sin(r)}" y2="${C-r2*Math.cos(r)}" stroke="${k<m?ring:'#2E2E44'}" stroke-width="${k%5===0?3:2}" stroke-linecap="round"/>`}
+      svg.innerHTML=`<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="#1E1F33" stroke-width="18"/><path d="M ${C} ${C-R} A ${R} ${R} 0 ${large} 1 ${x} ${y}" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>${t}<circle cx="${x}" cy="${y}" r="17" fill="#FF0088" stroke="#050510" stroke-width="3"/>`;
+      vEl.textContent=m+':00';
+      if(mode==='fortime'){const seg=document.querySelector('.seg[data-target="ft1"]');const up=seg.querySelector('button.on').textContent.includes('UP');document.getElementById('ft1').textContent=(up?'Counts up':'Counts down')+' · cap '+m+':00';}}
+    function at(e){const b=svg.getBoundingClientRect(),dx=e.clientX-(b.left+b.width/2),dy=e.clientY-(b.top+b.height/2);let a=Math.atan2(dx,-dy)*180/Math.PI;if(a<0)a+=360;let n=Math.round(a/6)||60;if(Math.abs(n-m)>30)n=m>30?60:1;n=Math.max(1,Math.min(60,n));if(n!==m){m=n;buzz();draw()}}
+    svg.addEventListener('pointerdown',e=>{drag=true;svg.setPointerCapture(e.pointerId);at(e)});
+    svg.addEventListener('pointermove',e=>{if(drag)at(e)});
+    svg.addEventListener('pointerup',()=>drag=false);svg.addEventListener('pointercancel',()=>drag=false);
+    svg.redraw=draw;draw();
+  });
+  // count direction switch
+  document.querySelectorAll('.seg').forEach(seg=>{
+    seg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');buzz();document.querySelector('.dial[data-mode="fortime"]').redraw()}));
+  });
+})();
+</script>
+<script>
+// Timeline centring: every .tlzone puts its timeline exactly midway between
+// the visible bottom of the content above it (glyph bottoms, not box edges)
+// and the top of the bottom buttons. Re-run on resize, never per tick.
+(function(){
+  const cv=document.createElement('canvas').getContext('2d');
+  function glyphBottom(textNode){
+    const el=textNode.parentElement,cs=getComputedStyle(el);
+    if(cs.visibility==='hidden'||+cs.opacity<0.15)return -1;
+    const r=document.createRange();r.selectNodeContents(textNode);const rects=[...r.getClientRects()];if(!rects.length)return -1;
+    cv.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m=cv.measureText(textNode.textContent.trim()||'0');
+    const asc=m.fontBoundingBoxAscent,desc=m.fontBoundingBoxDescent,gd=m.actualBoundingBoxDescent;
+    // Only glyphs inside a scroller's visible window count (wheels scroll).
+    const sc=el.closest('.rw,.wheel'),vr=sc?sc.getBoundingClientRect():null;
+    const ok=rects.filter(q=>!vr||(q.top>=vr.top-1&&q.bottom<=vr.bottom+1));if(!ok.length)return -1;
+    return Math.max(...ok.map(q=>{const h=q.height,base=q.top+(h-(asc+desc))/2+asc;return base+gd}));
+  }
+  function visBottom(el){
+    const wheels=el.querySelectorAll('.wheel');
+    if(wheels.length){ // a 3-row wheel: the lower row's glyphs, centred in its row
+      return Math.max(...[...wheels].map(w=>{const b=w.getBoundingClientRect(),it=w.querySelector('.it:not(.on)')||w.querySelector('.it');const row=it.getBoundingClientRect().height,fs=parseFloat(getComputedStyle(it).fontSize);return b.bottom-(row-0.7*fs)/2}));
+    }
+    let best=-1;const tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n;
+    while((n=tw.nextNode()))if(n.textContent.trim())best=Math.max(best,glyphBottom(n));
+    el.querySelectorAll('svg').forEach(s=>best=Math.max(best,s.getBoundingClientRect().bottom));
+    return best<0?el.getBoundingClientRect().bottom:best;
+  }
+  function place(){
+    document.querySelectorAll('.tlzone').forEach(z=>{
+      const above=z.previousElementSibling,tl=z.querySelector('.tl');if(!above||!tl)return;
+      const frame=z.closest('.dev,.watch');const slab=frame&&frame.querySelector('.slab,.slab2,.wslab');if(!slab)return;
+      tl.style.marginTop='0px';z.style.alignItems='flex-start';
+      const top=visBottom(above),bottom=slab.getBoundingClientRect().top,zt=z.getBoundingClientRect().top,h=tl.getBoundingClientRect().height;
+      tl.style.marginTop=Math.max(0,((top+bottom)/2-h/2)-zt)+'px';
+    });
+  }
+  window.__placeTimelines=place;
+  const go=()=>requestAnimationFrame(()=>requestAnimationFrame(place));
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go);
+  try{new ResizeObserver(go).observe(document.body)}catch(e){addEventListener('resize',go)}
+  setTimeout(go,600);
+})();
+
+</script>

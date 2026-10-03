@@ -351,9 +351,9 @@ void main() {
           s.tick(Duration(seconds: seconds)).getOrElse((f) => fail('$f'));
 
       test('Tabata paused mid-WORK keeps the work countdown', () {
-        var session = TimerSession.fromWorkout(tabata())
-            .start()
-            .getOrElse((f) => fail('$f'));
+        var session = TimerSession.fromWorkout(
+          tabata(),
+        ).start().getOrElse((f) => fail('$f'));
         session = tickBy(session, 12);
         expect(session.state, TimerState.running);
         expect(session.timeRemaining.seconds, 8);
@@ -369,9 +369,9 @@ void main() {
       });
 
       test('Tabata paused mid-REST keeps the rest countdown', () {
-        var session = TimerSession.fromWorkout(tabata())
-            .start()
-            .getOrElse((f) => fail('$f'));
+        var session = TimerSession.fromWorkout(
+          tabata(),
+        ).start().getOrElse((f) => fail('$f'));
         session = tickBy(session, 23); // 20 work + 3 into rest
         expect(session.state, TimerState.resting);
 
@@ -384,9 +384,9 @@ void main() {
         final workout = tabata().copyWith(
           prepCountdown: TimerDuration.fromSeconds(10),
         );
-        var session = TimerSession.fromWorkout(workout)
-            .start()
-            .getOrElse((f) => fail('$f'));
+        var session = TimerSession.fromWorkout(
+          workout,
+        ).start().getOrElse((f) => fail('$f'));
         session = tickBy(session, 3);
         final paused = session.pause().getOrElse((f) => fail('$f'));
 
@@ -451,6 +451,22 @@ void main() {
           expect(ticked.state, TimerState.completed);
           // Elapsed pinned to the workout boundary, not the raw delta.
           expect(ticked.elapsed.seconds, 30);
+          // And it ended in the last round, not the one the tick began in
+          // (1.3.1: the end screen reads this as "3/3").
+          expect(ticked.currentRound, 3);
+        });
+      });
+
+      test('Tabata finished in one catch-up tick ends in its last round', () {
+        var session = TimerSession.fromWorkout(tabataWorkout(rounds: 2));
+        session = session.start().getOrElse((f) => session);
+
+        final result = session.tick(const Duration(seconds: 60));
+
+        result.fold((failure) => fail('Should not fail'), (ticked) {
+          expect(ticked.state, TimerState.completed);
+          expect(ticked.elapsed.seconds, 60);
+          expect(ticked.currentRound, 2);
         });
       });
 
@@ -486,9 +502,7 @@ void main() {
       });
 
       test('Tabata completes when the delta overshoots the workout', () {
-        var session = TimerSession.fromWorkout(
-          tabataWorkout(rounds: 2),
-        );
+        var session = TimerSession.fromWorkout(tabataWorkout(rounds: 2));
         session = session.start().getOrElse((f) => session);
 
         final result = session.tick(const Duration(seconds: 500));

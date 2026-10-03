@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Tabata setup: WORK and REST side by side, ROUNDS below; tap a value to
-/// move it with the Crown. Opens on the last Tabata set: every change is
+/// Tabata setup: WORK (green) and REST (pink) side by side, ROUNDS (blue)
+/// below; tap a value to move it with the Crown. Opens on the last Tabata set: every change is
 /// remembered (1.3.1). The total rides inside START.
 struct TabataSetupView: View {
     @Bindable var viewModel: TimerViewModel
@@ -51,7 +51,7 @@ struct TabataSetupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 0) {
             Spacer(minLength: 0)
             HStack(spacing: 6) {
                 Button { focusedField = .work } label: {
@@ -66,7 +66,8 @@ struct TabataSetupView: View {
                 .buttonStyle(.plain)
             }
             Button { focusedField = .rounds } label: {
-                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", size: 32, focused: focusedField == .rounds)
+                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", labelColor: Palette.mode("amrap"),
+                           size: 32, focused: focusedField == .rounds)
             }
             .buttonStyle(.plain)
             Spacer(minLength: 0)
@@ -76,7 +77,8 @@ struct TabataSetupView: View {
                 showingTimer = viewModel.session?.state != .ready
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, CapsuleGeometry.sideMargin)
+        .padding(.bottom, CapsuleGeometry.bottomMargin)
         .focusable()
         .digitalCrownRotation(
             crownBinding,
@@ -89,6 +91,8 @@ struct TabataSetupView: View {
         .onAppear(perform: load)
         .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
+        // Last, outside the Crown focus container, so it reaches the edge.
+        .ignoresSafeArea(edges: .bottom)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)
         }

@@ -9,7 +9,8 @@ import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/core/presentation/widgets/wordmark.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
-import 'package:wod_timer/features/timer/presentation/widgets/setup_stepper.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
@@ -69,110 +70,120 @@ class PlaceholderPage extends StatelessWidget {
   }
 }
 
-/// Signal design home page: the WOD. title, then one strip per mode showing
-/// the setup that mode will open on.
+/// One mode as Home shows it: the remembered setup, in words and as a
+/// timeline.
+class HomeMode {
+  const HomeMode({
+    required this.name,
+    required this.config,
+    required this.spokenConfig,
+    required this.timerType,
+    required this.shape,
+  });
+
+  final String name;
+
+  /// Remembered setup as shown ("10 × 1:00").
+  final String config;
+
+  /// The same setup the way a screen reader should say it.
+  final String spokenConfig;
+
+  final String timerType;
+  final WorkoutShape shape;
+
+  Color get accent => shape.accent;
+  int get totalSeconds => shape.totalSeconds;
+}
+
+/// Home (1.3.1): the stacked wordmark, then every mode as a card showing
+/// the setup it will open on, drawn as a timeline. Phones list the four
+/// cards; tablets put the last mode started in a big tile across the top
+/// and the other three in a row below.
 class PlaceholderHomePage extends ConsumerWidget {
   const PlaceholderHomePage({required this.onTimerSelected, super.key});
 
   /// Callback when a timer type is selected.
   final void Function(String timerType) onTimerSelected;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      body: SafeArea(
-        child: OrientationBuilder(
-          builder: (context, orientation) {
-            if (orientation == Orientation.landscape) {
-              return _buildLandscape(context, ref);
-            }
-            return _buildPortrait(context, ref);
-          },
-        ),
-      ),
-    );
-  }
+  /// Logical shortest side (under TabletScale) from which Home uses tiles.
+  static const double tabletShortestSide = 560;
 
-  Widget _buildHero() => const Wordmark();
-
-  /// One strip per mode, each showing the remembered setup, so Home answers
-  /// "what will this start?" before the tap. Read on every build: Home is
-  /// rebuilt each time it is navigated back to, after setup saved.
-  List<Widget> _buildStrips(
-    BuildContext context,
-    WidgetRef ref, {
-    required double verticalPadding,
-  }) {
-    final memory = ref.watch(setupMemoryProvider);
+  /// The modes in Home order: For Time, EMOM, AMRAP, Tabata.
+  static List<HomeMode> modesOf(SetupMemory memory) {
     final amrap = memory.amrap;
     final forTime = memory.forTime;
     final emom = memory.emom;
     final tabata = memory.tabata;
     final direction = forTime.countUp ? 'UP' : 'DOWN';
-
-    Widget strip({
-      required String name,
-      required String config,
-      required String spokenConfig,
-      required String timerType,
-      required Color accentColor,
-    }) {
-      return _SignalStripItem(
-        name: name,
-        config: config,
-        spokenConfig: spokenConfig,
-        accentColor: accentColor,
-        verticalPadding: verticalPadding,
-        onTap: () {
-          ref.read(hapticServiceProvider).lightImpact();
-          onTimerSelected(timerType);
-        },
-      );
-    }
-
     return [
-      strip(
-        name: 'AMRAP',
-        config: setupClock(amrap.durationSeconds),
-        spokenConfig: setupSpokenDuration(amrap.durationSeconds),
-        timerType: 'amrap',
-        accentColor: AppColors.amrapAccent,
-      ),
-      const SizedBox(height: 12),
-      strip(
+      HomeMode(
         name: 'FOR TIME',
-        config: 'CAP ${setupClock(forTime.capSeconds)} \u00B7 $direction',
+        config: 'CAP ${setupClock(forTime.capSeconds)} · $direction',
         spokenConfig:
             'Cap ${setupSpokenDuration(forTime.capSeconds)}, '
             'counts ${direction.toLowerCase()}',
-        timerType: 'fortime',
-        accentColor: AppColors.forTimeAccent,
+        timerType: TimerTypes.forTime,
+        shape: WorkoutShape.ofSetup(forTime),
       ),
-      const SizedBox(height: 12),
-      strip(
+      HomeMode(
         name: 'EMOM',
-        config: '${emom.rounds} \u00D7 ${setupClock(emom.intervalSeconds)}',
+        config: '${emom.rounds} × ${setupClock(emom.intervalSeconds)}',
         spokenConfig:
             '${emom.rounds} ${emom.rounds == 1 ? 'round' : 'rounds'} of '
             '${setupSpokenDuration(emom.intervalSeconds)}',
-        timerType: 'emom',
-        accentColor: AppColors.emomAccent,
+        timerType: TimerTypes.emom,
+        shape: WorkoutShape.ofSetup(emom),
       ),
-      const SizedBox(height: 12),
-      strip(
+      HomeMode(
+        name: 'AMRAP',
+        config: setupClock(amrap.durationSeconds),
+        spokenConfig: setupSpokenDuration(amrap.durationSeconds),
+        timerType: TimerTypes.amrap,
+        shape: WorkoutShape.ofSetup(amrap),
+      ),
+      HomeMode(
         name: 'TABATA',
         config:
-            '${tabata.rounds} \u00D7 ${setupPhase(tabata.workSeconds)} / '
+            '${tabata.rounds} × ${setupPhase(tabata.workSeconds)} / '
             '${setupPhase(tabata.restSeconds)}',
         spokenConfig:
             '${tabata.rounds} ${tabata.rounds == 1 ? 'round' : 'rounds'}, '
             '${setupSpokenDuration(tabata.workSeconds)} work, '
             '${setupSpokenDuration(tabata.restSeconds)} rest',
-        timerType: 'tabata',
-        accentColor: AppColors.tabataAccent,
+        timerType: TimerTypes.tabata,
+        shape: WorkoutShape.ofSetup(tabata),
       ),
     ];
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Read on every build: Home is rebuilt each time it is navigated back
+    // to, after setup saved.
+    final memory = ref.watch(setupMemoryProvider);
+    final modes = modesOf(memory);
+    final size = MediaQuery.sizeOf(context);
+    final tablet = size.shortestSide >= tabletShortestSide;
+    final landscape = size.width > size.height;
+
+    void select(String type) {
+      ref.read(hapticServiceProvider).lightImpact();
+      onTimerSelected(type);
+    }
+
+    final Widget cards = tablet
+        ? _HomeTiles(modes: modes, lastMode: memory.lastMode, onSelect: select)
+        : _HomeCards(modes: modes, compact: landscape, onSelect: select);
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundDark,
+      body: SafeArea(
+        child: landscape
+            ? _buildLandscape(context, cards, tablet: tablet)
+            : _buildPortrait(context, cards, tablet: tablet),
+      ),
+    );
   }
 
   Widget _buildSettingsButton(BuildContext context) {
@@ -187,34 +198,27 @@ class PlaceholderHomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildPortrait(BuildContext context, WidgetRef ref) {
+  Widget _buildPortrait(
+    BuildContext context,
+    Widget cards, {
+    required bool tablet,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
       child: ContentWidthCap(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHero(),
+            const Wordmark(),
             const SizedBox(height: 20),
-
-            // Timer type strip list; scrolls only when large text can't fit.
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: _buildStrips(context, ref, verticalPadding: 14),
-                    ),
-                  ),
-                ),
-              ),
+              child: tablet
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: cards,
+                    )
+                  : cards,
             ),
-
-            // Bottom icons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [_buildSettingsButton(context)],
@@ -225,10 +229,13 @@ class PlaceholderHomePage extends ConsumerWidget {
     );
   }
 
-  /// Landscape gets its own layout (hero left, modes right): the portrait
-  /// column used to overflow here and cut TABATA off entirely. All four
-  /// strips fit 844 x 390pt; the scroll view is only a silent fallback.
-  Widget _buildLandscape(BuildContext context, WidgetRef ref) {
+  /// Landscape: wordmark column left, the cards or tiles right. All four
+  /// phone cards fit 844 x 390pt without the total line.
+  Widget _buildLandscape(
+    BuildContext context,
+    Widget cards, {
+    required bool tablet,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       child: Row(
@@ -239,7 +246,7 @@ class PlaceholderHomePage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Spacer(),
-                _buildHero(),
+                const Wordmark(),
                 const Spacer(),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -251,15 +258,12 @@ class PlaceholderHomePage extends ConsumerWidget {
           const SizedBox(width: 24),
           Expanded(
             flex: 2,
-            child: ContentWidthCap(
-              maxWidth: 520,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _buildStrips(context, ref, verticalPadding: 12),
-                ),
-              ),
-            ),
+            child: tablet
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: cards,
+                  )
+                : ContentWidthCap(maxWidth: 520, child: cards),
           ),
         ],
       ),
@@ -267,93 +271,290 @@ class PlaceholderHomePage extends ConsumerWidget {
   }
 }
 
-/// One mode as a single row: the mode's colour bar, the name in brand
-/// orange, and the setup it will open on at the right. The bars came back
-/// in 1.3.1 (Gareth liked them); there is still no chevron, the whole strip
-/// is the button.
-class _SignalStripItem extends StatelessWidget {
-  const _SignalStripItem({
-    required this.name,
-    required this.config,
-    required this.spokenConfig,
-    required this.accentColor,
-    required this.verticalPadding,
+TextStyle _nameStyle(double size) => AppTypography.stripName.copyWith(
+  color: AppColors.textPrimaryDark,
+  fontSize: size,
+  fontWeight: FontWeight.w900,
+  height: 1,
+);
+
+TextStyle _configStyle(double size, {FontWeight weight = FontWeight.w700}) =>
+    AppTypography.bodyLarge.copyWith(
+      color: AppColors.textPrimaryDark,
+      fontSize: size,
+      fontWeight: weight,
+      height: 1,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+TextStyle _mutedStyle(double size) => AppTypography.bodyLarge.copyWith(
+  color: AppColors.textSecondaryDark,
+  fontSize: size,
+  fontWeight: FontWeight.w600,
+  height: 1,
+  fontFeatures: const [FontFeature.tabularFigures()],
+);
+
+Widget _bar(Color color, {required double width, double? height}) => Container(
+  width: width,
+  height: height,
+  decoration: BoxDecoration(
+    color: color,
+    borderRadius: BorderRadius.circular(width / 2),
+  ),
+);
+
+Widget _fitLeft(Widget child) => FittedBox(
+  fit: BoxFit.scaleDown,
+  alignment: Alignment.centerLeft,
+  child: child,
+);
+
+/// The whole card is the button; no chevron.
+class _HomeTap extends StatelessWidget {
+  const _HomeTap({
+    required this.mode,
+    required this.radius,
     required this.onTap,
+    required this.child,
   });
 
-  final String name;
-
-  /// The mode's sidebar colour (AMRAP green, For Time blue, EMOM magenta,
-  /// Tabata amber).
-  final Color accentColor;
-
-  /// Remembered setup as shown ("10 × 1:00").
-  final String config;
-
-  /// The same setup the way a screen reader should say it.
-  final String spokenConfig;
-
-  final double verticalPadding;
+  final HomeMode mode;
+  final double radius;
   final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '$name timer. $spokenConfig. Double tap to select.',
+      label: '${mode.name} timer. ${mode.spokenConfig}. Double tap to select.',
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: verticalPadding,
-            ),
+          borderRadius: BorderRadius.circular(radius),
+          child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-              color: Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              color: Colors.white.withValues(alpha: 0.035),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Phone: full-width cards, centred in the space, scrolling only when
+/// large text can't fit.
+class _HomeCards extends StatelessWidget {
+  const _HomeCards({
+    required this.modes,
+    required this.compact,
+    required this.onSelect,
+  });
+
+  final List<HomeMode> modes;
+
+  /// Landscape: no total line, an 8pt timeline, tighter padding.
+  final bool compact;
+  final void Function(String timerType) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: compact ? 10 : 14,
+            children: [
+              for (final mode in modes)
+                _HomeCard(
+                  mode: mode,
+                  compact: compact,
+                  onTap: () => onSelect(mode.timerType),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One phone card: 4pt mode-colour bar, white name 28, setup right-aligned
+/// 18, the timeline under, "10:00 total" right-aligned 13 grey under that.
+class _HomeCard extends StatelessWidget {
+  const _HomeCard({
+    required this.mode,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final HomeMode mode;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeTap(
+      mode: mode,
+      radius: 14,
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: compact ? 12 : 16,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                _bar(mode.accent, width: 4, height: 30),
                 const SizedBox(width: 14),
-                Text(
-                  name,
-                  style: AppTypography.stripName.copyWith(
-                    color: AppColors.brand,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                  ),
+                // Halves, so large text shrinks the name and wraps the
+                // setup instead of pushing the row off the card.
+                Expanded(
+                  child: _fitLeft(Text(mode.name, style: _nameStyle(28))),
                 ),
                 const SizedBox(width: 12),
-                // Expanded so large text wraps the config instead of
-                // pushing the row off the screen.
                 Expanded(
                   child: Text(
-                    config,
+                    mode.config,
                     textAlign: TextAlign.end,
-                    style: AppTypography.bodyLarge.copyWith(
-                      color: AppColors.textPrimaryDark,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                    style: _configStyle(18),
                   ),
                 ),
               ],
             ),
+            SizedBox(height: compact ? 10 : 14),
+            WorkoutTimeline(shape: mode.shape, height: compact ? 8 : 12),
+            if (!compact) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${setupClock(mode.totalSeconds)} total',
+                  style: _mutedStyle(13),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tablet: the last mode started as a big tile across the top, the other
+/// three in a row below in Home order.
+class _HomeTiles extends StatelessWidget {
+  const _HomeTiles({
+    required this.modes,
+    required this.lastMode,
+    required this.onSelect,
+  });
+
+  final List<HomeMode> modes;
+  final String lastMode;
+  final void Function(String timerType) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final hero = modes.firstWhere(
+      (m) => m.timerType == lastMode,
+      orElse: () => modes.first,
+    );
+    final rest = modes.where((m) => m != hero).toList();
+    return Column(
+      spacing: 14,
+      children: [
+        Expanded(
+          flex: 5,
+          child: _HomeTile(
+            mode: hero,
+            big: true,
+            onTap: () => onSelect(hero.timerType),
           ),
+        ),
+        Expanded(
+          flex: 4,
+          child: Row(
+            spacing: 14,
+            children: [
+              for (final mode in rest)
+                Expanded(
+                  child: _HomeTile(
+                    mode: mode,
+                    big: false,
+                    onTap: () => onSelect(mode.timerType),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One tablet tile: bar, white name, setup, timeline, total.
+class _HomeTile extends StatelessWidget {
+  const _HomeTile({required this.mode, required this.big, required this.onTap});
+
+  final HomeMode mode;
+  final bool big;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeTap(
+      mode: mode,
+      radius: 18,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _bar(mode.accent, width: 6),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _fitLeft(Text(mode.name, style: _nameStyle(big ? 44 : 32))),
+                  const Spacer(),
+                  _fitLeft(
+                    Text(
+                      mode.config,
+                      style: _configStyle(
+                        big ? 40 : 32,
+                        weight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  WorkoutTimeline(shape: mode.shape, height: 14),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${setupClock(mode.totalSeconds)} total',
+                      style: _mutedStyle(big ? 18 : 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

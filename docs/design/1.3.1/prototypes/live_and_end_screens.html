@@ -1,0 +1,282 @@
+<title>Wharf WOD Workout Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Figtree:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ink:#050510; --page:#08080F; --card:#0E0E1E; --line:#1F2030; --soft:#16172A; --track:#24253A;
+  --white:#FFFFFF; --label:#9A9AA2; --dim:#6A6A72;
+  --green:#00FF88; --pink:#FF0088; --blue:#00AAFF; --orange:#FF6B1A;
+  --display:'Outfit','Avenir Next',system-ui,sans-serif;
+  --body:'Figtree','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--white);font-family:var(--body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:36px 64px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:900;line-height:1.05}
+h2{font-size:24px;font-weight:900}
+h2 i{display:inline-block;width:6px;height:22px;border-radius:3px;margin-right:10px;vertical-align:-2px}
+p{margin:0}
+.lede{color:#C9CBD6;max-width:70ch;margin-top:12px}
+.asks{margin-top:16px;border-left:4px solid var(--pink);background:var(--card);padding:12px 16px;border-radius:0 10px 10px 0;max-width:80ch;color:#DADCE5;display:grid;gap:6px}
+.asks b{font-family:var(--display);font-weight:800;color:var(--white)}
+.speed{display:flex;gap:8px;margin-top:16px;align-items:center;flex-wrap:wrap;color:var(--label);font-family:var(--display);font-weight:700}
+.speed button{font-family:var(--display);font-weight:800;font-size:15px;background:var(--soft);color:var(--white);border:1.5px solid #34344A;border-radius:12px;padding:8px 14px;cursor:pointer}
+.speed button.on{background:var(--white);color:#000;border-color:var(--white)}
+section{margin-top:44px;display:grid;gap:14px}
+.sub{color:var(--label);max-width:74ch}
+.row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.cell{width:min(100%,320px)}
+.cell.w{width:198px}
+.cap{font-family:var(--display);font-weight:700;font-size:14px;color:var(--label);margin-top:8px}
+/* phone / tablet frame */
+.dev{--s:1;width:100%;height:calc(620px*var(--s));background:var(--ink);border-radius:calc(32px*var(--s));border:1px solid var(--line);box-shadow:0 0 0 6px #121220;display:flex;flex-direction:column;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none;font-family:var(--display)}
+.dev.ipad{width:100%;max-width:520px;height:auto;aspect-ratio:3/4;border-radius:26px}
+.live{flex:1;display:flex;flex-direction:column;align-items:center;padding:calc(30px*var(--s)) calc(14px*var(--s)) 0;position:relative;cursor:pointer}
+.glow{position:absolute;left:0;right:0;top:12%;height:46%;pointer-events:none;transition:background .3s}
+.phase{height:calc(40px*var(--s));display:flex;align-items:center;font-weight:900;font-size:calc(28px*var(--s));letter-spacing:.06em;position:relative}
+.clockbox{width:100%;display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.clock{font-weight:900;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;position:relative;white-space:nowrap;transition:color .2s}
+.second{height:calc(64px*var(--s));display:flex;align-items:center;justify-content:center;gap:calc(8px*var(--s));position:relative}
+.second .n{font-weight:900;font-size:calc(64px*var(--s));line-height:1;font-variant-numeric:tabular-nums}
+.second .u{font-weight:800;font-size:calc(16px*var(--s));letter-spacing:.14em;color:var(--label)}
+.second .h{font-weight:800;font-size:calc(26px*var(--s));letter-spacing:.1em;color:var(--label)}
+.tl{display:flex;gap:calc(3px*var(--s));height:calc(14px*var(--s));width:100%;position:relative}
+.tl b{display:block;height:100%;border-radius:calc(4px*var(--s));background:var(--track);overflow:hidden;position:relative}
+.tl b i{position:absolute;left:0;top:0;bottom:0;display:block}
+.ctrl{display:none;height:calc(150px*var(--s));display:flex;align-items:center;justify-content:center;gap:calc(14px*var(--s));width:100%;position:relative}
+.pause{width:calc(96px*var(--s));height:calc(96px*var(--s));border-radius:50%;border:2.5px solid rgba(255,255,255,.85);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;gap:calc(9px*var(--s));cursor:pointer}
+.pause span{width:calc(9px*var(--s));height:calc(32px*var(--s));background:#fff;border-radius:3px}
+.pause.play{background:#fff;border-color:#fff}
+.pause.play span{display:none}
+.pause.play::after{content:"";border-left:calc(28px*var(--s)) solid #000;border-top:calc(17px*var(--s)) solid transparent;border-bottom:calc(17px*var(--s)) solid transparent;margin-left:calc(6px*var(--s))}
+.finish{flex:1;max-width:calc(190px*var(--s));height:calc(70px*var(--s));border-radius:calc(35px*var(--s));background:#fff;color:#000;font-weight:900;font-size:calc(22px*var(--s));letter-spacing:.08em;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+/* end */
+.end{flex:1;display:flex;flex-direction:column;align-items:center;padding:calc(40px*var(--s)) calc(16px*var(--s)) 0}
+.end .w{font-weight:900;font-size:calc(30px*var(--s))}
+.end .c{font-weight:700;font-size:calc(14px*var(--s));letter-spacing:.14em;color:var(--label);margin-top:calc(4px*var(--s))}
+.end .heroz{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:calc(6px*var(--s))}
+.end .hero{font-weight:900;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:calc(18px*var(--s))}
+.end .pm{width:calc(40px*var(--s));height:calc(40px*var(--s));border-radius:50%;border:1.5px solid #4A4A5A;color:var(--label);display:flex;align-items:center;justify-content:center;font-size:calc(24px*var(--s));font-weight:600}
+.end .u{line-height:1.2;font-weight:800;font-size:calc(16px*var(--s));letter-spacing:.14em;color:var(--label)}
+.end .t2{line-height:1.2;font-weight:800;font-size:calc(20px*var(--s));color:#fff;font-variant-numeric:tabular-nums}
+.end .tlw{width:100%;padding:calc(18px*var(--s)) 0 calc(26px*var(--s))}
+.slab2{height:calc(132px*var(--s));display:flex;flex:none}
+.slab2 div{flex:1;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:calc(26px*var(--s));letter-spacing:.08em;padding-bottom:calc(10px*var(--s));cursor:pointer}
+.slab2 .again{color:#000}
+.slab2 div{position:relative;overflow:hidden}
+.slab2 .pausek{background:var(--soft);color:#fff}
+.slab2 .finishk{background:#fff;color:#000}
+.slab2 .stopk{background:#1A0E14;color:#FF4444}
+.slab2 .stopk .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,68,68,.35);transition:none}
+.slab2 .stopk span{position:relative}
+.slab2 + .slab2{display:none}
+.live{padding-bottom:0}
+.live .tlzone,.end .tlzone,.end .sp{flex:1;display:flex;align-items:center;width:100%;min-height:calc(10px*var(--s))}
+.end .heroz{flex:none!important}
+.rw{position:relative;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);touch-action:pan-y}
+.rw::-webkit-scrollbar{display:none}
+.rw div{display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:#3A3D58}
+.rw div.on{color:var(--blue)}
+.hintfix{font-weight:700;font-size:calc(13px*var(--s));color:var(--dim)}
+.watch .hintfix{font-size:9px}
+.slab2 .done{background:var(--soft);color:#fff}
+/* watch */
+.watch{width:198px;height:242px;background:#000;border-radius:44px;box-shadow:0 0 0 7px #1a1a1f,0 0 0 8px #2a2a33;display:flex;flex-direction:column;overflow:hidden;font-family:var(--display);position:relative;user-select:none;-webkit-user-select:none}
+.watch .live{padding:22px 10px 0}
+.watch .phase{height:18px;font-size:13px}
+.watch .second{height:34px}
+.watch .second .n{font-size:28px}
+.watch .second .u{font-size:11px}
+.watch .second .h{font-size:13px}
+.watch .tl{height:5px;gap:1.5px}
+.watch .tl b{border-radius:2px}
+.watch .ctrl{height:62px;gap:8px;padding-bottom:8px}
+.watch .pause{width:40px;height:40px;border-width:2px;gap:4px}
+.watch .pause span{width:4px;height:14px}
+.watch .pause.play::after{border-left-width:13px;border-top-width:8px;border-bottom-width:8px;margin-left:3px}
+.watch .finish{height:36px;font-size:14px;max-width:110px}
+.watch .end{padding:22px 10px 0}
+.watch .end .w{font-size:17px}
+.watch .end .c{font-size:10px;letter-spacing:.08em}
+.watch .end .u{font-size:10px}
+.watch .end .t2{font-size:12px}
+.watch .end .pm{width:24px;height:24px;font-size:15px}
+.watch .end .hero{gap:8px}
+.watch .end .tlw{padding:6px 0 8px}
+/* watch: inset capsules, not an edge slab (the rounded screen clips a slab) */
+.watch .slab2{height:44px;margin:0 9px 10px;gap:6px}
+.watch .slab2 div{font-size:14px;padding-bottom:0;border-radius:22px}
+.watch .slab2 .stopk span{font-size:12px}
+@media (prefers-reduced-motion:reduce){.clock,.glow{transition:none}}
+</style>
+
+<div class="wrap">
+  <h1>Live and end screens, in each workout's colours</h1>
+  <p class="lede">Each workout now wears its Home colour while it runs: For Time orange, EMOM pink, AMRAP blue, and Tabata green for work and pink for rest. The progress bar is the Home timeline, filling block by block. Every screen below is running: tap AMRAP to count a round, tap PAUSE to see the paused screen, hold STOP to end, and use the speed buttons to watch the blocks fill.</p>
+  <div class="asks">
+    <p><b>Things to decide:</b></p>
+    <p>1. The clock takes the workout's colour. Today every workout runs in green.</p>
+    <p>2. The GET READY countdown is amber today, which now sits close to For Time's orange. I'd make it white for every workout.</p>
+    <p>3. Every screen's main actions sit in one edge-to-edge slab at the bottom: START on setup, PAUSE (with FINISH on For Time) while running, HOLD TO STOP and RESUME when paused, AGAIN and DONE at the end. AGAIN and RESUME take the workout's colour. On the watch the same buttons are full-width capsules with a small margin, because the round screen corners clip an edge slab.</p>
+    <p>4. End screens keep the timeline, filled to where you finished or stopped.</p>
+    <p>5. Nothing moves while numbers count: every line has a fixed slot, and the clock's size is set once per workout from its longest value.</p>
+  </div>
+  <div class="speed">Speed <button data-sp="1" class="on">Real time</button><button data-sp="10">10×</button><button data-sp="40">40×</button></div>
+
+  <section id="ft"><h2><i style="background:var(--orange)"></i>For Time</h2><p class="sub">Counts up in orange. FINISH logs your time; the bar runs to the cap.</p><div class="row" data-mode="fortime"></div></section>
+  <section id="em"><h2><i style="background:var(--pink)"></i>EMOM</h2><p class="sub">The interval counts down in pink. One block per minute fills as each round passes.</p><div class="row" data-mode="emom"></div></section>
+  <section id="am"><h2><i style="background:var(--blue)"></i>AMRAP</h2><p class="sub">The clock counts down in blue. Tap anywhere above the slab to count a round. At the end, scroll the round count to fix it.</p><div class="row" data-mode="amrap"></div></section>
+  <section id="tb"><h2><i style="background:var(--green)"></i>Tabata</h2><p class="sub">Work is green and rest is pink, on the clock and on the blocks. The last five seconds name the next phase in its colour.</p><div class="row" data-mode="tabata"></div></section>
+  <section><h2>iPad</h2><p class="sub">The same screens scaled to the tablet, like the rest of the app.</p><div class="row" id="ipadrow"></div></section>
+</div>
+
+<script>
+(function(){
+  const C={fortime:'#FF6B1A',emom:'#FF0088',amrap:'#00AAFF',work:'#00FF88',rest:'#FF0088'};
+  const clock=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+  const bare=s=>String(Math.max(0,Math.ceil(s)));
+  const ems=t=>[...t].reduce((a,c)=>a+(c===':'?.34:c==='/'?.42:.62),0);
+  let speed=1;
+  const M={
+    fortime:{start:68,total:1200,parts:[[1200,0]],cfg:'FOR TIME · CAP 20:00'},
+    emom:{start:65,total:600,parts:Array.from({length:10},()=>[60,0]),cfg:'EMOM · 10 × 1:00'},
+    amrap:{start:25,total:600,parts:[[600,0]],cfg:'AMRAP · 10:00'},
+    tabata:{start:14,total:240,parts:Array.from({length:8},()=>[[20,0],[10,1]]).flat(),cfg:'TABATA · 8 × 20s / 10s'},
+  };
+  function state(mode,t,rounds){
+    if(mode==='fortime')return{clock:clock(t),col:C.fortime,phase:'',second:{h:'CAP 20:00'}};
+    if(mode==='emom'){const i=Math.min(9,Math.floor(t/60));return{clock:bare(60-(t%60)),col:C.emom,phase:'',second:{n:(i+1)+'/10'}}}
+    if(mode==='amrap')return{clock:clock(600-t),col:C.amrap,phase:'',second:rounds?{n:rounds,u:'ROUNDS'}:{h:'TAP TO COUNT'}};
+    const r=Math.min(7,Math.floor(t/30)),w=t%30,work=w<20,left=work?20-w:30-w,last=r===7&&!work;
+    let phase=work?'WORK':(last?'LAST REST':'REST'),pc=work?C.work:C.rest;
+    if(left<=5&&!(r===7&&!work)){phase='NEXT · '+(work?'REST':'WORK');pc=work?C.rest:C.work}
+    return{clock:bare(left),col:work?C.work:C.rest,phase,pc,second:{n:(r+1)+'/8'}};
+  }
+  function tlHTML(mode,t){const parts=M[mode].parts;let acc=0;return parts.map(([s,rest])=>{const f=Math.max(0,Math.min(1,(t-acc)/s));acc+=s;const col=mode==='tabata'?(rest?C.rest:C.work):C[mode];return`<b style="flex:${s}"><i style="width:${f*100}%;background:${col}"></i></b>`}).join('')}
+  function secondHTML(s){return s.h?`<span class="h">${s.h}</span>`:`<span class="n">${s.n}</span>`+(s.u?`<span class="u">${s.u}</span>`:'')}
+  // The clock never resizes as it counts: its size comes from the workout's
+// longest value, and it sits in a box of fixed height, so nothing below moves.
+const REF={fortime:'20:00',emom:'60',amrap:'10:00',tabata:'20'};
+function fit(el,txt,box,mode){const w=box.clientWidth*0.94,h=box.clientHeight*0.42;el.style.fontSize=Math.min(w/ems(REF[mode]),h/0.76)+'px';el.parentElement.style.height=h+'px';el.textContent=txt}
+
+  function makeLive(host,mode,kind){
+    const d=document.createElement('div');d.className=kind;
+    d.innerHTML=`<div class="live"><div class="glow"></div><div class="phase"></div><div class="clockbox"><div class="clock"></div></div><div class="second"></div><div class="tlzone"><div class="tl"></div></div></div><div class="slab2 ctl"></div>`;
+    host.appendChild(d);
+    let t=M[mode].start,running=true,rounds=3,lastTap=0;
+    const live=d.querySelector('.live'),ph=d.querySelector('.phase'),ck=d.querySelector('.clock'),se=d.querySelector('.second'),tl=d.querySelector('.tl'),gl=d.querySelector('.glow'),ctl=d.querySelector('.ctl');
+    const acol=mode==='tabata'?C.work:C[mode];
+    function controls(){
+      if(running){ctl.innerHTML=(mode==='fortime'?'<div class="finishk">FINISH</div>':'')+'<div class="pausek">PAUSE</div>';
+        ctl.querySelector('.pausek').onclick=e=>{e.stopPropagation();running=false;controls();render()};
+        const f=ctl.querySelector('.finishk');if(f)f.onclick=e=>{e.stopPropagation();t=M[mode].start;render()};}
+      else{ctl.innerHTML=`<div class="stopk"><i class="fill"></i><span>HOLD TO STOP</span></div><div class="again" style="background:${acol}">RESUME</div>`;
+        ctl.querySelector('.again').onclick=e=>{e.stopPropagation();running=true;controls();render()};
+        const st=ctl.querySelector('.stopk'),fill=st.querySelector('.fill');let tm=null,t0=0,raf=0;
+        const tick=()=>{const k=Math.min(1,(Date.now()-t0)/800);fill.style.width=(k*100)+'%';if(k>=1){t=M[mode].start;running=true;rounds=3;controls();render();return}raf=requestAnimationFrame(tick)};
+        st.onpointerdown=e=>{e.stopPropagation();t0=Date.now();raf=requestAnimationFrame(tick)};
+        const cancel=()=>{cancelAnimationFrame(raf);fill.style.width='0'};st.onpointerup=cancel;st.onpointerleave=cancel;st.onpointercancel=cancel;}
+    }
+    controls();
+    function render(){const s=state(mode,t,rounds);const col=running?s.col:'#8A8A93';
+      ph.textContent=running?(s.phase||''):'PAUSED';ph.style.color=running?(s.pc||s.col):'#9A9AA2';
+      fit(ck,s.clock,live,mode);ck.style.color=s.col;ck.style.opacity=running?1:.45;
+      gl.style.background=`radial-gradient(closest-side,${s.col}38,transparent)`;gl.style.opacity=running?1:.3;
+      se.innerHTML=secondHTML(s.second);tl.innerHTML=tlHTML(mode,t);}
+    live.addEventListener('click',()=>{if(mode==='amrap'&&running&&Date.now()-lastTap>700){rounds++;lastTap=Date.now();render()}});
+    setInterval(()=>{if(running){t+=0.1*speed;if(t>=M[mode].total)t=0;render()}},100);
+    new ResizeObserver(render).observe(live);render();
+    return d;
+  }
+  function makeEnd(host,mode,kind){
+    const d=document.createElement('div');d.className=kind;
+    const E={fortime:{w:'Finished',hero:'12:34',col:C.fortime,u:'TIME',t:754},
+             emom:{w:'Stopped',hero:'2/10',col:C.emom,u:'ROUNDS',t:125,t2:'2:05'},
+             amrap:{w:'Finished',hero:'7',col:C.amrap,u:'ROUNDS',t:600,pm:true},
+             tabata:{w:'Finished',hero:'8/8',col:C.work,u:'ROUNDS',t:240,t2:'4:00'}}[mode];
+    const againCol=mode==='tabata'?C.work:C[mode];
+    const watch=kind==='watch';
+    const label=watch&&E.t2?`${E.u} · ${E.t2}`:E.u;
+    d.innerHTML=`<div class="end"><div class="w">${E.w}</div><div class="c">${M[mode].cfg}</div><div class="sp"></div><div class="heroz"><div class="hero"><span class="hn" style="color:${E.col}"></span></div><span class="u">${label}</span>${E.t2&&!watch?`<span class="t2">${E.t2} total</span>`:''}</div><div class="tlzone"><div class="tl">${tlHTML(mode,E.t)}</div></div></div><div class="slab2"><div class="again" style="background:${againCol}">AGAIN</div><div class="done">DONE</div></div>`;
+    host.appendChild(d);
+    const hn=d.querySelector('.hn'),box=d.querySelector('.heroz');
+    const f=()=>{if(E.pm)return;const w=box.clientWidth*.86,h=d.clientHeight*(watch?.2:.22);hn.style.fontSize=Math.min(w/ems(E.hero),h/0.76)+'px';hn.textContent=E.hero};
+    new ResizeObserver(f).observe(box);f();
+    if(E.pm){
+      const hero=d.querySelector('.hero');hero.innerHTML='<div class="rw"></div>';const rw=hero.firstChild;
+      const hint=document.createElement('span');hint.className='hintfix';hint.textContent='Scroll to fix the count';if(!watch)box.appendChild(hint);
+      rw.innerHTML=Array.from({length:61},(_,i)=>`<div>${i}</div>`).join('');
+      const items=[...rw.children];let cur=-1,size=60;
+      const lay=()=>{size=Math.min(box.clientWidth*.5,d.clientHeight*(watch?.12:.15));const ih=size*1.05;rw.style.height=(ih*1.9)+'px';rw.style.width=(size*1.6)+'px';items.forEach(it=>{it.style.height=ih+'px';it.style.fontSize=size+'px'});rw.style.paddingBlock=(ih*.45)+'px';rw.scrollTop=7*ih;sync()};
+      const sync=()=>{const ih=items[0].getBoundingClientRect().height;const i=Math.max(0,Math.min(60,Math.round(rw.scrollTop/ih)));if(i!==cur){if(cur>=0)items[cur].classList.remove('on');items[i].classList.add('on');cur=i;try{navigator.vibrate&&navigator.vibrate(4)}catch(e){}}};
+      rw.addEventListener('scroll',()=>requestAnimationFrame(sync),{passive:true});
+      new ResizeObserver(lay).observe(box);requestAnimationFrame(lay);
+    }
+    return d;
+  }
+  function wrapCap(el,txt){const w=document.createElement('div');w.appendChild(el);const c=document.createElement('p');c.className='cap';c.textContent=txt;w.appendChild(c);return w}
+  document.querySelectorAll('.row[data-mode]').forEach(row=>{
+    const mode=row.dataset.mode;
+    const mk=w=>{const x=document.createElement('div');x.className='cell'+(w?' w':'');row.appendChild(x);return x};
+    const a=mk();makeLive(a,mode,'dev');a.appendChild(Object.assign(document.createElement('p'),{className:'cap',textContent:'iPhone · live'}));
+    const b=mk();makeEnd(b,mode,'dev');b.appendChild(Object.assign(document.createElement('p'),{className:'cap',textContent:'iPhone · end'}));
+    const c=mk(1);makeLive(c,mode,'watch');c.appendChild(Object.assign(document.createElement('p'),{className:'cap',textContent:'Watch · live'}));
+    const e=mk(1);makeEnd(e,mode,'watch');e.appendChild(Object.assign(document.createElement('p'),{className:'cap',textContent:'Watch · end'}));
+  });
+  const ip=document.getElementById('ipadrow');
+  const i1=document.createElement('div');i1.style.cssText='flex:1 1 320px;max-width:520px';ip.appendChild(i1);makeLive(i1,'tabata','dev ipad');i1.appendChild(Object.assign(document.createElement('p'),{className:'cap',textContent:'iPad · Tabata live'}));
+  const i2=document.createElement('div');i2.style.cssText='flex:1 1 320px;max-width:520px';ip.appendChild(i2);makeEnd(i2,'fortime','dev ipad');i2.appendChild(Object.assign(document.createElement('p'),{className:'cap',textContent:'iPad · For Time end'}));
+  const fitS=()=>document.querySelectorAll('.dev.ipad').forEach(d=>d.style.setProperty('--s',Math.max(.85,Math.min(1.6,d.clientWidth/320)).toFixed(3)));
+  fitS();try{new ResizeObserver(fitS).observe(document.body)}catch(e){}
+  document.querySelectorAll('.speed button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.speed button').forEach(x=>x.classList.remove('on'));b.classList.add('on');speed=+b.dataset.sp});
+})();
+</script>
+<script>
+// Timeline centring: every .tlzone puts its timeline exactly midway between
+// the visible bottom of the content above it (glyph bottoms, not box edges)
+// and the top of the bottom buttons. Re-run on resize, never per tick.
+(function(){
+  const cv=document.createElement('canvas').getContext('2d');
+  function glyphBottom(textNode){
+    const el=textNode.parentElement,cs=getComputedStyle(el);
+    if(cs.visibility==='hidden'||+cs.opacity<0.15)return -1;
+    const r=document.createRange();r.selectNodeContents(textNode);const rects=[...r.getClientRects()];if(!rects.length)return -1;
+    cv.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m=cv.measureText(textNode.textContent.trim()||'0');
+    const asc=m.fontBoundingBoxAscent,desc=m.fontBoundingBoxDescent,gd=m.actualBoundingBoxDescent;
+    // Only glyphs inside a scroller's visible window count (wheels scroll).
+    const sc=el.closest('.rw,.wheel'),vr=sc?sc.getBoundingClientRect():null;
+    const ok=rects.filter(q=>!vr||(q.top>=vr.top-1&&q.bottom<=vr.bottom+1));if(!ok.length)return -1;
+    return Math.max(...ok.map(q=>{const h=q.height,base=q.top+(h-(asc+desc))/2+asc;return base+gd}));
+  }
+  function visBottom(el){
+    const wheels=el.querySelectorAll('.wheel');
+    if(wheels.length){ // a 3-row wheel: the lower row's glyphs, centred in its row
+      return Math.max(...[...wheels].map(w=>{const b=w.getBoundingClientRect(),it=w.querySelector('.it:not(.on)')||w.querySelector('.it');const row=it.getBoundingClientRect().height,fs=parseFloat(getComputedStyle(it).fontSize);return b.bottom-(row-0.7*fs)/2}));
+    }
+    let best=-1;const tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n;
+    while((n=tw.nextNode()))if(n.textContent.trim())best=Math.max(best,glyphBottom(n));
+    el.querySelectorAll('svg').forEach(s=>best=Math.max(best,s.getBoundingClientRect().bottom));
+    return best<0?el.getBoundingClientRect().bottom:best;
+  }
+  function place(){
+    document.querySelectorAll('.tlzone').forEach(z=>{
+      const above=z.previousElementSibling,tl=z.querySelector('.tl');if(!above||!tl)return;
+      const frame=z.closest('.dev,.watch');const slab=frame&&frame.querySelector('.slab,.slab2,.wslab');if(!slab)return;
+      tl.style.marginTop='0px';z.style.alignItems='flex-start';
+      const top=visBottom(above),bottom=slab.getBoundingClientRect().top,zt=z.getBoundingClientRect().top,h=tl.getBoundingClientRect().height;
+      tl.style.marginTop=Math.max(0,((top+bottom)/2-h/2)-zt)+'px';
+    });
+  }
+  window.__placeTimelines=place;
+  const go=()=>requestAnimationFrame(()=>requestAnimationFrame(place));
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go);
+  try{new ResizeObserver(go).observe(document.body)}catch(e){addEventListener('resize',go)}
+  setTimeout(go,600);
+})();
+
+</script>

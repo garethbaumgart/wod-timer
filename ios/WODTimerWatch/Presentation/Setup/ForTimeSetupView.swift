@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// For Time setup: the cap (whole minutes on the Crown) and the count
-/// direction as one tappable line. Opens on the last For Time set: every
+/// direction as a two-option switch, like the phone (1.3.1). Opens on the last For Time set: every
 /// change is remembered (1.3.1).
 struct ForTimeSetupView: View {
     @Bindable var viewModel: TimerViewModel
@@ -26,40 +26,64 @@ struct ForTimeSetupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 0) {
             Spacer(minLength: 0)
-            SetupValue(label: "TIME CAP", value: timeCap.clock)
+            SetupValue(label: "TIME CAP", value: timeCap.clock, size: 40)
                 .focusable()
                 .digitalCrownRotation($capMinutes, from: 1, through: 60, by: 1, sensitivity: .medium)
-            Button { countUp.toggle() } label: {
-                VStack(spacing: 0) {
-                    Text(countUp ? "COUNTS UP" : "COUNTS DOWN")
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
-                        .tracking(1)
-                        .foregroundStyle(.white)
-                    Text("TAP TO CHANGE")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .tracking(1)
-                        .foregroundStyle(Palette.label)
-                }
-                .frame(maxWidth: .infinity, minHeight: 36)
-            }
-            .buttonStyle(.plain)
+            CountDirectionSwitch(countUp: $countUp)
+                .padding(.top, 4)
             Spacer(minLength: 0)
-            StartButton {
+            StartButton(subtitle: "\(countUp ? "Counts up" : "Counts down") · cap \(timeCap.clock)") {
                 SetupMemory().save(type)
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))
                 showingTimer = viewModel.session?.state != .ready
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, CapsuleGeometry.sideMargin)
+        .padding(.bottom, CapsuleGeometry.bottomMargin)
         .navigationTitle("FOR TIME")
         .onAppear(perform: load)
         .onChange(of: type) { _, newType in SetupMemory().save(newType) }
         .navigationBarBackButtonHidden(showingTimer)
+        // Last, outside the Crown focus container, so it reaches the edge.
+        .ignoresSafeArea(edges: .bottom)
         .navigationDestination(isPresented: $showingTimer) {
             ActiveTimerView(viewModel: viewModel)
         }
+    }
+}
+
+/// "COUNT UP" | "COUNT DOWN": the selected option white with black text,
+/// on a soft pill.
+struct CountDirectionSwitch: View {
+    @Binding var countUp: Bool
+
+    var body: some View {
+        HStack(spacing: 2) {
+            option("COUNT UP", selected: countUp) { countUp = true }
+            option("COUNT DOWN", selected: !countUp) { countUp = false }
+        }
+        .padding(3)
+        .background(RoundedRectangle(cornerRadius: 13).fill(Palette.soft))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Count direction")
+    }
+
+    private func option(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .tracking(0.6)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(selected ? .black : Palette.label)
+                .frame(maxWidth: .infinity)
+                .frame(height: 22)
+                .background(RoundedRectangle(cornerRadius: 10).fill(selected ? Color.white : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 

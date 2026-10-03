@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Icon 58 (picked 3 Oct 2026): white ring, pink timer arc, neon green plates, pink buttons, on the app's ink -->
+  <rect width="512" height="512" rx="100" fill="#050510"/>
+  <circle cx="256" cy="276" r="180" fill="none" stroke="#FFFFFF" stroke-width="24"/>
+  <circle cx="256" cy="276" r="140" fill="#0E0E1E"/>
+  <path d="M 256 136 A 140 140 0 1 1 116 276" fill="none" stroke="#FF0088" stroke-width="20" stroke-linecap="round"/>
+  <rect x="80" y="236" width="40" height="80" rx="8" fill="#00FF88"/>
+  <rect x="60" y="246" width="24" height="60" rx="6" fill="#00B862"/>
+  <rect x="120" y="266" width="272" height="20" rx="4" fill="#FFFFFF"/>
+  <rect x="392" y="236" width="40" height="80" rx="8" fill="#00FF88"/>
+  <rect x="428" y="246" width="24" height="60" rx="6" fill="#00B862"/>
+  <rect x="236" y="70" width="40" height="30" rx="6" fill="#FF0088"/>
+  <circle cx="256" cy="70" r="16" fill="#FF0088"/>
+  <rect x="400" y="160" width="24" height="40" rx="4" fill="#FF0088" transform="rotate(45, 412, 180)"/>
+</svg>
