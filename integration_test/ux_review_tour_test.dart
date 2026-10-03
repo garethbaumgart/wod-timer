@@ -89,8 +89,14 @@ Future<void> spin(WidgetTester tester, String label, int steps) async {
     of: find.text(label),
     matching: find.byType(SetupWheel),
   );
-  final rowHeight = tester.widget<SetupWheel>(wheel).rowHeight;
-  await tester.drag(wheel, Offset(0, -steps * rowHeight));
+  // Measured as painted, so it is one row on a tablet too (TabletScale
+  // paints a 56pt row at 1.7x and drags are in painted points).
+  final rows = find.descendant(
+    of: wheel,
+    matching: find.byType(ListWheelScrollView),
+  );
+  final rowHeight = tester.getSize(rows).height / 3;
+  await tester.drag(rows, Offset(0, -steps * rowHeight));
   await tester.pumpAndSettle();
 }
 
@@ -246,9 +252,7 @@ void main() {
     await hold(tester, 'active_amrap_complete');
     // Fix the count on the wheel: one row up is one round more.
     final wheel = find.byType(RoundsWheel);
-    final itemHeight = RoundsWheel.itemHeightFor(
-      tester.widget<RoundsWheel>(wheel).fontSize,
-    );
+    final itemHeight = tester.getSize(wheel).height / 1.9;
     await tester.drag(wheel, Offset(0, -itemHeight));
     await tester.pumpAndSettle();
     await hold(tester, 'active_amrap_complete_fixed', tenths: 20);
