@@ -126,6 +126,8 @@ void main() {
     when(() => audio.playLetsGo()).thenAnswer((_) async => right(unit));
     when(() => audio.playGetReady()).thenAnswer((_) async => right(unit));
     when(() => audio.playCountdown(any())).thenAnswer((_) async => right(unit));
+    when(() => audio.playLowBeep(any())).thenAnswer((_) async => right(unit));
+    when(audio.playHighBeep).thenAnswer((_) async => right(unit));
     when(() => audio.playRest()).thenAnswer((_) async => right(unit));
     when(() => audio.playNextRound()).thenAnswer((_) async => right(unit));
     when(() => audio.playLastRound()).thenAnswer((_) async => right(unit));
@@ -172,18 +174,19 @@ void main() {
       },
     );
 
-    test('EMOM: final countdown fires near the end of the workout', () async {
+    test('EMOM: the low beeps count down every minute and the end, '
+        'and the spoken 5-4-3-2-1 is gone (2.1.0)', () async {
       final notifier = container.read(timerNotifierProvider.notifier);
       await notifier.start(emomWorkout()); // 3 x 60s = 180s
 
-      // Realistic tick cadence so the one-shot progress cues (keep going,
-      // halfway, almost there) fire on their own ticks and don't occupy
-      // the per-tick voice slot when the countdown threshold is crossed.
-      for (var s = 10; s <= 176; s += 2) {
+      for (var s = 1; s <= 180; s++) {
         engine.emit(Duration(seconds: s));
       }
 
-      verify(() => audio.playFinalCountdown()).called(1);
+      for (final n in [3, 2, 1]) {
+        verify(() => audio.playLowBeep(n)).called(3);
+      }
+      verifyNever(() => audio.playFinalCountdown());
     });
 
     test('EMOM: ten-seconds warning fires near the workout end', () async {

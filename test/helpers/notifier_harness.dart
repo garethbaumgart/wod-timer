@@ -174,7 +174,12 @@ Workout tabataWorkout({
 /// Every cue the notifier can ask for, keyed by name, so a test can say
 /// "only these cues played, in this order".
 class NotifierHarness {
-  NotifierHarness({AppSettings settings = const AppSettings()}) {
+  /// [audioService] swaps the mocked service for a real one (a sink-backed
+  /// AudioService), so a test can hear exactly which files the app plays.
+  NotifierHarness({
+    AppSettings settings = const AppSettings(),
+    IAudioService? audioService,
+  }) {
     when(() => audio.setVoicePack(any())).thenReturn(null);
     when(
       () => audio.setRandomizePerCue(enabled: any(named: 'enabled')),
@@ -185,11 +190,24 @@ class NotifierHarness {
     for (final entry in cues.entries) {
       when(entry.value).thenAnswer((_) async {
         played.add(entry.key);
+        heard.add('${engine.elapsed.inSeconds}s ${entry.key}');
         return right(unit);
       });
     }
     when(() => audio.playCountdown(any())).thenAnswer((invocation) async {
       played.add('countdown ${invocation.positionalArguments.first}');
+      return right(unit);
+    });
+    when(() => audio.playLowBeep(any())).thenAnswer((invocation) async {
+      beeped.add('low ${invocation.positionalArguments.first}');
+      heard.add(
+        '${engine.elapsed.inSeconds}s low ${invocation.positionalArguments.first}',
+      );
+      return right(unit);
+    });
+    when(audio.playHighBeep).thenAnswer((_) async {
+      beeped.add('high');
+      heard.add('${engine.elapsed.inSeconds}s high');
       return right(unit);
     });
     for (final entry in haptics.entries) {
@@ -201,7 +219,7 @@ class NotifierHarness {
     TimerNotifier.clock = () => now;
     container = ProviderContainer(
       overrides: [
-        audioServiceProvider.overrideWithValue(audio),
+        audioServiceProvider.overrideWithValue(audioService ?? audio),
         hapticServiceProvider.overrideWithValue(haptic),
         timerEngineProvider.overrideWithValue(engine),
         appSettingsNotifierProvider.overrideWith(() => FixedSettings(settings)),
@@ -226,6 +244,13 @@ class NotifierHarness {
 
   /// The voice cues, in the order they were asked for.
   final List<String> played = [];
+
+  /// The gym-timer beeps ('low 3', 'low 2', 'low 1', 'high'), in order.
+  final List<String> beeped = [];
+
+  /// Beeps and voice cues together, each stamped with the engine second it
+  /// played on ('57s low 3', '60s high', '60s good job').
+  final List<String> heard = [];
 
   /// The haptics, in the order they were asked for.
   final List<String> felt = [];

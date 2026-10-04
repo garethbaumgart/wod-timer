@@ -41,7 +41,8 @@ class TimerNotifier extends _$TimerNotifier {
 
   StreamSubscription<Duration>? _tickSubscription;
   Duration _lastTickElapsed = Duration.zero;
-  int _lastCountdownSecond = -1;
+  String? _lastLowBeep;
+  Duration? _lastVoiceAt;
   bool _playedGo = false;
   int _lastRound = 0;
   bool _isInitialized = false;
@@ -51,8 +52,6 @@ class TimerNotifier extends _$TimerNotifier {
   bool _playedLastRound = false;
   bool _playedAlmostThere = false;
   bool _playedKeepGoing = false;
-  bool _playedFinalCountdown = false;
-  int _completionCueToken = 0;
   final _random = Random();
 
   /// Taps that count AMRAP rounds are ignored for this long after the last
@@ -138,11 +137,12 @@ class TimerNotifier extends _$TimerNotifier {
         // the GO cue here.
         if (session.state == domain.TimerState.running && !_playedGo) {
           _playedGo = true;
-          if (_random.nextBool()) {
-            _audioService.playGo();
-          } else {
-            _audioService.playLetsGo();
-          }
+          _audioService.playHighBeep();
+          _say(
+            _random.nextBool()
+                ? _audioService.playGo
+                : _audioService.playLetsGo,
+          );
           _hapticService.heavyImpact();
           _blockRoundCount();
         }
@@ -257,8 +257,9 @@ class TimerNotifier extends _$TimerNotifier {
           'type': session.workout.timerType.typeCode,
           'ended_by': 'user_finish',
         });
-        // Play only the encouragement cue (e.g. "Good job" or "That's it,
-        // you're done") — not playComplete() as well, to avoid overlap.
+        // The change beep with the encouragement cue on it ("Good job" or
+        // "That's it, you're done"); not playComplete() as well.
+        _audioService.playHighBeep();
         _playCompletionEncouragement();
         _hapticService.success();
       },
@@ -416,43 +417,44 @@ class TimerNotifier extends _$TimerNotifier {
     );
   }
 
+  /// The gym-timer cue pattern (2.1.0, matched to the SmartWOD recording
+  /// Gareth chose): three low beeps in the last three seconds of every
+  /// phase, then on the change a high beep with the voice line starting on
+  /// it. The optional voice cues (motivation, halfway, almost there, ten
+  /// seconds) keep clear of the countdown and of another line still being
+  /// spoken.
   void _handleAudioCues(TimerSession oldSession, TimerSession newSession) {
     // Track whether a voice cue already played this tick so we don't
     // overlap two spoken clips (e.g. "Halfway" + "Next round").
     bool voiceCuePlayed = false;
+    // One high beep per change, even when two things change on one tick.
+    bool changeBeeped = false;
+    void changeBeep() {
+      if (changeBeeped) return;
+      changeBeeped = true;
+      _audioService.playHighBeep();
+    }
 
     // Handle "Get ready" when entering preparation phase
     if (newSession.state == domain.TimerState.preparing && !_playedGetReady) {
       _playedGetReady = true;
-      _audioService.playGetReady();
+      _say(_audioService.playGetReady);
       voiceCuePlayed = true;
     }
 
-    // Handle countdown during preparation
-    // Skip if "Get ready" already played this tick (e.g. prep is exactly 3s)
-    if (!voiceCuePlayed && newSession.state == domain.TimerState.preparing) {
-      final remaining = newSession.timeRemaining.seconds;
-      if (remaining <= 3 &&
-          remaining > 0 &&
-          remaining != _lastCountdownSecond) {
-        _lastCountdownSecond = remaining;
-        _audioService.playCountdown(remaining);
-        _hapticService.mediumImpact(); // Haptic for each countdown tick
-        voiceCuePlayed = true;
-      }
-    }
+    // Low beeps in the last three seconds of the phase (prep included).
+    _playPhaseCountdown(newSession);
 
-    // Handle "Go" or "Let's go" when transitioning from preparing to running
+    // High beep + "Go" or "Let's go" when the prep countdown ends
     if (oldSession.state == domain.TimerState.preparing &&
         newSession.state == domain.TimerState.running &&
         !_playedGo) {
       _playedGo = true;
+      changeBeep();
       // Randomly alternate between "Go" and "Let's go"
-      if (_random.nextBool()) {
-        _audioService.playGo();
-      } else {
-        _audioService.playLetsGo();
-      }
+      _say(
+        _random.nextBool() ? _audioService.playGo : _audioService.playLetsGo,
+      );
       _hapticService.heavyImpact(); // Strong haptic for GO!
       _blockRoundCount();
       voiceCuePlayed = true;
@@ -472,7 +474,8 @@ class TimerNotifier extends _$TimerNotifier {
     if (oldSession.state == domain.TimerState.running &&
         newSession.state == domain.TimerState.resting &&
         !roundChanged) {
-      _audioService.playRest();
+      changeBeep();
+      _say(_audioService.playRest);
       _hapticService.warning(); // Haptic pattern for rest transition
       voiceCuePlayed = true;
     }
@@ -487,6 +490,7 @@ class TimerNotifier extends _$TimerNotifier {
     if (roundChanged) {
       _lastRound = newSession.currentRound;
       _hapticService.heavyImpact(); // Strong haptic for new round
+      changeBeep();
 
       // Play "Last round" if final round, otherwise "Next round"
       final totalRounds = newSession.totalRounds;
@@ -494,84 +498,112 @@ class TimerNotifier extends _$TimerNotifier {
           newSession.currentRound == totalRounds &&
           !_playedLastRound) {
         _playedLastRound = true;
-        _audioService.playLastRound();
+        _say(_audioService.playLastRound);
       } else {
-        _audioService.playNextRound();
+        _say(_audioService.playNextRound);
       }
       voiceCuePlayed = true;
     } else if (_lastRound == 0) {
       _lastRound = newSession.currentRound;
     }
 
+    // The optional cues below wait for a clear moment.
+    if (voiceCuePlayed || !_clearToSpeak(newSession)) return;
+
     // Handle motivational cue around 33% progress
-    // Skip if another voice cue already played this tick
-    if (!voiceCuePlayed &&
-        newSession.progress >= 0.33 &&
+    if (newSession.progress >= 0.33 &&
         oldSession.progress < 0.33 &&
         !_playedKeepGoing) {
       _playedKeepGoing = true;
       // Randomly alternate between motivation cues
-      if (_random.nextBool()) {
-        _audioService.playKeepGoing();
-      } else {
-        _audioService.playComeOn();
-      }
-      voiceCuePlayed = true;
+      _say(
+        _random.nextBool()
+            ? _audioService.playKeepGoing
+            : _audioService.playComeOn,
+      );
+      return;
     }
 
     // Handle halfway point
-    // Skip if another voice cue already played this tick (e.g. round transition)
-    if (!voiceCuePlayed &&
-        newSession.progress >= 0.5 &&
-        oldSession.progress < 0.5) {
-      _audioService.playHalfway();
+    if (newSession.progress >= 0.5 && oldSession.progress < 0.5) {
+      _say(_audioService.playHalfway);
       _hapticService.mediumImpact();
-      voiceCuePlayed = true;
+      return;
     }
 
     // Handle "Almost there" at ~85% progress
-    // Skip if another voice cue already played this tick
-    if (!voiceCuePlayed &&
-        newSession.progress >= 0.85 &&
+    if (newSession.progress >= 0.85 &&
         oldSession.progress < 0.85 &&
         !_playedAlmostThere) {
       _playedAlmostThere = true;
-      _audioService.playAlmostThere();
-      voiceCuePlayed = true;
+      _say(_audioService.playAlmostThere);
+      return;
     }
 
-    // Handle "Ten seconds" warning — only if workout is long enough (>15s)
-    // to avoid overlapping with the final countdown clip.
+    // Handle "Ten seconds" warning, said with 10 or 9 seconds to go, in a
+    // workout long enough for it to mean something (over 15s).
     // Uses WHOLE-workout remaining: for EMOM/Tabata, timeRemaining is the
     // current interval's remaining, which would fire this at the end of
     // round 1 (and latch, never playing at the actual workout end).
-    if (!voiceCuePlayed &&
-        newSession.state.isActive &&
-        newSession.state != domain.TimerState.preparing &&
-        !_playedTenSeconds) {
+    if (newSession.state != domain.TimerState.preparing &&
+        !_playedTenSeconds &&
+        newSession.workout.timerType.estimatedDuration.seconds > 15) {
       final remaining = _workoutRemainingSeconds(newSession);
-      if (remaining <= 10 && remaining > 7) {
+      if (remaining <= 10 && remaining > 8) {
         _playedTenSeconds = true;
-        _audioService.playTenSeconds();
-        voiceCuePlayed = true;
+        _say(_audioService.playTenSeconds);
       }
     }
+  }
 
-    // Handle spoken "5, 4, 3, 2, 1" final countdown.
-    // This is a single pre-recorded clip (~5s long) so we trigger it
-    // once at 5 seconds remaining and let it play through naturally.
-    // Whole-workout remaining, same reasoning as "Ten seconds" — and the
-    // final phase of a Tabata is a rest, so resting counts too.
-    if (!voiceCuePlayed &&
-        newSession.state.isActive &&
-        newSession.state != domain.TimerState.preparing &&
-        !_playedFinalCountdown) {
-      final remaining = _workoutRemainingSeconds(newSession);
-      if (remaining <= 5 && remaining > 0) {
-        _playedFinalCountdown = true;
-        _audioService.playFinalCountdown();
-      }
+  /// Plays a voice cue and notes when, so the optional cues can wait for a
+  /// clear moment.
+  void _say(Future<Object?> Function() cue) {
+    _lastVoiceAt = _lastTickElapsed;
+    cue();
+  }
+
+  /// A clear moment for an optional voice cue: more than four seconds
+  /// before the phase's countdown beeps, and at least two seconds after the
+  /// last line started.
+  bool _clearToSpeak(TimerSession session) {
+    if (!session.state.isActive) return false;
+    if (session.timeRemaining.seconds <= 4) return false;
+    final last = _lastVoiceAt;
+    return last == null ||
+        _lastTickElapsed - last >= const Duration(seconds: 2);
+  }
+
+  /// A low beep with 3, 2 and 1 seconds left in the current phase: the
+  /// prep countdown, an AMRAP or For Time clock, an EMOM interval, a Tabata
+  /// work or rest. A phase too short to fit a count (3 seconds or less)
+  /// skips the numbers it starts on.
+  void _playPhaseCountdown(TimerSession session) {
+    if (!session.state.isActive) return;
+    final left = session.timeRemaining.seconds;
+    if (left < 1 || left > 3 || left >= _phaseSeconds(session)) return;
+    final key = '${session.state.name}:${session.currentRound}:$left';
+    if (key == _lastLowBeep) return;
+    _lastLowBeep = key;
+    _audioService.playLowBeep(left);
+    if (session.state == domain.TimerState.preparing) {
+      _hapticService.mediumImpact(); // Haptic for each countdown tick
     }
+  }
+
+  /// The length of the phase the session is in.
+  int _phaseSeconds(TimerSession session) {
+    if (session.state == domain.TimerState.preparing) {
+      return session.workout.prepCountdown.seconds;
+    }
+    return session.workout.timerType.when(
+      amrap: (timer) => timer.duration.seconds,
+      forTime: (timer) => timer.timeCap.seconds,
+      emom: (timer) => timer.intervalDuration.seconds,
+      tabata: (timer) => session.state == domain.TimerState.resting
+          ? timer.restDuration.seconds
+          : timer.workDuration.seconds,
+    );
   }
 
   /// Seconds left in the WHOLE workout (not the current interval/phase).
@@ -609,15 +641,10 @@ class TimerNotifier extends _$TimerNotifier {
   /// branch, which the pause race guard made unreachable, so the sheet
   /// never asked).
   bool _endNaturally() {
+    // The end is a change like any other: the high beep, the line on it.
+    _audioService.playHighBeep();
     if (state.endedAtTimeCap) {
-      final delay = _playedFinalCountdown
-          ? const Duration(milliseconds: 600)
-          : Duration.zero;
-      final token = ++_completionCueToken;
-      Future.delayed(delay, () {
-        if (token != _completionCueToken) return;
-        _audioService.playComplete();
-      });
+      _audioService.playComplete();
       _hapticService.heavyImpact();
       return false;
     }
@@ -631,29 +658,21 @@ class TimerNotifier extends _$TimerNotifier {
     return true;
   }
 
-  /// Play a random encouragement cue on workout completion.
-  ///
-  /// If the final countdown clip is still playing (triggered at 5s remaining),
-  /// delay the encouragement cue to avoid overlapping.
+  /// Play a random encouragement cue on workout completion, on the high
+  /// beep (no spoken final countdown to wait for since 2.1.0).
   void _playCompletionEncouragement() {
-    final delay = _playedFinalCountdown
-        ? const Duration(milliseconds: 600)
-        : Duration.zero;
-
-    final token = ++_completionCueToken;
-    Future.delayed(delay, () {
-      if (token != _completionCueToken) return;
-      if (_random.nextBool()) {
-        _audioService.playGoodJob();
-      } else {
-        _audioService.playThatsIt();
-      }
-    });
+    if (_random.nextBool()) {
+      _audioService.playGoodJob();
+    } else {
+      _audioService.playThatsIt();
+    }
   }
 
   void _resetAudioState() {
-    _completionCueToken++;
-    _lastCountdownSecond = -1;
+    _lastLowBeep = null;
+    _lastVoiceAt = null;
+    // A no-prep GO is spoken before the ticking (re)starts the clock.
+    _lastTickElapsed = Duration.zero;
     _playedGo = false;
     _lastRound = 0;
     _playedGetReady = false;
@@ -661,7 +680,6 @@ class TimerNotifier extends _$TimerNotifier {
     _playedLastRound = false;
     _playedAlmostThere = false;
     _playedKeepGoing = false;
-    _playedFinalCountdown = false;
   }
 
   void _dispose() {

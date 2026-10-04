@@ -54,11 +54,15 @@ class AudioService implements IAudioService {
         ),
       );
 
-      // Create a pool of players for concurrent playback
-      for (var i = 0; i < 3; i++) {
-        final player = AudioPlayer();
-        await player.setPlayerMode(PlayerMode.lowLatency);
-        _players['pool_$i'] = player;
+      // Two players for the voice and two for the beeps, so a high beep
+      // and the voice line that starts on it play together, and a beep can
+      // never cut off a line that is still being spoken.
+      for (var i = 0; i < _poolSize; i++) {
+        for (final channel in ['voice', 'beep']) {
+          final player = AudioPlayer();
+          await player.setPlayerMode(PlayerMode.lowLatency);
+          _players['${channel}_$i'] = player;
+        }
       }
 
       // Listen for playback completion or errors to deactivate session.
@@ -79,13 +83,14 @@ class AudioService implements IAudioService {
     }
   }
 
-  int _currentPlayerIndex = 0;
+  static const _poolSize = 2;
+  final Map<String, int> _nextIndex = {'voice': 0, 'beep': 0};
   int _activePlayers = 0;
 
-  AudioPlayer get _nextPlayer {
-    final player = _players['pool_$_currentPlayerIndex']!;
-    _currentPlayerIndex = (_currentPlayerIndex + 1) % 3;
-    return player;
+  AudioPlayer _nextPlayer(String channel) {
+    final index = _nextIndex[channel]!;
+    _nextIndex[channel] = (index + 1) % _poolSize;
+    return _players['${channel}_$index']!;
   }
 
   Future<void> _activateSession() async {
@@ -120,24 +125,17 @@ class AudioService implements IAudioService {
     return 'audio/$pack/$filename';
   }
 
-  /// Beep is shared across all voice packs.
-  static const _beepSound = 'audio/major/beep.m4a';
+  /// The gym-timer beeps, shared by every voice pack.
+  static const _highBeep = 'audio/beeps/high.wav';
+  static String _lowBeep(int secondsLeft) =>
+      'audio/beeps/low_${secondsLeft.clamp(1, 3)}.wav';
 
-  /// Whether spoken voice cues are muted (beeps-only mode).
+  /// Whether spoken voice cues are muted (Beeps only).
   bool _voiceMuted = false;
 
-  /// Play a voice cue, honouring beeps-only mode.
-  ///
-  /// With the voice muted, timing-critical cues ([beepFallback] true) fall
-  /// back to a beep so countdowns and transitions stay audible; the
-  /// encouragement cues go silent.
-  Future<Either<AudioFailure, Unit>> _playVoice(
-    String filename, {
-    bool beepFallback = false,
-  }) async {
-    if (_voiceMuted) {
-      return beepFallback ? _play(_beepSound) : right(unit);
-    }
+  /// Play a voice cue; Beeps only drops it (the beeps carry the timing).
+  Future<Either<AudioFailure, Unit>> _playVoice(String filename) async {
+    if (_voiceMuted) return right(unit);
     return _play(_voicePath(filename));
   }
 
@@ -145,29 +143,35 @@ class AudioService implements IAudioService {
   bool get isMuted => _isMuted;
 
   @override
-  Future<Either<AudioFailure, Unit>> playBeep() async {
-    return _play(_beepSound);
-  }
+  Future<Either<AudioFailure, Unit>> playBeep() => playHighBeep();
+
+  @override
+  Future<Either<AudioFailure, Unit>> playLowBeep(int secondsLeft) =>
+      _play(_lowBeep(secondsLeft), channel: 'beep');
+
+  @override
+  Future<Either<AudioFailure, Unit>> playHighBeep() =>
+      _play(_highBeep, channel: 'beep');
 
   @override
   Future<Either<AudioFailure, Unit>> playCountdown(int number) async {
-    if (number > 3 || number < 1) return _play(_beepSound);
-    return _playVoice('countdown_$number.mp3', beepFallback: true);
+    if (number > 3 || number < 1) return playHighBeep();
+    return _playVoice('countdown_$number.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playGo() async {
-    return _playVoice('countdown_go.mp3', beepFallback: true);
+    return _playVoice('countdown_go.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playRest() async {
-    return _playVoice('rest.mp3', beepFallback: true);
+    return _playVoice('rest.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playComplete() async {
-    return _playVoice('complete.mp3', beepFallback: true);
+    return _playVoice('complete.mp3');
   }
 
   @override
@@ -177,22 +181,22 @@ class AudioService implements IAudioService {
 
   @override
   Future<Either<AudioFailure, Unit>> playIntervalStart() async {
-    return _playVoice('interval.mp3', beepFallback: true);
+    return _playVoice('interval.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playGetReady() async {
-    return _playVoice('get_ready.mp3', beepFallback: true);
+    return _playVoice('get_ready.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playTenSeconds() async {
-    return _playVoice('ten_seconds.mp3', beepFallback: true);
+    return _playVoice('ten_seconds.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playLastRound() async {
-    return _playVoice('last_round.mp3', beepFallback: true);
+    return _playVoice('last_round.mp3');
   }
 
   @override
@@ -207,17 +211,17 @@ class AudioService implements IAudioService {
 
   @override
   Future<Either<AudioFailure, Unit>> playNextRound() async {
-    return _playVoice('next_round.mp3', beepFallback: true);
+    return _playVoice('next_round.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playFinalCountdown() async {
-    return _playVoice('final_countdown.mp3', beepFallback: true);
+    return _playVoice('final_countdown.mp3');
   }
 
   @override
   Future<Either<AudioFailure, Unit>> playLetsGo() async {
-    return _playVoice('lets_go.mp3', beepFallback: true);
+    return _playVoice('lets_go.mp3');
   }
 
   @override
@@ -240,21 +244,28 @@ class AudioService implements IAudioService {
     return _playVoice('no_rep.mp3');
   }
 
-  Future<Either<AudioFailure, Unit>> _play(String assetPath) async {
+  Future<Either<AudioFailure, Unit>> _play(
+    String assetPath, {
+    String channel = 'voice',
+  }) async {
     if (_isMuted) {
       return right(unit);
     }
 
     // Fire and forget - don't await playback to avoid blocking UI
-    unawaited((_playAsset ?? _playAsync)(assetPath));
+    unawaited(
+      _playAsset != null
+          ? _playAsset(assetPath)
+          : _playAsync(assetPath, channel),
+    );
     return right(unit);
   }
 
-  Future<void> _playAsync(String assetPath) async {
+  Future<void> _playAsync(String assetPath, [String channel = 'voice']) async {
     try {
       await _initPlayers();
       await _activateSession();
-      final player = _nextPlayer;
+      final player = _nextPlayer(channel);
       await player.setVolume(_volume);
       // Not awaiting - fire and forget for responsiveness
       unawaited(player.play(AssetSource(assetPath)));

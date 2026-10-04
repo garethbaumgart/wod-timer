@@ -31,7 +31,8 @@ final class TimerViewModel {
     // MARK: - Internal State
 
     private var lastTickElapsed: TimeInterval = 0
-    private var lastCountdownSecond: Int = -1
+    private var lastLowBeep: String?
+    private var lastVoiceAt: TimeInterval?
     private var playedGo = false
     private var lastRound: Int = 0
     private var playedGetReady = false
@@ -40,7 +41,7 @@ final class TimerViewModel {
     private var playedHalfway = false
     private var playedAlmostThere = false
     private var playedTenSeconds = false
-    private var playedFinalCountdown = false
+    private var playedFinalCountdownHaptic = false
     private var lastWorkout: Workout?
 
     /// AMRAP taps are ignored for this long after a counted round, after GO
@@ -79,7 +80,14 @@ final class TimerViewModel {
             lastTickElapsed = 0
             engine.start()
             recentsStore.save(workout)
-            if started.state == .running { blockRoundCount() }
+            if started.state == .running {
+                // No get-ready countdown: GO on the high beep right away.
+                playedGo = true
+                audio.playHighBeep()
+                say(Bool.random() ? audio.playGo : audio.playLetsGo)
+                haptics.go()
+                blockRoundCount()
+            }
         case .failure:
             break
         }
@@ -146,6 +154,7 @@ final class TimerViewModel {
             phase = .completed
             engine.stop()
             haptics.complete()
+            audio.playHighBeep()
             playCompletionEncouragement()
         case .failure:
             break
@@ -228,8 +237,7 @@ final class TimerViewModel {
                 phase = .completed
                 engine.stop()
                 haptics.complete()
-                // A capped For Time is a DNF: no "Good job".
-                if !endedAtTimeCap { playCompletionEncouragement() }
+                playEndCues()
             } else {
                 session = updated
                 phase = updated.state
@@ -241,44 +249,54 @@ final class TimerViewModel {
                 phase = .completed
                 engine.stop()
                 haptics.complete()
-                if !endedAtTimeCap { playCompletionEncouragement() }
+                playEndCues()
             }
+        }
+    }
+
+    /// The end is a change like any other: the high beep with the line on
+    /// it. A capped For Time is a DNF: the neutral end line, no "Good job".
+    private func playEndCues() {
+        audio.playHighBeep()
+        if endedAtTimeCap {
+            audio.playComplete()
+        } else {
+            playCompletionEncouragement()
         }
     }
 
     // MARK: - Cue Logic (Haptics + Voice)
 
-    /// Ported from timer_notifier.dart _handleAudioCues.
-    /// Plays voice cues alongside haptic feedback.
+    /// Ported from timer_notifier.dart _handleAudioCues. The gym-timer
+    /// pattern (2.1.0): three low beeps in the last three seconds of every
+    /// phase, then on the change a high beep with the voice line starting on
+    /// it. The optional voice cues keep clear of the countdown and of a line
+    /// still being spoken.
     private func handleCues(old: TimerSession, new: TimerSession) {
         var voiceCuePlayed = false
+        // One high beep per change, even when two things change on one tick.
+        var changeBeeped = false
+        func changeBeep() {
+            guard !changeBeeped else { return }
+            changeBeeped = true
+            audio.playHighBeep()
+        }
 
         // "Get ready" when entering prep
         if new.state == .preparing && !playedGetReady {
             playedGetReady = true
-            audio.playGetReady()
+            say(audio.playGetReady)
             voiceCuePlayed = true
         }
 
-        // Countdown ticks during preparation (3, 2, 1)
-        if !voiceCuePlayed && new.state == .preparing {
-            let remaining = new.timeRemaining.seconds
-            if remaining <= 3 && remaining > 0 && remaining != lastCountdownSecond {
-                lastCountdownSecond = remaining
-                audio.playCountdown(remaining)
-                haptics.prepTick()
-                voiceCuePlayed = true
-            }
-        }
+        // Low beeps in the last three seconds of the phase (prep included).
+        playPhaseCountdown(new)
 
-        // "Go!" or "Let's go!" when prep → running
+        // High beep + "Go!" or "Let's go!" when prep → running
         if old.state == .preparing && new.state == .running && !playedGo {
             playedGo = true
-            if Bool.random() {
-                audio.playGo()
-            } else {
-                audio.playLetsGo()
-            }
+            changeBeep()
+            say(Bool.random() ? audio.playGo : audio.playLetsGo)
             haptics.go()
             blockRoundCount()
             voiceCuePlayed = true
@@ -289,7 +307,8 @@ final class TimerViewModel {
 
         // Work → Rest transition (prefer round cue if both happen)
         if old.state == .running && new.state == .resting && !roundChanged {
-            audio.playRest()
+            changeBeep()
+            say(audio.playRest)
             haptics.workToRest()
             voiceCuePlayed = true
         }
@@ -302,15 +321,16 @@ final class TimerViewModel {
         // Round change (EMOM/Tabata)
         if roundChanged {
             lastRound = new.currentRound
+            changeBeep()
 
             if let totalRounds = new.totalRounds,
                new.currentRound == totalRounds,
                !playedLastRound {
                 playedLastRound = true
-                audio.playLastRound()
+                say(audio.playLastRound)
                 haptics.lastRound()
             } else {
-                audio.playNextRound()
+                say(audio.playNextRound)
                 haptics.roundChange()
             }
             voiceCuePlayed = true
@@ -318,55 +338,93 @@ final class TimerViewModel {
             lastRound = new.currentRound
         }
 
-        // Motivational cue at ~33% progress
-        if !voiceCuePlayed && new.progress >= 0.33 && old.progress < 0.33 && !playedKeepGoing {
-            playedKeepGoing = true
-            if Bool.random() {
-                audio.playKeepGoing()
-            } else {
-                audio.playComeOn()
+        // The wrist tap for the last five seconds of the workout stays (the
+        // spoken "5, 4, 3, 2, 1" it used to ride with is the low beeps now).
+        if new.state.isActive && new.state != .preparing && !playedFinalCountdownHaptic {
+            let remaining = workoutRemaining(new)
+            if remaining <= 5 && remaining > 0 {
+                playedFinalCountdownHaptic = true
+                haptics.finalCountdown()
             }
-            voiceCuePlayed = true
+        }
+
+        // The optional cues below wait for a clear moment.
+        guard !voiceCuePlayed, clearToSpeak(new) else { return }
+
+        // Motivational cue at ~33% progress
+        if new.progress >= 0.33 && old.progress < 0.33 && !playedKeepGoing {
+            playedKeepGoing = true
+            say(Bool.random() ? audio.playKeepGoing : audio.playComeOn)
+            return
         }
 
         // Halfway point
-        if !voiceCuePlayed && new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
+        if new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
             playedHalfway = true
-            audio.playHalfway()
+            say(audio.playHalfway)
             haptics.halfway()
-            voiceCuePlayed = true
+            return
         }
 
         // "Almost there" at ~85% progress
-        if !voiceCuePlayed && new.progress >= 0.85 && old.progress < 0.85 && !playedAlmostThere {
+        if new.progress >= 0.85 && old.progress < 0.85 && !playedAlmostThere {
             playedAlmostThere = true
-            audio.playAlmostThere()
-            voiceCuePlayed = true
+            say(audio.playAlmostThere)
+            return
         }
 
-        // "Ten seconds" warning (only if workout > 15s to avoid overlap with
-        // final countdown). Whole-workout remaining: for EMOM / Tabata the
-        // session's timeRemaining is per interval, which fired this at the
-        // end of round 1 and then latched.
-        if !voiceCuePlayed && new.state.isActive && new.state != .preparing && !playedTenSeconds
+        // "Ten seconds", said with 10 or 9 seconds to go, in a workout over
+        // 15s. Whole-workout remaining: for EMOM / Tabata the session's
+        // timeRemaining is per interval, which fired this at the end of
+        // round 1 and then latched.
+        if new.state != .preparing && !playedTenSeconds
             && new.workout.timerType.estimatedDuration.seconds > 15 {
             let remaining = workoutRemaining(new)
-            if remaining <= 10 && remaining > 7 {
+            if remaining <= 10 && remaining > 8 {
                 playedTenSeconds = true
-                audio.playTenSeconds()
-                voiceCuePlayed = true
+                say(audio.playTenSeconds)
             }
         }
+    }
 
-        // Final countdown (single pre-recorded "5, 4, 3, 2, 1" clip). Whole
-        // workout, and resting counts: a Tabata ends on a rest.
-        if !voiceCuePlayed && new.state.isActive && new.state != .preparing && !playedFinalCountdown {
-            let remaining = workoutRemaining(new)
-            if remaining <= 5 && remaining > 0 {
-                playedFinalCountdown = true
-                audio.playFinalCountdown()
-                haptics.finalCountdown()
-            }
+    /// Plays a voice cue and notes when, so the optional cues can wait for a
+    /// clear moment.
+    private func say(_ cue: () -> Void) {
+        lastVoiceAt = lastTickElapsed
+        cue()
+    }
+
+    /// A clear moment for an optional voice cue: more than four seconds
+    /// before the phase's countdown beeps, and at least two seconds after
+    /// the last line started.
+    private func clearToSpeak(_ session: TimerSession) -> Bool {
+        guard session.state.isActive, session.timeRemaining.seconds > 4 else { return false }
+        guard let last = lastVoiceAt else { return true }
+        return lastTickElapsed - last >= 2
+    }
+
+    /// A low beep with 3, 2 and 1 seconds left in the current phase. A phase
+    /// of 3 seconds or less skips the numbers it starts on.
+    private func playPhaseCountdown(_ session: TimerSession) {
+        guard session.state.isActive else { return }
+        let left = session.timeRemaining.seconds
+        guard left >= 1, left <= 3, left < phaseSeconds(session) else { return }
+        let key = "\(session.state):\(session.currentRound):\(left)"
+        guard key != lastLowBeep else { return }
+        lastLowBeep = key
+        audio.playLowBeep(left)
+        if session.state == .preparing { haptics.prepTick() }
+    }
+
+    /// The length of the phase the session is in.
+    private func phaseSeconds(_ session: TimerSession) -> Int {
+        if session.state == .preparing { return session.workout.prepCountdown.seconds }
+        switch session.workout.timerType {
+        case let .amrap(duration): return duration.seconds
+        case let .forTime(timeCap, _): return timeCap.seconds
+        case let .emom(intervalDuration, _): return intervalDuration.seconds
+        case let .tabata(workDuration, restDuration, _):
+            return session.state == .resting ? restDuration.seconds : workDuration.seconds
         }
     }
 
@@ -376,25 +434,18 @@ final class TimerViewModel {
         return max(0, total - session.elapsed.seconds)
     }
 
-    /// Plays "Good job" or "That's it" after completion,
-    /// delayed if the final countdown clip may still be playing.
-    /// The "5, 4, 3, 2, 1" clip starts at 5s remaining and runs ~5s,
-    /// so it should finish near completion. A 1s buffer avoids overlap
-    /// if the timer completes slightly before the clip ends.
+    /// Plays "Good job" or "That's it" on the high beep at the end.
     private func playCompletionEncouragement() {
-        let delay: TimeInterval = playedFinalCountdown ? 1.0 : 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, self.phase == .completed else { return }
-            if Bool.random() {
-                self.audio.playGoodJob()
-            } else {
-                self.audio.playThatsIt()
-            }
+        if Bool.random() {
+            audio.playGoodJob()
+        } else {
+            audio.playThatsIt()
         }
     }
 
     private func resetCueState() {
-        lastCountdownSecond = -1
+        lastLowBeep = nil
+        lastVoiceAt = nil
         playedGo = false
         lastRound = 0
         playedGetReady = false
@@ -403,7 +454,7 @@ final class TimerViewModel {
         playedHalfway = false
         playedAlmostThere = false
         playedTenSeconds = false
-        playedFinalCountdown = false
+        playedFinalCountdownHaptic = false
     }
 }
 
@@ -430,5 +481,8 @@ extension TimerViewModel {
     }
 
     func debugFinish() { finish() }
+
+    /// Feed one engine tick through the real cue logic (tests).
+    func debugTick(elapsed: TimeInterval) { onTick(elapsed: elapsed) }
 }
 #endif

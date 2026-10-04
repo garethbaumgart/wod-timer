@@ -6,10 +6,22 @@ import 'package:wod_timer/core/domain/failures/audio_failure.dart';
 /// This service handles playing timer-related sounds like beeps,
 /// countdown numbers, and completion sounds.
 abstract class IAudioService {
-  /// Play a short beep sound (used for interval alerts).
+  /// Play the high change beep (same sound as [playHighBeep]).
   Future<Either<AudioFailure, Unit>> playBeep();
 
-  /// Play a countdown number (3, 2, 1).
+  /// Play the low countdown beep for [secondsLeft] (3, 2 or 1) before a
+  /// phase change. The gym-timer pattern (2.1.0, matched to the SmartWOD
+  /// recording Gareth chose): three low beeps in the last three seconds of
+  /// every phase, then [playHighBeep] on the change with the voice line on
+  /// top. Beeps play in Beeps only too; only Silent mutes them.
+  Future<Either<AudioFailure, Unit>> playLowBeep(int secondsLeft);
+
+  /// Play the high beep that marks every phase change: start, round, rest,
+  /// work and end. The voice line for the change starts with it.
+  Future<Either<AudioFailure, Unit>> playHighBeep();
+
+  /// Play a spoken countdown number (3, 2, 1). Since 2.1.0 the timer counts
+  /// down with [playLowBeep] instead; kept for the voice packs' clips.
   Future<Either<AudioFailure, Unit>> playCountdown(int number);
 
   /// Play the "Go" sound at workout start.
@@ -87,8 +99,8 @@ abstract class IAudioService {
   /// voice packs instead of using the fixed [setVoicePack] value.
   void setRandomizePerCue({required bool enabled});
 
-  /// Mute only the spoken voice cues, keeping beep fallbacks for the
-  /// timing-critical moments (countdown, GO, phase/round transitions).
+  /// Mute only the spoken voice cues (Beeps only). The low and high beeps
+  /// keep playing, so every countdown and change stays audible.
   void setVoiceMuted({required bool muted});
 
   /// Play a short preview sample ("GO!") for the given voice pack,

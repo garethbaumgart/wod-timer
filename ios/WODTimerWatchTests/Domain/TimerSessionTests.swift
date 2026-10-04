@@ -523,16 +523,9 @@ final class SetupMemoryTests: XCTestCase {
     }
 }
 
-/// 1.3.1: Beeps only mirrors the phone's beep-fallback cues.
+/// Beeps only: since 2.1.0 the beeps carry every countdown and change, so
+/// Beeps only is the beeps with the voice taken away.
 final class BeepsOnlyTests: XCTestCase {
-    func testTimingCuesBeepAndEncouragementStaysQuiet() {
-        for cue in ["countdown_3", "countdown_go", "rest", "last_round", "next_round", "ten_seconds"] {
-            XCTAssertTrue(WatchAudioService.beepCues.contains(cue), cue)
-        }
-        for cue in ["halfway", "keep_going", "good_job", "come_on", "almost_there", "thats_it"] {
-            XCTAssertFalse(WatchAudioService.beepCues.contains(cue), cue)
-        }
-    }
 
     func testTheChoicePersists() {
         let key = "watch_voice_beeps"
@@ -1276,5 +1269,126 @@ final class DomainTypesTests: XCTestCase {
         XCTAssertEqual(TimerError.invalidStateTransition(from: .ready, to: .paused).message, "Cannot transition from Ready to Paused")
         XCTAssertEqual(TimerError.timerNotActive.message, "Timer is not active")
         XCTAssertEqual(TimerError.alreadyCompleted.message, "Workout is already completed")
+    }
+}
+
+
+// MARK: - 2.1.0 gym-timer beeps
+
+/// The schedule, second by second, through the real view model and audio
+/// service: low beeps with 3, 2, 1 seconds left in every phase, then the high
+/// beep with the voice line on it. Mirrors the phone's timer_cues_test.
+final class GymBeepScheduleTests: XCTestCase {
+    private let keys = ["watch_voice_pack", "watch_voice_random", "watch_voice_muted", "watch_voice_beeps"]
+    private var saved: [String: Any?] = [:]
+
+    override func setUp() {
+        super.setUp()
+        for key in keys {
+            saved[key] = UserDefaults.standard.object(forKey: key)
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
+
+    override func tearDown() {
+        for key in keys {
+            if let value = saved[key] ?? nil {
+                UserDefaults.standard.set(value, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        super.tearDown()
+    }
+
+    private func workout(_ type: TimerType, prep: Int = 0) -> Workout {
+        Workout(id: UUID(), name: "Test", timerType: type, prepCountdown: TimerDuration(seconds: prep),
+                createdAt: Date())
+    }
+
+    /// Runs [type] tick by tick to its end and returns what was heard, with
+    /// the random picks folded to one name each.
+    private func heard(_ type: TimerType, prep: Int = 0, beepsOnly: Bool = false,
+                       ticks: ((TimerViewModel, Int) -> Void)? = nil) -> [String] {
+        let vm = TimerViewModel()
+        vm.audio.setBeepsOnly(beepsOnly)
+        vm.start(workout: workout(type, prep: prep))
+        let total = prep + type.estimatedDuration.seconds
+        for s in 1 ... total {
+            vm.debugTick(elapsed: TimeInterval(s))
+            ticks?(vm, s)
+        }
+        XCTAssertEqual(vm.phase, .completed)
+        defer { vm.reset() }
+        return vm.audio.cueLog.map {
+            $0.replacingOccurrences(of: "lets_go", with: "countdown_go")
+                .replacingOccurrences(of: "come_on", with: "keep_going")
+                .replacingOccurrences(of: "thats_it", with: "good_job")
+        }
+    }
+
+    private let countIn = ["beep:low_3", "beep:low_2", "beep:low_1", "beep:high"]
+
+    func testAmrapCountsInToTheEndAndKeepsTheOptionalLinesClear() {
+        XCTAssertEqual(heard(.amrap(duration: TimerDuration(seconds: 60))),
+                       ["beep:high", "voice:countdown_go", "voice:keep_going", "voice:halfway",
+                        "voice:ten_seconds"] + countIn + ["voice:good_job"])
+    }
+
+    func testThePrepCountdownIsLowBeepsThenGoOnTheHighBeep() {
+        XCTAssertEqual(Array(heard(.amrap(duration: TimerDuration(seconds: 60)), prep: 10).prefix(6)),
+                       ["voice:get_ready"] + countIn + ["voice:countdown_go"])
+    }
+
+    func testEmomCountsInToEveryMinute() {
+        var expected: [String] = ["beep:high", "voice:countdown_go"]
+        expected += countIn
+        expected += ["voice:next_round", "voice:halfway"]
+        expected += countIn
+        expected += ["voice:last_round", "voice:almost_there", "voice:ten_seconds"]
+        expected += countIn
+        expected += ["voice:good_job"]
+        let emom = TimerType.emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 3))
+        XCTAssertEqual(heard(emom), expected)
+    }
+
+    func testTabataCountsInToEveryWorkAndRest() {
+        var expected: [String] = ["beep:high", "voice:countdown_go"]
+        for line in ["voice:rest", "voice:last_round", "voice:rest", "voice:good_job"] {
+            expected += countIn
+            expected.append(line)
+        }
+        let tabata = TimerType.tabata(workDuration: TimerDuration(seconds: 20),
+                                      restDuration: TimerDuration(seconds: 10), rounds: RoundCount(value: 2))
+        XCTAssertEqual(heard(tabata), expected)
+    }
+
+    func testACappedForTimeEndsOnTheHighBeepWithTheNeutralLine() {
+        XCTAssertEqual(heard(.forTime(timeCap: TimerDuration(seconds: 60))).suffix(5),
+                       countIn + ["voice:complete"])
+    }
+
+    func testBeepsOnlyKeepsEveryBeepAndDropsEveryLine() {
+        let tabata = TimerType.tabata(workDuration: TimerDuration(seconds: 20), restDuration: TimerDuration(seconds: 10),
+                                      rounds: RoundCount(value: 2))
+        XCTAssertEqual(heard(tabata, prep: 10, beepsOnly: true),
+                       countIn + countIn + countIn + countIn + countIn)
+    }
+
+    func testShortPhasesSkipTheBeepsTheyStartOn() {
+        let beeps = heard(.tabata(workDuration: TimerDuration(seconds: 3), restDuration: TimerDuration(seconds: 2),
+                                  rounds: RoundCount(value: 1)))
+            .filter { $0.hasPrefix("beep:") }
+        XCTAssertEqual(beeps, ["beep:high", "beep:low_2", "beep:low_1", "beep:high", "beep:low_1", "beep:high"])
+    }
+
+    func testFinishIsTheHighBeepWithTheEncouragement() {
+        let vm = TimerViewModel()
+        vm.start(workout: workout(.forTime(timeCap: TimerDuration(seconds: 600))))
+        for s in 1 ... 30 { vm.debugTick(elapsed: TimeInterval(s)) }
+        vm.finish()
+        XCTAssertEqual(vm.audio.cueLog.suffix(2).first, "beep:high")
+        XCTAssertTrue(["voice:good_job", "voice:thats_it"].contains(vm.audio.cueLog.last ?? ""))
+        vm.reset()
     }
 }

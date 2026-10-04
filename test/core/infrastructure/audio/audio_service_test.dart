@@ -58,22 +58,9 @@ void main() {
     'no_rep': 'no_rep.mp3',
   };
 
-  /// The cues that must stay audible with the voice off: the ones that
-  /// mark time (countdown, GO, phase and round changes, the end).
-  const timingCues = {
-    'go',
-    'rest',
-    'complete',
-    'interval',
-    'get_ready',
-    'ten_seconds',
-    'last_round',
-    'next_round',
-    'final_countdown',
-    'lets_go',
-  };
-
-  const beep = 'audio/major/beep.m4a';
+  // The gym-timer beeps (2.1.0), shared by every pack.
+  const beep = 'audio/beeps/high.wav';
+  String low(int n) => 'audio/beeps/low_$n.wav';
 
   group('voice on', () {
     test('every cue plays its clip from the Major pack by default', () async {
@@ -99,11 +86,21 @@ void main() {
       ]);
     });
 
-    test('the beep is the same file in every pack', () async {
+    test('the beeps are the same files in every pack', () async {
       await audio.playBeep();
+      await audio.playHighBeep();
+      await audio.playLowBeep(3);
       audio.setVoicePack('holly');
-      await audio.playBeep();
-      expect(played, [beep, beep]);
+      await audio.playHighBeep();
+      await audio.playLowBeep(3);
+      expect(played, [beep, beep, low(3), beep, low(3)]);
+    });
+
+    test('each of 3, 2, 1 has its own low beep; out of range clamps', () async {
+      for (final n in [3, 2, 1, 5, 0]) {
+        await audio.playLowBeep(n);
+      }
+      expect(played, [low(3), low(2), low(1), low(3), low(1)]);
     });
 
     test(
@@ -147,24 +144,22 @@ void main() {
   group('Beeps only (voice muted)', () {
     setUp(() => audio.setVoiceMuted(muted: true));
 
-    test('the timing cues fall back to a beep', () async {
-      for (final name in timingCues) {
-        played.clear();
-        expect(await cues()[name]!(), right<AudioFailure, Unit>(unit));
-        expect(played, [beep], reason: name);
-      }
-      played.clear();
-      await audio.playCountdown(3);
-      await audio.playCountdown(1);
-      expect(played, [beep, beep]);
-    });
-
-    test('the encouragement cues go quiet but still succeed', () async {
-      for (final name in clips.keys.where((n) => !timingCues.contains(n))) {
+    test('every voice cue goes quiet but still succeeds', () async {
+      for (final name in clips.keys) {
         played.clear();
         expect(await cues()[name]!(), right<AudioFailure, Unit>(unit));
         expect(played, isEmpty, reason: name);
       }
+      await audio.playCountdown(3);
+      expect(played, isEmpty);
+    });
+
+    test('the beeps keep playing: they carry the timing', () async {
+      await audio.playLowBeep(3);
+      await audio.playLowBeep(2);
+      await audio.playLowBeep(1);
+      await audio.playHighBeep();
+      expect(played, [low(3), low(2), low(1), beep]);
     });
 
     test('turning the voice back on restores the clips', () async {
@@ -182,6 +177,8 @@ void main() {
         expect(await cue(), right<AudioFailure, Unit>(unit));
       }
       await audio.playBeep();
+      await audio.playLowBeep(3);
+      await audio.playHighBeep();
       await audio.playCountdown(3);
       expect(played, isEmpty);
 

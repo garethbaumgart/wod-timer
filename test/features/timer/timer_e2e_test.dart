@@ -45,6 +45,12 @@ void main() {
     when(
       () => mockAudioService.playCountdown(any()),
     ).thenAnswer((_) async => right(unit));
+    when(
+      () => mockAudioService.playLowBeep(any()),
+    ).thenAnswer((_) async => right(unit));
+    when(
+      mockAudioService.playHighBeep,
+    ).thenAnswer((_) async => right(unit));
     when(() => mockAudioService.playGo()).thenAnswer((_) async => right(unit));
     when(
       () => mockAudioService.playRest(),

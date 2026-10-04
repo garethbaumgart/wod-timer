@@ -79,6 +79,7 @@ flutter:
     - assets/audio/major/
     - assets/audio/liam/
     - assets/audio/holly/
+    - assets/audio/beeps/
     # Outfit ships in the bundle (all nine weights + OFL.txt) so google_fonts
     # never fetches at runtime — an offline cold start used to crash the app
     # (Sentry WHARFWOD-1). Filenames must match google_fonts' Outfit-<Weight>
