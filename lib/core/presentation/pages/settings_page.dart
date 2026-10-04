@@ -121,31 +121,7 @@ class SettingsPage extends ConsumerWidget {
                         },
                       ),
                       _buildDivider(),
-                      // The automatic rating sheet is throttled by Apple and may
-                      // never appear, so someone who wants to rate needs a row
-                      // they can find. It opens the store page, not the sheet:
-                      // neither store lets a button call the in-app review API.
-                      _buildTapRow(
-                        label: 'Rate Wharf WOD',
-                        value: '',
-                        onTap: () {
-                          trackEvent('rate_tapped', {'source': 'settings'});
-                          unawaited(
-                            ref.read(reviewPrompterProvider).openStorePage(),
-                          );
-                        },
-                      ),
-                      _buildDivider(),
-                      _buildTapRow(
-                        label: 'Send feedback',
-                        value: '',
-                        onTap: () => launchUrl(
-                          Uri.parse(
-                            'mailto:support@mentalmetal.app'
-                            '?subject=Wharf%20WOD%20feedback',
-                          ),
-                        ),
-                      ),
+                      _buildRateBlock(ref),
                       _buildDivider(),
                       _buildTapRow(
                         label: 'Privacy policy',
@@ -166,6 +142,66 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Rate and feedback as one question with two answers (2.1.0, option 14
+  /// of the Rate row mocks): "Love it" opens the store page, "Could be
+  /// better" opens the feedback mail. Both are always on screen: showing the
+  /// store only to people who say they love it would be review gating,
+  /// which Google Play bans.
+  ///
+  /// The automatic rating sheet is throttled by Apple and may never appear,
+  /// so someone who wants to rate needs a control they can find. It opens
+  /// the store page, not the sheet: neither store lets a button call the
+  /// in-app review API.
+  Widget _buildRateBlock(WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'How is Wharf WOD working for you?',
+            style: _labelStyle.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _RateAnswer(
+                  label: 'Love it',
+                  semanticsLabel: 'Love it: rate Wharf WOD',
+                  filled: true,
+                  onTap: () {
+                    trackEvent('rate_tapped', {'source': 'settings'});
+                    unawaited(ref.read(reviewPrompterProvider).openStorePage());
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _RateAnswer(
+                  label: 'Could be better',
+                  semanticsLabel: 'Could be better: send feedback',
+                  filled: false,
+                  onTap: () {
+                    trackEvent('feedback_tapped', {'source': 'settings'});
+                    unawaited(
+                      launchUrl(
+                        Uri.parse(
+                          'mailto:support@mentalmetal.app'
+                          '?subject=Wharf%20WOD%20feedback',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -328,6 +364,70 @@ class SettingsPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One of the two answers in the rate block: a 48pt button, the filled one
+/// neon green with a star.
+class _RateAnswer extends StatelessWidget {
+  const _RateAnswer({
+    required this.label,
+    required this.semanticsLabel,
+    required this.filled,
+    required this.onTap,
+  });
+
+  final String label;
+  final String semanticsLabel;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = filled
+        ? AppColors.backgroundDark
+        : AppColors.textPrimaryDark;
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: filled ? AppColors.primary : null,
+            borderRadius: BorderRadius.circular(14),
+            border: filled
+                ? null
+                : Border.all(color: AppColors.border, width: 1.5),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (filled) ...[
+                Icon(Icons.star_rounded, size: 19, color: foreground),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: foreground,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

@@ -211,11 +211,11 @@ void main() {
   });
 
   group('links', () {
-    testWidgets('Send feedback opens a mail to support with the subject', (
+    testWidgets('Could be better opens a mail to support with the subject', (
       tester,
     ) async {
       await pumpSettings(tester);
-      await tester.tap(find.text('Send feedback'));
+      await tester.tap(find.text('Could be better'));
       await tester.pumpAndSettle();
       expect(launches, hasLength(1));
       expect(

@@ -18,7 +18,7 @@ struct VoiceSettingsView: View {
 
     var body: some View {
         List {
-            row(.pack(.major), "Major", "CrossFit coach")
+            row(.pack(.major), "Major", "Drill sergeant")
             row(.pack(.liam), "Liam", "Male coach")
             row(.pack(.holly), "Holly", "Female coach")
             row(.random, "Random", "A different voice each cue")

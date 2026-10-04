@@ -9,7 +9,7 @@ part 'app_settings_provider.g.dart';
 
 /// Voice option for audio cues.
 enum VoiceOption {
-  /// Major - CrossFit coach voice.
+  /// Major - drill sergeant voice.
   major,
 
   /// Liam - male coach voice (shown as "Male Coach" since 1.3.1).

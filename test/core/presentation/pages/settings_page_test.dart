@@ -148,24 +148,44 @@ void main() {
     expect(find.text('HOME'), findsOneWidget);
   });
 
-  group('Rate Wharf WOD row', () {
-    testWidgets('sits between Haptics and Send feedback', (tester) async {
+  group('Rate block (Love it / Could be better)', () {
+    const question = 'How is Wharf WOD working for you?';
+
+    testWidgets('sits between Haptics and Privacy policy, both answers side '
+        'by side', (tester) async {
       await pumpSettings(tester);
 
       final haptics = tester.getRect(find.text('Haptics'));
-      final rate = tester.getRect(find.text('Rate Wharf WOD'));
-      final feedback = tester.getRect(find.text('Send feedback'));
-      expect(rate.top, greaterThan(haptics.bottom));
-      expect(feedback.top, greaterThan(rate.bottom));
+      final ask = tester.getRect(find.text(question));
+      final love = tester.getRect(find.text('Love it'));
+      final better = tester.getRect(find.text('Could be better'));
+      final privacy = tester.getRect(find.text('Privacy policy'));
+      expect(ask.top, greaterThan(haptics.bottom));
+      expect(love.top, greaterThan(ask.bottom));
+      expect(love.center.dy, closeTo(better.center.dy, 0.5));
+      expect(better.left, greaterThan(love.right));
+      expect(privacy.top, greaterThan(love.bottom));
     });
 
-    testWidgets('opens the store page once and never the automatic sheet', (
+    testWidgets('both answers are always there: no review gating', (
       tester,
     ) async {
       await pumpSettings(tester);
-      await scrollTo(tester, find.text('Rate Wharf WOD'));
+      expect(find.text('Love it'), findsOneWidget);
+      expect(find.text('Could be better'), findsOneWidget);
+      expect(find.bySemanticsLabel('Love it: rate Wharf WOD'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Could be better: send feedback'),
+        findsOneWidget,
+      );
+    });
 
-      await tester.tap(find.text('Rate Wharf WOD'));
+    testWidgets('Love it opens the store page once and never the automatic '
+        'sheet', (tester) async {
+      await pumpSettings(tester);
+      await scrollTo(tester, find.text('Love it'));
+
+      await tester.tap(find.text('Love it'));
       await tester.pumpAndSettle();
 
       expect(requester.listings, 1);
@@ -182,15 +202,15 @@ void main() {
   });
 
   group('Flat list', () {
-    testWidgets('six rows in order, no section headers', (tester) async {
+    testWidgets('rows and the rate block in order, no section headers', (tester) async {
       await pumpSettings(tester);
 
       const order = [
         'Orientation',
         'Voice',
         'Haptics',
-        'Rate Wharf WOD',
-        'Send feedback',
+        'How is Wharf WOD working for you?',
+        'Love it',
         'Privacy policy',
       ];
       final rects = [
@@ -202,12 +222,15 @@ void main() {
           greaterThan(rects[i - 1].bottom),
           reason: order[i],
         );
-        // Evenly spaced: nothing (a header, a caption) sits between rows.
-        expect(
-          rects[i].top - rects[i - 1].top,
-          closeTo(rects[1].top - rects[0].top, 6),
-          reason: order[i],
-        );
+        // The plain rows are evenly spaced: nothing (a header, a caption)
+        // sits between them. The rate block is taller by design (2.1.0).
+        if (i < 3) {
+          expect(
+            rects[i].top - rects[i - 1].top,
+            closeTo(rects[1].top - rects[0].top, 6),
+            reason: order[i],
+          );
+        }
       }
 
       for (final gone in [
@@ -278,7 +301,7 @@ void main() {
         expect(playButton(voice), findsNothing, reason: voice);
       }
 
-      final major = tester.getRect(find.text('Major (CrossFit Coach)'));
+      final major = tester.getRect(find.text('Major (Drill Sergeant)'));
       final play = tester.getRect(
         find
             .ancestor(of: playButton('Major'), matching: find.byType(SizedBox))
@@ -355,6 +378,7 @@ void main() {
 
     await scrollTo(tester, find.text('Wharf WOD 1.2.1 (1)'));
     expect(tester.takeException(), isNull);
-    expect(find.text('Rate Wharf WOD'), findsOneWidget);
+    expect(find.text('Love it'), findsOneWidget);
+    expect(find.text('Could be better'), findsOneWidget);
   });
 }

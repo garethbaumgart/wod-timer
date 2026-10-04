@@ -27,7 +27,7 @@ String voiceShortLabel(VoiceOption voice) {
 String voiceLabel(VoiceOption voice) {
   switch (voice) {
     case VoiceOption.major:
-      return 'Major (CrossFit Coach)';
+      return 'Major (Drill Sergeant)';
     case VoiceOption.liam:
       return 'Liam (Male Coach)';
     case VoiceOption.holly:

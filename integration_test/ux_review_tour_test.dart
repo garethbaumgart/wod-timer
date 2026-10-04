@@ -202,7 +202,7 @@ void main() {
     await tester.tap(find.text('Voice'));
     await tester.pumpAndSettle();
     await hold(tester, 'settings_voice_picker');
-    await tester.tap(find.text('Major (CrossFit Coach)'));
+    await tester.tap(find.text('Major (Drill Sergeant)'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Orientation'));

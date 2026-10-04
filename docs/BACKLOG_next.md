@@ -2,20 +2,15 @@
 
 Notes from Gareth to pick up in the next set of changes. Add new items here as they come in; move each into the release's plan or spec when the build starts.
 
-## Settings > Voice
+## Built on feat/gym-beeps (4 Oct 2026), waiting on Gareth's listen
 
-- **Major is a Drill Sergeant, not a CrossFit coach** (4 Oct 2026). Keep the order of the voice options exactly as it is; only the description changes.
-  - Phone and tablet: `lib/core/presentation/widgets/voice_picker_sheet.dart:30` shows `Major (CrossFit Coach)`; change to `Major (Drill Sergeant)`.
-  - Watch: `ios/WODTimerWatch/Presentation/VoiceSettingsView.swift:21` shows `"Major", "CrossFit coach"`; change the subtitle to `Drill sergeant`, matching the other rows' case.
-  - Doc comment: `lib/core/application/providers/app_settings_provider.dart:12`.
-  - Tests that find the old text: `test/core/presentation/pages/settings_page_test.dart:281` and `integration_test/ux_review_tour_test.dart:205`.
-  - Spelling: "Sergeant".
+- **Gym-timer beeps in every workout.** Three low beeps (about 435.5 Hz) with 3, 2, 1 seconds left in every phase, then the high beep (about 1031 Hz) on the change with the voice line on it, matched to the SmartWOD recording Gareth chose. Spoken 3-2-1 and 5-4-3-2-1 replaced by the beeps; optional lines never talk over the count-in or another line; Beeps only = beeps without voice. Phone and watch. Assets: `assets/audio/beeps/`, voices levelled by `tool/audio/level_voices.py` (see `tool/audio/README.md`). Major mocks of all four workouts, rendered from the app's own cue log (`test/tool/cue_timeline_test.dart`): https://claude.ai/artifact/AoN3cUXdV73Q4ozoVAFRFC
+- **Rate block (option 14 of https://claude.ai/artifact/AYaE7K23rdhJda7HHfQauH).** "How is Wharf WOD working for you?" with Love it (store page) and Could be better (feedback mail), both always shown (no review gating). Replaces the Rate and Send feedback rows.
+- **Major is a Drill Sergeant.** Phone "Major (Drill Sergeant)", watch "Drill sergeant", same order.
 
-## Beeps and voice cues (awaiting Gareth's pick)
+## Still open
 
-- Match the SmartWOD pattern Gareth recorded on 4 Oct 2026: three low beeps (about 435.5 Hz) in the last three seconds of every phase, then a high beep (about 1031 Hz) exactly on the change, with the voice line starting on it. The beeps sit about 5.5 dB above the voice.
-- Mocks for each voice pack are on the Sound match page: https://claude.ai/artifact/TtVVu6nQ2gSkU7s3BHM29n
-- Missing voice lines to record if wanted: "Round 2", "Round 3", and so on, plus "Well done".
+- Record "Round 2", "Round 3" and so on, plus "Well done", if wanted (EMOM says "Next round" today).
 
 ## Already merged, waiting to ship
 
