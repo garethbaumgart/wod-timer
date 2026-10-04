@@ -125,7 +125,6 @@ void main() {
     when(() => audio.playGo()).thenAnswer((_) async => right(unit));
     when(() => audio.playLetsGo()).thenAnswer((_) async => right(unit));
     when(() => audio.playGetReady()).thenAnswer((_) async => right(unit));
-    when(() => audio.playCountdown(any())).thenAnswer((_) async => right(unit));
     when(() => audio.playLowBeep(any())).thenAnswer((_) async => right(unit));
     when(audio.playHighBeep).thenAnswer((_) async => right(unit));
     when(() => audio.playRest()).thenAnswer((_) async => right(unit));
@@ -136,9 +135,6 @@ void main() {
     when(() => audio.playComeOn()).thenAnswer((_) async => right(unit));
     when(() => audio.playAlmostThere()).thenAnswer((_) async => right(unit));
     when(() => audio.playTenSeconds()).thenAnswer((_) async => right(unit));
-    when(
-      () => audio.playFinalCountdown(),
-    ).thenAnswer((_) async => right(unit));
     when(() => audio.playGoodJob()).thenAnswer((_) async => right(unit));
     when(() => audio.playThatsIt()).thenAnswer((_) async => right(unit));
     when(() => haptic.mediumImpact()).thenAnswer((_) async => right(unit));
@@ -161,7 +157,7 @@ void main() {
 
   group('TimerNotifier cue timing (whole-workout scale)', () {
     test(
-      'EMOM: final countdown does NOT fire at the end of round 1',
+      'EMOM: the ten-seconds warning does NOT fire at the end of round 1',
       () async {
         final notifier = container.read(timerNotifierProvider.notifier);
         await notifier.start(emomWorkout()); // 3 x 60s
@@ -169,13 +165,12 @@ void main() {
         // 55s in: round 1 has 5s left, but the WORKOUT has 125s left.
         engine.emit(const Duration(seconds: 55));
 
-        verifyNever(() => audio.playFinalCountdown());
         verifyNever(() => audio.playTenSeconds());
       },
     );
 
     test('EMOM: the low beeps count down every minute and the end, '
-        'and the spoken 5-4-3-2-1 is gone (2.1.0)', () async {
+        '(2.1.0)', () async {
       final notifier = container.read(timerNotifierProvider.notifier);
       await notifier.start(emomWorkout()); // 3 x 60s = 180s
 
@@ -186,7 +181,6 @@ void main() {
       for (final n in [3, 2, 1]) {
         verify(() => audio.playLowBeep(n)).called(3);
       }
-      verifyNever(() => audio.playFinalCountdown());
     });
 
     test('EMOM: ten-seconds warning fires near the workout end', () async {

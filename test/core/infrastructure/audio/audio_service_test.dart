@@ -22,19 +22,16 @@ void main() {
     'rest': audio.playRest,
     'complete': audio.playComplete,
     'halfway': audio.playHalfway,
-    'interval': audio.playIntervalStart,
     'get_ready': audio.playGetReady,
     'ten_seconds': audio.playTenSeconds,
     'last_round': audio.playLastRound,
     'keep_going': audio.playKeepGoing,
     'good_job': audio.playGoodJob,
     'next_round': audio.playNextRound,
-    'final_countdown': audio.playFinalCountdown,
     'lets_go': audio.playLetsGo,
     'come_on': audio.playComeOn,
     'almost_there': audio.playAlmostThere,
     'thats_it': audio.playThatsIt,
-    'no_rep': audio.playNoRep,
   };
 
   /// The clip each cue plays inside a voice pack.
@@ -43,19 +40,16 @@ void main() {
     'rest': 'rest.mp3',
     'complete': 'complete.mp3',
     'halfway': 'halfway.mp3',
-    'interval': 'interval.mp3',
     'get_ready': 'get_ready.mp3',
     'ten_seconds': 'ten_seconds.mp3',
     'last_round': 'last_round.mp3',
     'keep_going': 'keep_going.mp3',
     'good_job': 'good_job.mp3',
     'next_round': 'next_round.mp3',
-    'final_countdown': 'final_countdown.mp3',
     'lets_go': 'lets_go.mp3',
     'come_on': 'come_on.mp3',
     'almost_there': 'almost_there.mp3',
     'thats_it': 'thats_it.mp3',
-    'no_rep': 'no_rep.mp3',
   };
 
   // The gym-timer beeps (2.1.0), shared by every pack.
@@ -69,21 +63,6 @@ void main() {
         expect(await entry.value(), right<AudioFailure, Unit>(unit));
         expect(played, ['audio/major/${clips[entry.key]}'], reason: entry.key);
       }
-    });
-
-    test('3, 2, 1 are spoken; any other number is a beep', () async {
-      await audio.playCountdown(3);
-      await audio.playCountdown(2);
-      await audio.playCountdown(1);
-      await audio.playCountdown(4);
-      await audio.playCountdown(0);
-      expect(played, [
-        'audio/major/countdown_3.mp3',
-        'audio/major/countdown_2.mp3',
-        'audio/major/countdown_1.mp3',
-        beep,
-        beep,
-      ]);
     });
 
     test('the beeps are the same files in every pack', () async {
@@ -150,7 +129,6 @@ void main() {
         expect(await cues()[name]!(), right<AudioFailure, Unit>(unit));
         expect(played, isEmpty, reason: name);
       }
-      await audio.playCountdown(3);
       expect(played, isEmpty);
     });
 
@@ -179,7 +157,6 @@ void main() {
       await audio.playBeep();
       await audio.playLowBeep(3);
       await audio.playHighBeep();
-      await audio.playCountdown(3);
       expect(played, isEmpty);
 
       await audio.setMuted(muted: false);

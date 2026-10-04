@@ -194,10 +194,6 @@ class NotifierHarness {
         return right(unit);
       });
     }
-    when(() => audio.playCountdown(any())).thenAnswer((invocation) async {
-      played.add('countdown ${invocation.positionalArguments.first}');
-      return right(unit);
-    });
     when(() => audio.playLowBeep(any())).thenAnswer((invocation) async {
       beeped.add('low ${invocation.positionalArguments.first}');
       heard.add(
@@ -269,7 +265,6 @@ class NotifierHarness {
     'come on': audio.playComeOn,
     'almost there': audio.playAlmostThere,
     'ten seconds': audio.playTenSeconds,
-    'final countdown': audio.playFinalCountdown,
     'good job': audio.playGoodJob,
     'thats it': audio.playThatsIt,
     'complete': audio.playComplete,

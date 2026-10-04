@@ -20,10 +20,6 @@ abstract class IAudioService {
   /// work and end. The voice line for the change starts with it.
   Future<Either<AudioFailure, Unit>> playHighBeep();
 
-  /// Play a spoken countdown number (3, 2, 1). Since 2.1.0 the timer counts
-  /// down with [playLowBeep] instead; kept for the voice packs' clips.
-  Future<Either<AudioFailure, Unit>> playCountdown(int number);
-
   /// Play the "Go" sound at workout start.
   Future<Either<AudioFailure, Unit>> playGo();
 
@@ -35,9 +31,6 @@ abstract class IAudioService {
 
   /// Play the halfway alert sound.
   Future<Either<AudioFailure, Unit>> playHalfway();
-
-  /// Play the interval start sound (for EMOM).
-  Future<Either<AudioFailure, Unit>> playIntervalStart();
 
   /// Play the "Get ready" cue before countdown starts.
   Future<Either<AudioFailure, Unit>> playGetReady();
@@ -57,9 +50,6 @@ abstract class IAudioService {
   /// Play the "Next round" transition cue.
   Future<Either<AudioFailure, Unit>> playNextRound();
 
-  /// Play the spoken "5, 4, 3, 2, 1" final countdown.
-  Future<Either<AudioFailure, Unit>> playFinalCountdown();
-
   /// Play the "Let's go" alternative start cue.
   Future<Either<AudioFailure, Unit>> playLetsGo();
 
@@ -71,9 +61,6 @@ abstract class IAudioService {
 
   /// Play the "That's it, you're done" completion cue.
   Future<Either<AudioFailure, Unit>> playThatsIt();
-
-  /// Play the "No rep" fun cue.
-  Future<Either<AudioFailure, Unit>> playNoRep();
 
   /// Preload all sounds for faster playback.
   Future<void> preloadSounds();

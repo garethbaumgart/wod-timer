@@ -108,10 +108,6 @@ final class WatchAudioService {
 
     // MARK: - Voice Cues
 
-    func playCountdown(_ number: Int) {
-        play(file: "countdown_\(number)")
-    }
-
     func playGo() {
         play(file: "countdown_go")
     }
@@ -146,10 +142,6 @@ final class WatchAudioService {
 
     func playNextRound() {
         play(file: "next_round")
-    }
-
-    func playFinalCountdown() {
-        play(file: "final_countdown")
     }
 
     func playLetsGo() {

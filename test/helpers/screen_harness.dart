@@ -266,11 +266,9 @@ class LiveHarness {
       () => audio.playComeOn(),
       () => audio.playAlmostThere(),
       () => audio.playTenSeconds(),
-      () => audio.playFinalCountdown(),
     ]) {
       when(cue).thenAnswer((_) async => right(unit));
     }
-    when(() => audio.playCountdown(any())).thenAnswer((_) async => right(unit));
     when(() => audio.playLowBeep(any())).thenAnswer((_) async => right(unit));
     when(audio.playHighBeep).thenAnswer((_) async => right(unit));
     when(() => haptic.heavyImpact()).thenAnswer((_) async => right(unit));

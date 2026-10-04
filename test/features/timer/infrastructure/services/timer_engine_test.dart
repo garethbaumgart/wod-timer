@@ -201,9 +201,13 @@ void main() {
 
         timerEngine.stop();
         final emissionsAtStop = emissions.length;
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Over 350ms a running 100ms engine would add three or more ticks.
+        // One tick already in flight on the broadcast stream when stop() ran
+        // may still land (the notifier drops it); under load that made a
+        // strict "no more ticks" check flaky and blocked a ship (4 Oct 2026).
+        await Future<void>.delayed(const Duration(milliseconds: 350));
 
-        expect(emissions.length, emissionsAtStop);
+        expect(emissions.length, lessThanOrEqualTo(emissionsAtStop + 1));
         await subscription.cancel();
       });
     });

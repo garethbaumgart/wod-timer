@@ -7,7 +7,9 @@ in every pack is equally loud, so each clip's speech (its 20 ms frames above
 a tenth of its loudest) is set to TARGET_DB, with a -4 dBFS limiter for the
 peaks. TARGET_DB leaves headroom: the high beep and a line start together, and
 their peaks must sum under full scale or the phone clips. Reads the ORIGINAL recordings from git (SOURCE_REV), so re-running is
-idempotent, and writes the phone assets and the watch copies.
+idempotent, and writes the phone assets and the watch copies. Clips added
+after SOURCE_REV (new voice lines) are not in git there yet: level a new
+recording by pointing SOURCE_REV at the commit that adds it.
 
     python3 tool/audio/level_voices.py
 """
@@ -44,7 +46,11 @@ def main() -> None:
         names = subprocess.run(
             ["git", "ls-tree", "--name-only", f"{SOURCE_REV}:assets/audio/{pack}"],
             cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
-        for name in (n for n in names if n.endswith(".mp3")):
+        # Only the clips the app still ships: a clip deleted from the pack
+        # (2.1.0 dropped the spoken countdowns, "Next interval" and "No rep")
+        # is never brought back. New clips are leveled once they are added.
+        live = {p.name for p in (OUTPUTS[0] / pack).glob("*.mp3")}
+        for name in (n for n in names if n.endswith(".mp3") and n in live):
             src = subprocess.run(
                 ["git", "show", f"{SOURCE_REV}:assets/audio/{pack}/{name}"],
                 cwd=ROOT, capture_output=True, check=True).stdout

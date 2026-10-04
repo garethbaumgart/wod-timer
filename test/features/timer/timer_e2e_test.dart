@@ -43,14 +43,9 @@ void main() {
       () => mockAudioService.playBeep(),
     ).thenAnswer((_) async => right(unit));
     when(
-      () => mockAudioService.playCountdown(any()),
-    ).thenAnswer((_) async => right(unit));
-    when(
       () => mockAudioService.playLowBeep(any()),
     ).thenAnswer((_) async => right(unit));
-    when(
-      mockAudioService.playHighBeep,
-    ).thenAnswer((_) async => right(unit));
+    when(mockAudioService.playHighBeep).thenAnswer((_) async => right(unit));
     when(() => mockAudioService.playGo()).thenAnswer((_) async => right(unit));
     when(
       () => mockAudioService.playRest(),
@@ -60,9 +55,6 @@ void main() {
     ).thenAnswer((_) async => right(unit));
     when(
       () => mockAudioService.playHalfway(),
-    ).thenAnswer((_) async => right(unit));
-    when(
-      () => mockAudioService.playIntervalStart(),
     ).thenAnswer((_) async => right(unit));
     when(
       () => mockAudioService.playGetReady(),
@@ -83,9 +75,6 @@ void main() {
       () => mockAudioService.playNextRound(),
     ).thenAnswer((_) async => right(unit));
     when(
-      () => mockAudioService.playFinalCountdown(),
-    ).thenAnswer((_) async => right(unit));
-    when(
       () => mockAudioService.playLetsGo(),
     ).thenAnswer((_) async => right(unit));
     when(
@@ -96,9 +85,6 @@ void main() {
     ).thenAnswer((_) async => right(unit));
     when(
       () => mockAudioService.playThatsIt(),
-    ).thenAnswer((_) async => right(unit));
-    when(
-      () => mockAudioService.playNoRep(),
     ).thenAnswer((_) async => right(unit));
     when(() => mockAudioService.dispose()).thenAnswer((_) async {});
     when(() => mockAudioService.setVoicePack(any())).thenReturn(null);

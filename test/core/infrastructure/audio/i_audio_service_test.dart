@@ -37,23 +37,6 @@ void main() {
       });
     });
 
-    group('playCountdown', () {
-      test('should play countdown numbers', () async {
-        when(
-          () => mockAudioService.playCountdown(any()),
-        ).thenAnswer((_) async => right(unit));
-
-        for (final num in [3, 2, 1]) {
-          final result = await mockAudioService.playCountdown(num);
-          expect(result.isRight(), true);
-        }
-
-        verify(() => mockAudioService.playCountdown(3)).called(1);
-        verify(() => mockAudioService.playCountdown(2)).called(1);
-        verify(() => mockAudioService.playCountdown(1)).called(1);
-      });
-    });
-
     group('playGo', () {
       test('should return success when go sound plays', () async {
         when(
@@ -103,19 +86,6 @@ void main() {
 
         expect(result.isRight(), true);
         verify(() => mockAudioService.playHalfway()).called(1);
-      });
-    });
-
-    group('playIntervalStart', () {
-      test('should return success when interval sound plays', () async {
-        when(
-          () => mockAudioService.playIntervalStart(),
-        ).thenAnswer((_) async => right(unit));
-
-        final result = await mockAudioService.playIntervalStart();
-
-        expect(result.isRight(), true);
-        verify(() => mockAudioService.playIntervalStart()).called(1);
       });
     });
 
@@ -197,19 +167,6 @@ void main() {
       });
     });
 
-    group('playFinalCountdown', () {
-      test('should return success when final countdown sound plays', () async {
-        when(
-          () => mockAudioService.playFinalCountdown(),
-        ).thenAnswer((_) async => right(unit));
-
-        final result = await mockAudioService.playFinalCountdown();
-
-        expect(result.isRight(), true);
-        verify(() => mockAudioService.playFinalCountdown()).called(1);
-      });
-    });
-
     group('playLetsGo', () {
       test('should return success when lets go sound plays', () async {
         when(
@@ -259,19 +216,6 @@ void main() {
 
         expect(result.isRight(), true);
         verify(() => mockAudioService.playThatsIt()).called(1);
-      });
-    });
-
-    group('playNoRep', () {
-      test('should return success when no rep sound plays', () async {
-        when(
-          () => mockAudioService.playNoRep(),
-        ).thenAnswer((_) async => right(unit));
-
-        final result = await mockAudioService.playNoRep();
-
-        expect(result.isRight(), true);
-        verify(() => mockAudioService.playNoRep()).called(1);
       });
     });
 

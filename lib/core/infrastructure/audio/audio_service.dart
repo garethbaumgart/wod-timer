@@ -154,12 +154,6 @@ class AudioService implements IAudioService {
       _play(_highBeep, channel: 'beep');
 
   @override
-  Future<Either<AudioFailure, Unit>> playCountdown(int number) async {
-    if (number > 3 || number < 1) return playHighBeep();
-    return _playVoice('countdown_$number.mp3');
-  }
-
-  @override
   Future<Either<AudioFailure, Unit>> playGo() async {
     return _playVoice('countdown_go.mp3');
   }
@@ -177,11 +171,6 @@ class AudioService implements IAudioService {
   @override
   Future<Either<AudioFailure, Unit>> playHalfway() async {
     return _playVoice('halfway.mp3');
-  }
-
-  @override
-  Future<Either<AudioFailure, Unit>> playIntervalStart() async {
-    return _playVoice('interval.mp3');
   }
 
   @override
@@ -215,11 +204,6 @@ class AudioService implements IAudioService {
   }
 
   @override
-  Future<Either<AudioFailure, Unit>> playFinalCountdown() async {
-    return _playVoice('final_countdown.mp3');
-  }
-
-  @override
   Future<Either<AudioFailure, Unit>> playLetsGo() async {
     return _playVoice('lets_go.mp3');
   }
@@ -237,11 +221,6 @@ class AudioService implements IAudioService {
   @override
   Future<Either<AudioFailure, Unit>> playThatsIt() async {
     return _playVoice('thats_it.mp3');
-  }
-
-  @override
-  Future<Either<AudioFailure, Unit>> playNoRep() async {
-    return _playVoice('no_rep.mp3');
   }
 
   Future<Either<AudioFailure, Unit>> _play(
