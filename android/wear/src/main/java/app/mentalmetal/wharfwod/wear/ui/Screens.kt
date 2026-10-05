@@ -338,7 +338,7 @@ fun HealthScreen(tracker: ExerciseTracker, requestPermissions: () -> Unit) {
         if (enabled) {
             item {
                 Text(
-                    if (allowed) "Activity and sensor access: allowed" else "Activity and sensor access: not allowed yet",
+                    if (allowed) "Activity access: allowed" else "Activity access: not allowed yet",
                     color = if (allowed) Palette.label else Palette.error, fontSize = 11.sp, fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                 )

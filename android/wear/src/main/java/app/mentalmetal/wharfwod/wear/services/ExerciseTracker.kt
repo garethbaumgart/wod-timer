@@ -27,6 +27,11 @@ import kotlinx.coroutines.launch
  * exercise session, where the watch grants it, makes it a recognised
  * workout (one at a time, like Apple Watch). Either can be refused: the
  * timer still runs while the app is on screen.
+ *
+ * The session requests no data types, so the only runtime permission is
+ * ACTIVITY_RECOGNITION: Health Services needs BODY_SENSORS only for
+ * heart-rate data, and every manifest permission has to be justified in
+ * Play's Health apps declaration.
  */
 class ExerciseTracker(private val context: Context, store: KeyValueStore) : WorkoutTracking {
     companion object {
@@ -36,7 +41,7 @@ class ExerciseTracker(private val context: Context, store: KeyValueStore) : Work
         fun exerciseType(type: TimerType): ExerciseType =
             if (type is TimerType.Tabata) ExerciseType.HIGH_INTENSITY_INTERVAL_TRAINING else ExerciseType.STRENGTH_TRAINING
 
-        val permissions = listOf(Manifest.permission.ACTIVITY_RECOGNITION, Manifest.permission.BODY_SENSORS)
+        val permissions = listOf(Manifest.permission.ACTIVITY_RECOGNITION)
     }
 
     enum class Status { IDLE, SERVICE_ONLY, EXERCISING, NO_PERMISSION, OFF }
