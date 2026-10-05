@@ -8,7 +8,7 @@ Notes from Gareth to pick up in the next set of changes. Add new items here as t
 - **Rate block (option 14 of https://claude.ai/artifact/AYaE7K23rdhJda7HHfQauH).** "How is Wharf WOD working for you?" with Love it (store page) and Could be better (feedback mail), both always shown (no review gating). Replaces the Rate and Send feedback rows.
 - **Major is a Drill Sergeant.** Phone "Major (Drill Sergeant)", watch "Drill sergeant", same order.
 
-## Built on feat/watch-fixes (5 Oct 2026), on TestFlight for Gareth's wrist
+## Shipped as 2.2.0 (5 Oct 2026): iOS build 22 submitted, Play vc14 production
 
 - **The watch stays awake**: HKWorkoutSession per workout, haptic patterns
   (GO a double knock, rounds, rest, 3-2-1 taps), audio session fallback,
@@ -24,4 +24,3 @@ Notes from Gareth to pick up in the next set of changes. Add new items here as t
 
 ## Already merged, waiting to ship
 
-- 2.0.1: the rating-prompt fix from the coverage audit. Ship it once 2.0.0 is approved on iOS.
