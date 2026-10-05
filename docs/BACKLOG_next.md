@@ -8,7 +8,17 @@ Notes from Gareth to pick up in the next set of changes. Add new items here as t
 - **Rate block (option 14 of https://claude.ai/artifact/AYaE7K23rdhJda7HHfQauH).** "How is Wharf WOD working for you?" with Love it (store page) and Could be better (feedback mail), both always shown (no review gating). Replaces the Rate and Send feedback rows.
 - **Major is a Drill Sergeant.** Phone "Major (Drill Sergeant)", watch "Drill sergeant", same order.
 
+## Built on feat/watch-fixes (5 Oct 2026), on TestFlight for Gareth's wrist
+
+- **The watch stays awake**: HKWorkoutSession per workout, haptic patterns
+  (GO a double knock, rounds, rest, 3-2-1 taps), audio session fallback,
+  Sound check row, Health row, whole-millisecond ticks. Plan:
+  `docs/PLAN_2.2.0_watch_background.md`.
+
 ## Still open
+
+- Heart rate on the watch live screen (the session already collects it; a
+  read permission and one line of UI).
 
 - Record "Round 2", "Round 3" and so on, plus "Well done", if wanted (EMOM says "Next round" today).
 

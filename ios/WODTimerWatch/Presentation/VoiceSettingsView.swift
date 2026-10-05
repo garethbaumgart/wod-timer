@@ -1,9 +1,11 @@
 import SwiftUI
 
 /// One list, as on the phone: three voices, Random, Beeps only, or Silent
-/// (haptics only). Choosing one plays a sample.
+/// (haptics only). Choosing one plays a sample. Under them the sound check
+/// (2.2.0): a beep and a line, then where they came out and how loud.
 struct VoiceSettingsView: View {
     @Bindable var viewModel: TimerViewModel
+    @State private var checkResult = "Plays a beep and a line"
 
     private var audio: WatchAudioService { viewModel.audio }
 
@@ -24,8 +26,38 @@ struct VoiceSettingsView: View {
             row(.random, "Random", "A different voice each cue")
             row(.beeps, "Beeps", "No voice, beeps on the count")
             row(.silent, "Silent", "Haptics only")
+            Section {
+                Button(action: soundCheck) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Sound check")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                            Text(checkResult)
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(Palette.label)
+                        }
+                        Spacer()
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Palette.primary)
+                    }
+                }
+            } footer: {
+                Text("Cues play through the watch speaker or your headphones. Hear nothing? Turn the Crown in Now Playing to raise the volume.")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(Palette.label)
+            }
         }
         .navigationTitle("Voice")
+    }
+
+    private func soundCheck() {
+        if audio.muted {
+            checkResult = "Silent is on: haptics only"
+            return
+        }
+        audio.playSoundCheck()
+        checkResult = audio.outputDescription + (audio.sessionProblem.map { ", \($0)" } ?? "")
     }
 
     private func row(_ choice: Choice, _ name: String, _ detail: String) -> some View {

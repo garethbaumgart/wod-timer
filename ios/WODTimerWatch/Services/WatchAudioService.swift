@@ -40,6 +40,11 @@ final class WatchAudioService {
     @ObservationIgnored
     private(set) var cueLog: [String] = []
 
+    /// Why the audio session is not the full configuration, for the sound
+    /// check; nil when it took.
+    @ObservationIgnored
+    private(set) var sessionProblem: String?
+
     // Persisted since 1.3.0 (the choice used to reset on every launch).
     // Additive keys; a missing or unknown value reads as the default.
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -106,6 +111,24 @@ final class WatchAudioService {
         playBeep("high")
     }
 
+    // MARK: - Sound check (2.2.0)
+
+    /// The high beep with the chosen voice's "Let's go" on it, as a change
+    /// sounds in a workout.
+    func playSoundCheck() {
+        playHighBeep()
+        playLetsGo()
+    }
+
+    /// Where the next cue comes out ("Speaker", "AirPods Pro") and the media
+    /// volume it plays at: the two things that explain a silent watch.
+    var outputDescription: String {
+        let session = AVAudioSession.sharedInstance()
+        let names = session.currentRoute.outputs.map(\.portName)
+        let route = names.isEmpty ? "No output" : names.joined(separator: " + ")
+        return "\(route), volume \(Int((session.outputVolume * 100).rounded()))%"
+    }
+
     // MARK: - Voice Cues
 
     func playGo() {
@@ -166,12 +189,22 @@ final class WatchAudioService {
 
     // MARK: - Private
 
+    /// Playback that ducks music and pauses a podcast for the line, then
+    /// hands the sound back. If the watch refuses the options it falls back
+    /// rather than stay on a category that never reaches the speaker.
     private func configureAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, options: [.duckOthers, .interruptSpokenAudioAndMixWithOthers])
-        } catch {
-            // Audio session config is non-critical
+        let session = AVAudioSession.sharedInstance()
+        let attempts: [AVAudioSession.CategoryOptions] = [
+            [.duckOthers, .interruptSpokenAudioAndMixWithOthers], [.duckOthers], [],
+        ]
+        for options in attempts {
+            do {
+                try session.setCategory(.playback, mode: .default, options: options)
+                sessionProblem = options == attempts[0] ? nil : "mixing options refused"
+                return
+            } catch {
+                sessionProblem = error.localizedDescription
+            }
         }
     }
 

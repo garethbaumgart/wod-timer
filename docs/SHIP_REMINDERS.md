@@ -22,3 +22,17 @@ beep), under about 1.2 seconds, dry (no reverb or music), same voice and mic
 setup as the pack's other clips. Volume doesn't matter: new clips go through
 `tool/audio/level_voices.py`. Once they arrive, wire them into the cue logic
 on phone and watch.
+
+## Before the 2.2.0 App Store release (TestFlight does not need these)
+
+The watch app now uses HealthKit (a workout session keeps it running when
+the wrist drops, and the WOD is saved to Health). Before `release`:
+
+- Privacy policy (mentalmetal-site, wharfwod/privacy): add that the Apple
+  Watch app saves workouts to Apple Health on the device and reads no health
+  data; nothing leaves the watch. Guideline 5.1.3.
+- App Review notes: say HealthKit keeps the timer running off screen and
+  saves the workout.
+- Gareth's real-watch sign-off of the 2.2.0 TestFlight build (cues with the
+  wrist down, wrist raise returns to the app, Health permission, the
+  workout in Fitness).

@@ -40,5 +40,14 @@
 	<false/>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>app.mentalmetal.wharfwod</string>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+		<string>audio</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Wharf WOD does not read your health data.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Saves each workout you time to Health, and keeps the clock, beeps and taps running while your wrist is down.</string>
 </dict>
 </plist>

@@ -24,13 +24,17 @@ final class TimerViewModel {
     // MARK: - Dependencies
 
     private let engine = TimerEngine()
-    private let haptics = WatchHapticService()
+    /// Wrist cues; injectable so tests read the pattern log.
+    let haptics: WatchHapticService
     let audio = WatchAudioService()
+    /// The workout session that keeps the app alive off screen (2.2.0).
+    let tracker: WorkoutTracking
     let recentsStore = RecentWorkoutsStore()
 
     // MARK: - Internal State
 
     private var lastTickElapsed: TimeInterval = 0
+    private var lastTickMillis = 0
     private var lastLowBeep: String?
     private var lastVoiceAt: TimeInterval?
     private var playedGo = false
@@ -41,12 +45,14 @@ final class TimerViewModel {
     private var playedHalfway = false
     private var playedAlmostThere = false
     private var playedTenSeconds = false
-    private var playedFinalCountdownHaptic = false
     private var lastWorkout: Workout?
 
     /// AMRAP taps are ignored for this long after a counted round, after GO
     /// and after a resume, so a double tap or a late prep skip never counts.
     private static let roundCountCooldown: TimeInterval = 0.7
+    /// A stop before this many seconds of workout is a false start: the
+    /// Health record is discarded rather than saved.
+    static let keepHealthRecordAfter = 60
     private var roundCountBlockedUntil: Date?
 
     /// "TAP TO COUNT" shows until the athlete has counted a round once,
@@ -57,10 +63,31 @@ final class TimerViewModel {
         roundCountBlockedUntil = Date().addingTimeInterval(Self.roundCountCooldown)
     }
 
-    init() {
+    init(
+        tracker: WorkoutTracking = TimerViewModel.defaultTracker(),
+        haptics: WatchHapticService = WatchHapticService()
+    ) {
+        self.tracker = tracker
+        self.haptics = haptics
         engine.onTick = { [weak self] elapsed in
             self?.onTick(elapsed: elapsed)
         }
+    }
+
+    /// The tracker for this run: the Health session on a watch; nothing
+    /// under tests, previews and the simulator capture and promo hooks,
+    /// where a permission sheet would get in the way.
+    static func defaultTracker() -> WorkoutTracking {
+        let env = ProcessInfo.processInfo.environment
+        if env["XCTestConfigurationFilePath"] != nil || env["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return NoopWorkoutTracker()
+        }
+        #if targetEnvironment(simulator)
+        if CaptureScene.fromLaunchArguments() != nil || CommandLine.arguments.contains("--promo-autostart") {
+            return NoopWorkoutTracker()
+        }
+        #endif
+        return HealthWorkoutTracker()
     }
 
     // MARK: - Public Actions
@@ -78,14 +105,17 @@ final class TimerViewModel {
             session = started
             phase = started.state
             lastTickElapsed = 0
+            lastTickMillis = 0
             engine.start()
             recentsStore.save(workout)
+            tracker.begin(workout)
             if started.state == .running {
                 // No get-ready countdown: GO on the high beep right away.
                 playedGo = true
                 audio.playHighBeep()
                 say(Bool.random() ? audio.playGo : audio.playLetsGo)
-                haptics.go()
+                haptics.play(.go)
+                tracker.go()
                 blockRoundCount()
             }
         case .failure:
@@ -103,7 +133,8 @@ final class TimerViewModel {
             session = paused
             phase = .paused
             engine.pause()
-            haptics.pauseResume()
+            haptics.play(.pause)
+            tracker.pause()
         case .failure:
             break
         }
@@ -118,7 +149,8 @@ final class TimerViewModel {
             session = resumed
             phase = resumed.state
             engine.resume()
-            haptics.pauseResume()
+            haptics.play(.resume)
+            tracker.resume()
             blockRoundCount()
         case .failure:
             break
@@ -136,7 +168,9 @@ final class TimerViewModel {
             session = completed
             phase = .completed
             engine.stop()
-            haptics.pauseResume()
+            haptics.cancelPending()
+            haptics.play(.pause)
+            tracker.end(keep: completed.elapsed.seconds >= Self.keepHealthRecordAfter)
         case .failure:
             break
         }
@@ -153,7 +187,8 @@ final class TimerViewModel {
             session = completed
             phase = .completed
             engine.stop()
-            haptics.complete()
+            haptics.play(.complete)
+            tracker.end(keep: true)
             audio.playHighBeep()
             playCompletionEncouragement()
         case .failure:
@@ -188,7 +223,7 @@ final class TimerViewModel {
         roundCountBlockedUntil = now.addingTimeInterval(Self.roundCountCooldown)
         current.countRound()
         session = current
-        haptics.prepTick()
+        haptics.play(.tap)
         if !hasCountedRound {
             hasCountedRound = true
             UserDefaults.standard.set(true, forKey: "watch_hint_amrap_counted")
@@ -210,6 +245,8 @@ final class TimerViewModel {
 
     func reset() {
         engine.stop()
+        haptics.cancelPending()
+        tracker.end(keep: false)
         session = nil
         phase = .ready
         endedEarly = false
@@ -222,7 +259,12 @@ final class TimerViewModel {
     private func onTick(elapsed: TimeInterval) {
         guard var current = session else { return }
 
-        let deltaMs = Int((elapsed - lastTickElapsed) * 1000)
+        // Whole milliseconds of the engine's clock, so the deltas sum to the
+        // elapsed time itself. Truncating each delta lost up to a
+        // millisecond a tick: about three seconds over a 10:00 AMRAP.
+        let elapsedMs = Int((elapsed * 1000).rounded())
+        let deltaMs = elapsedMs - lastTickMillis
+        lastTickMillis = elapsedMs
         lastTickElapsed = elapsed
 
         let oldSession = current
@@ -236,7 +278,8 @@ final class TimerViewModel {
                 session = updated
                 phase = .completed
                 engine.stop()
-                haptics.complete()
+                haptics.play(.complete)
+                tracker.end(keep: true)
                 playEndCues()
             } else {
                 session = updated
@@ -248,7 +291,8 @@ final class TimerViewModel {
                 session = current
                 phase = .completed
                 engine.stop()
-                haptics.complete()
+                haptics.play(.complete)
+                tracker.end(keep: true)
                 playEndCues()
             }
         }
@@ -271,7 +315,8 @@ final class TimerViewModel {
     /// pattern (2.1.0): three low beeps in the last three seconds of every
     /// phase, then on the change a high beep with the voice line starting on
     /// it. The optional voice cues keep clear of the countdown and of a line
-    /// still being spoken.
+    /// still being spoken. The wrist gets one pattern per change (2.2.0,
+    /// see WatchHapticService) and the Health session hears GO.
     private func handleCues(old: TimerSession, new: TimerSession) {
         var voiceCuePlayed = false
         // One high beep per change, even when two things change on one tick.
@@ -292,12 +337,18 @@ final class TimerViewModel {
         // Low beeps in the last three seconds of the phase (prep included).
         playPhaseCountdown(new)
 
+        // One wrist cue per tick, the one that matters most when two
+        // changes land together (a Tabata round starts as its rest ends):
+        // GO, then last round, round, rest, work.
+        var wristCue: WatchHapticService.Cue?
+
         // High beep + "Go!" or "Let's go!" when prep → running
         if old.state == .preparing && new.state == .running && !playedGo {
             playedGo = true
             changeBeep()
             say(Bool.random() ? audio.playGo : audio.playLetsGo)
-            haptics.go()
+            wristCue = .go
+            tracker.go()
             blockRoundCount()
             voiceCuePlayed = true
         }
@@ -309,13 +360,13 @@ final class TimerViewModel {
         if old.state == .running && new.state == .resting && !roundChanged {
             changeBeep()
             say(audio.playRest)
-            haptics.workToRest()
+            wristCue = wristCue ?? .workToRest
             voiceCuePlayed = true
         }
 
         // Rest → Work transition
         if old.state == .resting && new.state == .running {
-            haptics.restToWork()
+            wristCue = wristCue ?? .restToWork
         }
 
         // Round change (EMOM/Tabata)
@@ -328,25 +379,17 @@ final class TimerViewModel {
                !playedLastRound {
                 playedLastRound = true
                 say(audio.playLastRound)
-                haptics.lastRound()
+                wristCue = .lastRound
             } else {
                 say(audio.playNextRound)
-                haptics.roundChange()
+                if wristCue != .go { wristCue = .roundChange }
             }
             voiceCuePlayed = true
         } else if lastRound == 0 {
             lastRound = new.currentRound
         }
 
-        // The wrist tap for the last five seconds of the workout stays (the
-        // spoken "5, 4, 3, 2, 1" it used to ride with is the low beeps now).
-        if new.state.isActive && new.state != .preparing && !playedFinalCountdownHaptic {
-            let remaining = workoutRemaining(new)
-            if remaining <= 5 && remaining > 0 {
-                playedFinalCountdownHaptic = true
-                haptics.finalCountdown()
-            }
-        }
+        if let wristCue { haptics.play(wristCue) }
 
         // The optional cues below wait for a clear moment.
         guard !voiceCuePlayed, clearToSpeak(new) else { return }
@@ -362,7 +405,7 @@ final class TimerViewModel {
         if new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
             playedHalfway = true
             say(audio.playHalfway)
-            haptics.halfway()
+            haptics.play(.halfway)
             return
         }
 
@@ -403,8 +446,9 @@ final class TimerViewModel {
         return lastTickElapsed - last >= 2
     }
 
-    /// A low beep with 3, 2 and 1 seconds left in the current phase. A phase
-    /// of 3 seconds or less skips the numbers it starts on.
+    /// A low beep and a firm tap with 3, 2 and 1 seconds left in the current
+    /// phase (2.2.0: every phase, not only get ready). A phase of 3 seconds
+    /// or less skips the numbers it starts on.
     private func playPhaseCountdown(_ session: TimerSession) {
         guard session.state.isActive else { return }
         let left = session.timeRemaining.seconds
@@ -413,7 +457,7 @@ final class TimerViewModel {
         guard key != lastLowBeep else { return }
         lastLowBeep = key
         audio.playLowBeep(left)
-        if session.state == .preparing { haptics.prepTick() }
+        haptics.play(.countIn)
     }
 
     /// The length of the phase the session is in.
@@ -454,7 +498,6 @@ final class TimerViewModel {
         playedHalfway = false
         playedAlmostThere = false
         playedTenSeconds = false
-        playedFinalCountdownHaptic = false
     }
 }
 
