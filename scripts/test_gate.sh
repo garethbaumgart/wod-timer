@@ -6,7 +6,8 @@
 #
 #   scripts/test_gate.sh                 # --full: analyze, Flutter tests, watch XCTests
 #   scripts/test_gate.sh --quick         # analyze and Flutter tests only (no Xcode, about 1 min)
-#   scripts/test_gate.sh --full android  # the watch ships with iOS, so Android skips it
+#   scripts/test_gate.sh --full android  # the watch ships with iOS, so Android skips it;
+#                                        # Android (and both) also run the Wear OS module's JVM tests
 #
 # Exits non-zero on the first failure. Fast by design: unit and widget
 # tests only. The integration_test/ tours (store screenshots, promo and
@@ -67,6 +68,22 @@ if [[ "$RUN_WATCH" == "1" ]]; then
   xcrun simctl shutdown "$WATCH_SIM_ID" >/dev/null 2>&1 || true
 else
   step "watch XCTests skipped ($MODE, $PLATFORM)"
+fi
+
+# The Wear OS module (android/wear) has its own JVM tests; they ship with the
+# Android side, so the ios-only gate skips them.
+if [[ "$PLATFORM" != "ios" && -f android/wear/build.gradle.kts ]]; then
+  step "Wear OS JVM tests (:wear:testDebugUnitTest)"
+  JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
+  export JAVA_HOME
+  if [[ ! -x android/gradlew ]]; then
+    FLUTTER_ROOT="$(fvm flutter --version --machine | python3 -c 'import json,sys; print(json.load(sys.stdin)["flutterRoot"])')"
+    cp "$FLUTTER_ROOT/bin/cache/artifacts/gradle_wrapper/gradlew" android/
+    mkdir -p android/gradle/wrapper
+    cp "$FLUTTER_ROOT/bin/cache/artifacts/gradle_wrapper/gradle/wrapper/gradle-wrapper.jar" android/gradle/wrapper/
+    chmod +x android/gradlew
+  fi
+  (cd android && ./gradlew :wear:testDebugUnitTest -q)
 fi
 
 step "test gate green"
