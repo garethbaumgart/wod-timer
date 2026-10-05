@@ -62,6 +62,27 @@ have fired were `.click`, which is barely perceptible mid workout.
 - Crash recovery: `handleActiveWorkoutRecovery` closes a session handed back
   after a crash so it never blocks the next start.
 
+## Phone audio: a cue ducks the music and hands it back (5 Oct 2026)
+
+Gareth asked whether a cue lowers the music and brings it back. iOS did
+(`playback` + duckOthers + mixWithOthers). Android did not: both plugins
+defaulted to permanent audio focus (`AudioSessionConfiguration` and
+`AudioContextAndroid` both default to `gain`), which tells Spotify to stop
+and most players never restart. Now the audio session takes
+`gainTransientMayDuck` on the media stream and is the one owner of focus
+(the players' own context asks for none), so the music dips for the cue and
+returns. Second bug found on the way: Android's low-latency player
+(SoundPool) never reports completion, so the session, and the duck, stayed
+on from the first cue to the end of the workout; `SessionLease` releases
+each hold on completion or 2.2s after the play (longest clip 1.7s). Proven
+on the Pixel 3a API 34 emulator with the AMRAP integration test and the
+system's MediaFocusControl log: every request `req=3`
+(GAIN_TRANSIENT_MAY_DUCK), USAGE_MEDIA, abandoned about two seconds after
+the last clip of each burst, no permanent gain. Tests:
+`test/core/infrastructure/audio/audio_focus_test.dart` (the policy) and
+`session_lease_test.dart` (the release). The integration test's teardown
+was updated for the 1.3.0 live screen (PAUSE slab, hold-to-stop cell).
+
 ## Signing (why the watch target signs Release manually)
 
 `flutter build ipa` archives with the project's signing, then the lane
