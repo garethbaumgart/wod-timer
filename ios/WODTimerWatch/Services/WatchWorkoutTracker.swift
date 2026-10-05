@@ -65,6 +65,10 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     @ObservationIgnored private let store = HKHealthStore()
     @ObservationIgnored private var session: HKWorkoutSession?
     @ObservationIgnored private var collecting = false
+    /// Set by end(keep:) until the session reports ended, so a second end
+    /// (DONE after a finish) can't change what happens to the record, and
+    /// a new begin (AGAIN) waits for the old session to close.
+    @ObservationIgnored private var ending = false
     @ObservationIgnored private var goPending = false
     @ObservationIgnored private var keepOnEnd = true
     @ObservationIgnored private var pendingWorkout: Workout?
@@ -126,7 +130,8 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     // MARK: - WorkoutTracking
 
     func begin(_ workout: Workout) {
-        if session != nil { end(keep: false) }
+        // A session still open from an interrupted run is discarded first.
+        if session != nil, !ending { end(keep: false) }
         guard enabled else {
             status = .off
             return
@@ -138,6 +143,13 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         pendingWorkout = workout
         goPending = false
         status = .starting
+        // AGAIN right after a finish: the last session is still closing,
+        // so this one starts when it reports ended.
+        if session != nil { return }
+        startWhenAuthorized(workout)
+    }
+
+    private func startWhenAuthorized(_ workout: Workout) {
         requestAuthorizationIfNeeded { [weak self] authorized in
             guard let self, self.pendingWorkout?.id == workout.id else { return }
             guard authorized else {
@@ -169,10 +181,11 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     func end(keep: Bool) {
         pendingWorkout = nil
         goPending = false
-        guard let session else {
+        guard let session, !ending else {
             if status == .starting { status = .idle }
             return
         }
+        ending = true
         keepOnEnd = keep && collecting
         if collecting {
             // The delegate finishes or discards the record once stopped.
@@ -214,10 +227,17 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         }
     }
 
+    /// The session is gone: forget it, and start the workout waiting on it.
     private func clear(_ ended: HKWorkoutSession) {
         guard ended === session else { return }
         session = nil
         collecting = false
+        ending = false
+        if let pending = pendingWorkout {
+            startWhenAuthorized(pending)
+        } else if status != .off {
+            status = .idle
+        }
     }
 
     // MARK: - Crash recovery
@@ -292,7 +312,6 @@ extension HealthWorkoutTracker: HKWorkoutSessionDelegate {
             DispatchQueue.main.async { [weak self] in
                 guard let self, workoutSession === self.session else { return }
                 self.clear(workoutSession)
-                self.status = .idle
             }
         default:
             break
@@ -303,8 +322,8 @@ extension HealthWorkoutTracker: HKWorkoutSessionDelegate {
         Self.log.error("workout session failed: \(error.localizedDescription)")
         DispatchQueue.main.async { [weak self] in
             guard let self, workoutSession === self.session else { return }
-            self.clear(workoutSession)
             self.status = .failed(error.localizedDescription)
+            self.clear(workoutSession)
         }
     }
 }
