@@ -61,6 +61,22 @@ have fired were `.click`, which is barely perceptible mid workout.
 - Crash recovery: `handleActiveWorkoutRecovery` closes a session handed back
   after a crash so it never blocks the next start.
 
+## Signing (why the watch target signs Release manually)
+
+`flutter build ipa` archives with the project's signing, then the lane
+exports with manual App Store profiles. Xcode on the build Mac has no
+signed-in account, so its cached wildcard development profile ("iOS Team
+Provisioning Profile: *") is all automatic signing can offer, and that
+profile carries no HealthKit entitlement: the first 2.2.0 ship failed with
+"doesn't include the HealthKit capability". The watch target's Release and
+Profile configs now sign manually (`CODE_SIGN_STYLE = Manual`, Apple
+Distribution, `PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*]` = the lane's
+"MM AppStore app.mentalmetal.wharfwod.watchkitapp" profile, which the lane
+re-mints before every build). Debug stays automatic, so simulator builds and
+the test gate are unchanged. The entitlements file requests only
+`com.apple.developer.healthkit`; the profile Apple minted also allows
+`healthkit.access` = health-records, which the app does not request.
+
 ## Tests
 
 `ios/WODTimerWatchTests/Application/WatchCueTests.swift`: patterns, pattern
