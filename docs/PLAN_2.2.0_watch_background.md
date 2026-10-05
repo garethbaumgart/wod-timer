@@ -36,8 +36,9 @@ have fired were `.click`, which is barely perceptible mid workout.
   costs (cues stop when the wrist drops). The single permission (save
   workouts) is asked when Home appears, the way workout apps do.
 - **Entitlement, background modes, purpose strings**: `WODTimerWatch.entitlements`
-  (`com.apple.developer.healthkit`), `WKBackgroundModes` = workout-processing +
-  audio, `NSHealthShareUsageDescription` / `NSHealthUpdateUsageDescription` on the
+  (`com.apple.developer.healthkit`), `WKBackgroundModes` = workout-processing
+  and `UIBackgroundModes` = audio (WKBackgroundModes takes only session
+  types; App Store validation rejected "audio" there), `NSHealthShareUsageDescription` / `NSHealthUpdateUsageDescription` on the
   watch (and the iOS Info.plist, belt and braces). HEALTHKIT was added to the
   watch App ID `app.mentalmetal.wharfwod.watchkitapp` via the App Store
   Connect API on 5 Oct 2026; the ship lane re-mints the App Store profile.
@@ -72,8 +73,11 @@ profile carries no HealthKit entitlement: the first 2.2.0 ship failed with
 Profile configs now sign manually (`CODE_SIGN_STYLE = Manual`, Apple
 Distribution, `PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*]` = the lane's
 "MM AppStore app.mentalmetal.wharfwod.watchkitapp" profile, which the lane
-re-mints before every build). Debug stays automatic, so simulator builds and
-the test gate are unchanged. The entitlements file requests only
+re-mints before every build). Xcode then refused the archive because the
+embedded watch app and the parent app carried different certificates, so
+the Runner's Release and Profile sign the same way (Apple Distribution,
+"MM AppStore app.mentalmetal.wharfwod"). Debug stays automatic for both,
+so simulator builds, device debugging and the test gate are unchanged. The entitlements file requests only
 `com.apple.developer.healthkit`; the profile Apple minted also allows
 `healthkit.access` = health-records, which the app does not request.
 

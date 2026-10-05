@@ -43,6 +43,9 @@
 	<key>WKBackgroundModes</key>
 	<array>
 		<string>workout-processing</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
 		<string>audio</string>
 	</array>
 	<key>NSHealthShareUsageDescription</key>

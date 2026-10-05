@@ -220,9 +220,13 @@ final class HealthTrackerTests: XCTestCase {
 final class WatchBundleTests: XCTestCase {
     func testTheWatchAppDeclaresTheBackgroundModesAndHealthStrings() {
         let info = Bundle.main.infoDictionary ?? [:]
-        let modes = info["WKBackgroundModes"] as? [String] ?? []
-        XCTAssertTrue(modes.contains("workout-processing"), "the workout session needs it")
-        XCTAssertTrue(modes.contains("audio"), "cues in the background need it")
+        // WKBackgroundModes takes only session types; background audio is
+        // UIBackgroundModes, as on iOS (App Store validation rejects "audio"
+        // under WKBackgroundModes).
+        let sessions = info["WKBackgroundModes"] as? [String] ?? []
+        XCTAssertEqual(sessions, ["workout-processing"], "the workout session needs it, and nothing else belongs here")
+        let background = info["UIBackgroundModes"] as? [String] ?? []
+        XCTAssertTrue(background.contains("audio"), "cues in the background need it")
         XCTAssertFalse((info["NSHealthUpdateUsageDescription"] as? String ?? "").isEmpty)
         XCTAssertFalse((info["NSHealthShareUsageDescription"] as? String ?? "").isEmpty)
     }

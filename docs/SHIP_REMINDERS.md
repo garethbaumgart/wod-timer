@@ -28,9 +28,11 @@ on phone and watch.
 The watch app now uses HealthKit (a workout session keeps it running when
 the wrist drops, and the WOD is saved to Health). Before `release`:
 
-- Privacy policy (mentalmetal-site, wharfwod/privacy): add that the Apple
-  Watch app saves workouts to Apple Health on the device and reads no health
-  data; nothing leaves the watch. Guideline 5.1.3.
+- Privacy policy: DONE 5 Oct 2026 (mentalmetal-site wharf-wod/privacy.html,
+  "Apple Health" section: saves workouts on the device, reads nothing,
+  nothing leaves the watch). Guideline 5.1.3.
+- Support FAQ (wharf-wod/support.html): "Why does the watch app ask for
+  Health access?" goes live with the release, not before.
 - App Review notes: say HealthKit keeps the timer running off screen and
   saves the workout.
 - Gareth's real-watch sign-off of the 2.2.0 TestFlight build (cues with the
