@@ -8,11 +8,13 @@ import 'package:injectable/injectable.dart';
 import 'package:meta/meta.dart';
 import 'package:wod_timer/core/domain/failures/audio_failure.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
+import 'package:wod_timer/core/infrastructure/audio/session_lease.dart';
 
 /// Implementation of [IAudioService] using audioplayers package.
 ///
 /// Configures audio session to duck (lower volume of) other audio
-/// during cue playback, then restore it afterwards.
+/// during cue playback, then restore it afterwards, on both platforms:
+/// see [sessionConfiguration] and [cueContext].
 @LazySingleton(as: IAudioService)
 class AudioService implements IAudioService {
   AudioService() : _playAsset = null {
@@ -28,6 +30,69 @@ class AudioService implements IAudioService {
     : _playAsset = playAsset;
 
   final Future<void> Function(String assetPath)? _playAsset;
+
+  /// What a cue does to other audio (5 Oct 2026). iOS: the session ducks
+  /// music and mixes, so a podcast keeps playing under the line. Android:
+  /// transient focus that may duck, so the music drops for the cue and
+  /// comes back. The plugin default on Android is permanent focus, which
+  /// stops Spotify at the first beep and never restarts it. The session is
+  /// the one owner of focus, held from the first beep to the end of the
+  /// last line (see [SessionLease]).
+  @visibleForTesting
+  static final sessionConfiguration = audio_session.AudioSessionConfiguration(
+    avAudioSessionCategory: audio_session.AVAudioSessionCategory.playback,
+    avAudioSessionCategoryOptions:
+        audio_session.AVAudioSessionCategoryOptions.duckOthers |
+        audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
+    androidAudioAttributes: const audio_session.AndroidAudioAttributes(
+      contentType: audio_session.AndroidAudioContentType.speech,
+      usage: audio_session.AndroidAudioUsage.media,
+    ),
+    androidAudioFocusGainType:
+        audio_session.AndroidAudioFocusGainType.gainTransientMayDuck,
+    androidWillPauseWhenDucked: false,
+  );
+
+  /// The players' own context: the same iOS options, and on Android no
+  /// focus request of their own (the session owns it), on the media stream
+  /// at media volume. Applied once, before the pool is created, so every
+  /// player inherits it.
+  @visibleForTesting
+  static final cueContext = AudioContext(
+    iOS: AudioContextIOS(
+      category: AVAudioSessionCategory.playback,
+      options: const {
+        AVAudioSessionOptions.duckOthers,
+        AVAudioSessionOptions.mixWithOthers,
+      },
+    ),
+    android: const AudioContextAndroid(
+      isSpeakerphoneOn: false,
+      audioMode: AndroidAudioMode.normal,
+      stayAwake: false,
+      contentType: AndroidContentType.speech,
+      usageType: AndroidUsageType.media,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+  );
+
+  /// The longest cue clip is 1.7s ("complete"): a hold that gets no
+  /// completion event (Android's low-latency player) is released this long
+  /// after the play.
+  @visibleForTesting
+  static const releaseAfter = Duration(milliseconds: 2200);
+
+  late final SessionLease _lease = SessionLease(
+    onActivate: () async {
+      final session = await audio_session.AudioSession.instance;
+      await session.setActive(true);
+    },
+    onDeactivate: () async {
+      final session = await audio_session.AudioSession.instance;
+      await session.setActive(false);
+    },
+    releaseAfter: releaseAfter,
+  );
 
   final Map<String, AudioPlayer> _players = {};
   final List<StreamSubscription<PlayerState>> _subscriptions = [];
@@ -45,14 +110,12 @@ class AudioService implements IAudioService {
     try {
       // Configure audio session to duck other audio instead of stopping it
       final session = await audio_session.AudioSession.instance;
-      await session.configure(
-        audio_session.AudioSessionConfiguration(
-          avAudioSessionCategory: audio_session.AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions:
-              audio_session.AVAudioSessionCategoryOptions.duckOthers |
-              audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
-        ),
-      );
+      await session.configure(sessionConfiguration);
+      try {
+        await AudioPlayer.global.setAudioContext(cueContext);
+      } on Exception {
+        // Desktop and web have no audio context; the session still applies.
+      }
 
       // Two players for the voice and two for the beeps, so a high beep
       // and the voice line that starts on it play together, and a beep can
@@ -65,12 +128,13 @@ class AudioService implements IAudioService {
         }
       }
 
-      // Listen for playback completion or errors to deactivate session.
-      // Use a single listener to avoid double-decrementing _activePlayers.
-      for (final player in _players.values) {
-        final sub = player.onPlayerStateChanged.listen((state) async {
+      // A player's completion (or stop) releases its hold on the session;
+      // a player that never reports one is released by the lease's timeout.
+      for (final entry in _players.entries) {
+        final key = entry.key;
+        final sub = entry.value.onPlayerStateChanged.listen((state) async {
           if (state == PlayerState.completed || state == PlayerState.stopped) {
-            await _deactivateSession();
+            await _lease.complete(key);
           }
         });
         _subscriptions.add(sub);
@@ -85,27 +149,12 @@ class AudioService implements IAudioService {
 
   static const _poolSize = 2;
   final Map<String, int> _nextIndex = {'voice': 0, 'beep': 0};
-  int _activePlayers = 0;
 
-  AudioPlayer _nextPlayer(String channel) {
+  /// The next player of [channel], round robin ('voice_0', 'voice_1').
+  String _nextKey(String channel) {
     final index = _nextIndex[channel]!;
     _nextIndex[channel] = (index + 1) % _poolSize;
-    return _players['${channel}_$index']!;
-  }
-
-  Future<void> _activateSession() async {
-    _activePlayers++;
-    final session = await audio_session.AudioSession.instance;
-    await session.setActive(true);
-  }
-
-  Future<void> _deactivateSession() async {
-    _activePlayers--;
-    if (_activePlayers <= 0) {
-      _activePlayers = 0;
-      final session = await audio_session.AudioSession.instance;
-      await session.setActive(false);
-    }
+    return '${channel}_$index';
   }
 
   /// Current voice pack directory name.
@@ -241,16 +290,17 @@ class AudioService implements IAudioService {
   }
 
   Future<void> _playAsync(String assetPath, [String channel = 'voice']) async {
+    final key = _nextKey(channel);
     try {
       await _initPlayers();
-      await _activateSession();
-      final player = _nextPlayer(channel);
+      await _lease.acquire(key);
+      final player = _players[key]!;
       await player.setVolume(_volume);
       // Not awaiting - fire and forget for responsiveness
       unawaited(player.play(AssetSource(assetPath)));
     } on Exception {
       // Audio is non-critical - ignore errors
-      await _deactivateSession();
+      await _lease.complete(key);
     }
   }
 
@@ -261,6 +311,7 @@ class AudioService implements IAudioService {
 
   @override
   Future<void> dispose() async {
+    await _lease.releaseAll();
     for (final sub in _subscriptions) {
       await sub.cancel();
     }

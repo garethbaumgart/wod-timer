@@ -1,7 +1,10 @@
 import SwiftUI
+import WatchKit
 
 @main
 struct WODTimerWatchApp: App {
+    @WKApplicationDelegateAdaptor(WatchAppDelegate.self) private var delegate
+
     var body: some Scene {
         WindowGroup {
             #if targetEnvironment(simulator)
@@ -17,13 +20,21 @@ struct WODTimerWatchApp: App {
     }
 }
 
+/// The WatchKit lifecycle hook the SwiftUI app needs: a workout session
+/// handed back after a crash (2.2.0).
+final class WatchAppDelegate: NSObject, WKApplicationDelegate {
+    func handleActiveWorkoutRecovery() {
+        HealthWorkoutTracker.recoverCrashedSession()
+    }
+}
+
 #if targetEnvironment(simulator)
 /// Screenshot hook for the UX review and store captures (watch simulators
 /// can't be tap-driven): `simctl launch <udid> <bundle> --capture <scene>`
 /// opens one screen or timer state directly. Simulator builds only, so no
 /// device or App Store build contains it.
 enum CaptureScene: String, CaseIterable {
-    case home, voice
+    case home, voice, health
     case homeScrolled = "home-scrolled"
     case setupAmrap = "setup-amrap", setupForTime = "setup-fortime"
     case setupEmom = "setup-emom", setupTabata = "setup-tabata"
@@ -63,6 +74,7 @@ struct CaptureRoot: View {
         switch scene {
         case .home, .homeScrolled: HomeView()
         case .voice: VoiceSettingsView(viewModel: viewModel)
+        case .health: HealthSettingsView(tracker: HealthWorkoutTracker())
         case .setupAmrap: AmrapSetupView(viewModel: viewModel)
         case .setupForTime: ForTimeSetupView(viewModel: viewModel)
         case .setupEmom: EmomSetupView(viewModel: viewModel)

@@ -68,5 +68,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Wharf WOD does not read your health data.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>The Apple Watch app saves each workout you time to Health.</string>
 </dict>
 </plist>

@@ -3,7 +3,7 @@ import SwiftUI
 /// Home (1.3.1): the stacked Wharf WOD wordmark as the first row, then the
 /// four timers in the phone's order (For Time, EMOM, AMRAP, Tabata), each a
 /// mode-colour bar, the name in white, the workout it will start and that
-/// workout drawn as a timeline. The voice row is unchanged.
+/// workout drawn as a timeline, then the Voice and Health rows (2.2.0).
 struct HomeView: View {
     @State private var viewModel = TimerViewModel()
     @State private var showingTimer = false
@@ -54,6 +54,20 @@ struct HomeView: View {
                                 .foregroundStyle(Palette.label)
                         }
                     }
+                    if let tracker = viewModel.tracker as? HealthWorkoutTracker {
+                        NavigationLink {
+                            HealthSettingsView(tracker: tracker)
+                        } label: {
+                            HStack {
+                                Text("Health")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Spacer()
+                                Text(Self.healthLabel(tracker))
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Palette.label)
+                            }
+                        }
+                    }
                 }
                 .onAppear { captureScroll(proxy) }
             }
@@ -62,6 +76,9 @@ struct HomeView: View {
             }
             .onAppear {
                 refresh += 1
+                // The one Health permission (save workouts), asked here as
+                // workout apps do, never during a countdown.
+                (viewModel.tracker as? HealthWorkoutTracker)?.requestAuthorizationIfNeeded()
                 // Promo-footage hook: `simctl launch ... --promo-autostart`
                 // starts a default AMRAP after a beat so the simulator can be
                 // recorded without driving the UI. No effect in normal use.
@@ -84,6 +101,11 @@ struct HomeView: View {
             }
         }
         #endif
+    }
+
+    static func healthLabel(_ tracker: HealthWorkoutTracker) -> String {
+        guard tracker.enabled else { return "Off" }
+        return tracker.authorization == .sharingDenied ? "Not allowed" : "On"
     }
 
     private var voiceLabel: String {

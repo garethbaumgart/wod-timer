@@ -377,9 +377,13 @@ class TimerNotifier extends _$TimerNotifier {
     // processed tick's delta covers the dropped span.
     if (!currentSession.state.isActive) return;
 
-    // Calculate delta since last tick
-    final delta = elapsed - _lastTickElapsed;
-    _lastTickElapsed = elapsed;
+    // Whole milliseconds of the engine's clock, so the deltas sum to the
+    // elapsed time itself. The domain accumulates delta.inMilliseconds, and
+    // truncating each microsecond delta lost up to a millisecond a tick:
+    // about three seconds over a 10:00 AMRAP (found on the watch, 5 Oct 2026).
+    final elapsedMs = Duration(milliseconds: elapsed.inMilliseconds);
+    final delta = elapsedMs - _lastTickElapsed;
+    _lastTickElapsed = elapsedMs;
 
     final result = _tickTimer(currentSession, delta);
 

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/hold_to_stop_cell.dart';
 import 'package:wod_timer/injection.dart';
 import 'package:wod_timer/main.dart' as app;
 
@@ -136,10 +137,10 @@ void main() {
       // (a still-running session leaves audioplayers frame callbacks
       // pending). Stop lives on the paused screen (1.3.0) and is
       // hold-to-confirm: the 800ms ring starts on pointer down.
-      await tester.tap(find.byIcon(Icons.pause_rounded));
+      await tester.tap(find.text('PAUSE'));
       await tester.pump(const Duration(milliseconds: 400));
-      final stopButton = find.byIcon(Icons.stop);
-      expect(stopButton, findsOneWidget, reason: 'Should find stop button');
+      final stopButton = find.byType(HoldToStopCell);
+      expect(stopButton, findsOneWidget, reason: 'Should find hold to stop');
       final gesture = await tester.startGesture(tester.getCenter(stopButton));
       for (var i = 0; i < 12; i++) {
         await tester.pump(const Duration(milliseconds: 100));
