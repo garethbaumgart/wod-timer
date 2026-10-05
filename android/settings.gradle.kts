@@ -20,6 +20,11 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.11.1" apply false
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.20" apply false
 }
 
 include(":app")
+// The Wear OS app (2.3.0): a native Compose for Wear OS module, same package
+// name, published as the listing's Wear OS form factor. Built with
+// `./gradlew :wear:bundleRelease`, not by flutter build.
+include(":wear")
