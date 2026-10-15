@@ -105,17 +105,18 @@ struct TimerSession: Equatable {
         // Handle preparation phase
         if state == .preparing {
             if newIntervalElapsed.seconds >= workout.prepCountdown.seconds {
-                // Prep done, start the workout. Carry any overshoot into the
-                // workout so a large delta (the watch was asleep) loses nothing.
-                let overflow = TimerDuration(
-                    seconds: newIntervalElapsed.seconds - workout.prepCountdown.seconds
-                )
+                // Prep done, start the workout. Any overshoot (a large delta:
+                // the watch was asleep, or a frame drawn ahead) runs on
+                // through the workout's own rules, so it turns rounds and can
+                // finish it (2.2.1: it used to pile into round 1).
+                let overflowMs = (newIntervalElapsed.seconds - workout.prepCountdown.seconds) * 1000
+                    + newIntervalMillisRemainder
                 state = .running
-                elapsed = overflow
-                currentIntervalElapsed = overflow
-                intervalElapsedMillis = newIntervalMillisRemainder
-                elapsedMillis = newElapsedMillisRemainder
-                return .success(self)
+                elapsed = .zero
+                currentIntervalElapsed = .zero
+                elapsedMillis = 0
+                intervalElapsedMillis = 0
+                return tick(deltaMs: overflowMs)
             }
             currentIntervalElapsed = newIntervalElapsed
             intervalElapsedMillis = newIntervalMillisRemainder
@@ -157,6 +158,15 @@ struct TimerSession: Equatable {
                 newIntervalMillis: newIntervalMillisRemainder
             )
         }
+    }
+
+    /// The session `deltaMs` later, for the screen (2.2.1): the same tick,
+    /// on a copy. A paused, finished or not-yet-started session, or a
+    /// negative delta, answers itself.
+    func projected(byMs deltaMs: Int) -> TimerSession {
+        var copy = self
+        guard deltaMs > 0, case let .success(later) = copy.tick(deltaMs: deltaMs) else { return self }
+        return later
     }
 
     // MARK: - Timer Type Tick Handlers
@@ -205,6 +215,7 @@ struct TimerSession: Equatable {
         var round = currentRound
         while intervalSeconds > 0 && intervalElapsedSeconds >= intervalSeconds {
             if round >= rounds.value {
+                currentRound = round
                 markComplete(elapsedAt: TimerDuration(seconds: intervalSeconds * rounds.value))
                 return .success(self)
             }
@@ -242,6 +253,7 @@ struct TimerSession: Equatable {
                 isWorkPhase = false
             } else {
                 if round >= rounds.value {
+                    currentRound = round
                     markComplete(elapsedAt: TimerDuration(seconds: (work + rest) * rounds.value))
                     return .success(self)
                 }
@@ -295,6 +307,9 @@ struct TimerSession: Equatable {
 
     /// Time remaining in the current phase/interval.
     var timeRemaining: TimerDuration {
+        // Finished, nothing is left, however the last tick fell (2.2.1: a
+        // frame drawn past the end read the interval it started from).
+        if state == .completed { return .zero }
         // While paused, answer for the phase the session paused in, so the
         // clock reads what it read the instant before the pause (a Tabata
         // paused mid-WORK used to be measured against the REST length).

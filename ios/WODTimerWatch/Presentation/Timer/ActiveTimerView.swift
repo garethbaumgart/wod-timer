@@ -33,13 +33,17 @@ struct ActiveTimerView: View {
         }
     }
 
+    /// Each frame shows the clock for its own moment (2.2.1), so the
+    /// frames Always On draws ahead of time read right when they show.
+    /// Taps act on the live session, not the frame.
     @ViewBuilder
     private func live(session: TimerSession) -> some View {
-        TimelineView(.periodic(from: .now, by: 0.1)) { _ in
-            LiveScreen(session: session, counted: viewModel.hasCountedRound, paused: false) {
+        TimelineView(LiveClockSchedule(origin: viewModel.clockOrigin)) { context in
+            let shown = viewModel.displaySession(at: context.date) ?? session
+            LiveScreen(session: shown, counted: viewModel.hasCountedRound, paused: false) {
                 canvasTap(session)
             } buttons: {
-                controls(session: session)
+                controls(session: shown)
             }
         }
     }
@@ -64,6 +68,35 @@ struct ActiveTimerView: View {
         case .preparing: viewModel.skipPrep()
         case .running: viewModel.countRound()
         default: break
+        }
+    }
+}
+
+/// When the live screen draws (2.2.1): ten times a second on the wrist,
+/// once a second in Always On, where watchOS draws about once a second at
+/// best and may render a batch of frames ahead. The entries sit on the
+/// turns of the workout clock (counted from its origin, not the wall
+/// clock), so each new second shows the moment it starts and holds for
+/// the whole second.
+struct LiveClockSchedule: TimelineSchedule {
+    let origin: Date?
+
+    func entries(from startDate: Date, mode: TimelineScheduleMode) -> AnyIterator<Date> {
+        let step: TimeInterval = mode == .lowFrequency ? 1 : 0.1
+        let base = origin ?? startDate
+        var turn = (startDate.timeIntervalSince(base) / step).rounded(.down)
+        var first: Date? = startDate
+        return AnyIterator {
+            if let date = first {
+                first = nil
+                return date
+            }
+            var next: Date
+            repeat {
+                turn += 1
+                next = base.addingTimeInterval(turn * step)
+            } while next <= startDate
+            return next
         }
     }
 }
