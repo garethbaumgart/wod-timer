@@ -10,6 +10,11 @@ final class TimerViewModel {
     private(set) var session: TimerSession?
     private(set) var phase: TimerState = .ready
 
+    /// When the workout clock read zero, pauses taken out; nil while
+    /// paused or stopped. With the last tick it gives the clock for any
+    /// moment (displaySession(at:)).
+    private(set) var clockOrigin: Date?
+
     /// True when the athlete ended the workout with Stop: the end screen
     /// says "Stopped", never celebrates.
     private(set) var endedEarly = false
@@ -107,6 +112,7 @@ final class TimerViewModel {
             lastTickElapsed = 0
             lastTickMillis = 0
             engine.start()
+            clockOrigin = engine.origin
             recentsStore.save(workout)
             tracker.begin(workout)
             if started.state == .running {
@@ -125,7 +131,9 @@ final class TimerViewModel {
 
     func pause() {
         // The get-ready countdown is skipped or cancelled, never paused.
-        guard phase != .preparing, var current = session else { return }
+        guard phase != .preparing, session != nil else { return }
+        catchUp()
+        guard var current = session else { return }
         let result = current.pause()
 
         switch result {
@@ -133,6 +141,7 @@ final class TimerViewModel {
             session = paused
             phase = .paused
             engine.pause()
+            clockOrigin = nil
             haptics.play(.pause)
             tracker.pause()
         case .failure:
@@ -149,6 +158,7 @@ final class TimerViewModel {
             session = resumed
             phase = resumed.state
             engine.resume()
+            clockOrigin = engine.origin
             haptics.play(.resume)
             tracker.resume()
             blockRoundCount()
@@ -159,6 +169,7 @@ final class TimerViewModel {
 
     /// End early: an honest "Stopped", no celebration.
     func stop() {
+        catchUp()
         guard phase != .completed, var current = session else { return }
         let result = current.complete()
 
@@ -167,7 +178,7 @@ final class TimerViewModel {
             endedEarly = true
             session = completed
             phase = .completed
-            engine.stop()
+            stopClock()
             haptics.cancelPending()
             haptics.play(.pause)
             tracker.end(keep: completed.elapsed.seconds >= Self.keepHealthRecordAfter)
@@ -178,6 +189,7 @@ final class TimerViewModel {
 
     /// For Time's success action: log the time and celebrate.
     func finish() {
+        catchUp()
         guard phase != .completed, var current = session else { return }
         let result = current.complete()
 
@@ -186,7 +198,7 @@ final class TimerViewModel {
             endedEarly = false
             session = completed
             phase = .completed
-            engine.stop()
+            stopClock()
             haptics.play(.complete)
             tracker.end(keep: true)
             audio.playHighBeep()
@@ -239,12 +251,12 @@ final class TimerViewModel {
 
     func restart() {
         guard let workout = lastWorkout, phase == .completed else { return }
-        engine.stop()
+        stopClock()
         start(workout: workout)
     }
 
     func reset() {
-        engine.stop()
+        stopClock()
         haptics.cancelPending()
         tracker.end(keep: false)
         session = nil
@@ -252,6 +264,34 @@ final class TimerViewModel {
         endedEarly = false
         lastWorkout = nil
         resetCueState()
+    }
+
+    // MARK: - Clock
+
+    private func stopClock() {
+        engine.stop()
+        clockOrigin = nil
+    }
+
+    /// Brings the session up to this instant before a pause, stop or
+    /// finish, so the time they keep is exact between the once-a-second
+    /// ticks. A workout that ends on this tick ends here, as a tick would.
+    private func catchUp() {
+        guard engine.isRunning else { return }
+        onTick(elapsed: engine.elapsed)
+    }
+
+    /// The session as the clock reads at `date` (2.2.1): the last tick
+    /// carried forward to that moment. With the wrist down, Always On draws
+    /// about once a second and may render a batch of frames ahead of time,
+    /// each from whatever the screen read when it was drawn, so a clock
+    /// drawn from the last tick stood on one number for seconds and then
+    /// jumped (55, 49, 49, 49, then the right time; Gareth's Ultra, 15 Oct
+    /// 2026). Display only: the cues come from the engine's ticks.
+    func displaySession(at date: Date) -> TimerSession? {
+        guard let session, let clockOrigin else { return session }
+        let clockMs = Int((date.timeIntervalSince(clockOrigin) * 1000).rounded())
+        return session.projected(byMs: clockMs - lastTickMillis)
     }
 
     // MARK: - Tick Handler
@@ -263,6 +303,9 @@ final class TimerViewModel {
         // elapsed time itself. Truncating each delta lost up to a
         // millisecond a tick: about three seconds over a 10:00 AMRAP.
         let elapsedMs = Int((elapsed * 1000).rounded())
+        // A tick measured before the last one (queued behind a catch-up)
+        // has nothing to add.
+        guard elapsedMs >= lastTickMillis else { return }
         let deltaMs = elapsedMs - lastTickMillis
         lastTickMillis = elapsedMs
         lastTickElapsed = elapsed
@@ -277,7 +320,7 @@ final class TimerViewModel {
             if updated.state == .completed {
                 session = updated
                 phase = .completed
-                engine.stop()
+                stopClock()
                 haptics.play(.complete)
                 tracker.end(keep: true)
                 playEndCues()
@@ -290,7 +333,7 @@ final class TimerViewModel {
             if current.state == .completed, phase != .completed {
                 session = current
                 phase = .completed
-                engine.stop()
+                stopClock()
                 haptics.play(.complete)
                 tracker.end(keep: true)
                 playEndCues()
@@ -514,7 +557,7 @@ extension TimerViewModel {
         }
         session = current
         phase = current.state
-        if current.state == .completed { engine.stop() }
+        if current.state == .completed { stopClock() }
     }
 
     func debugCountRounds(_ n: Int) {

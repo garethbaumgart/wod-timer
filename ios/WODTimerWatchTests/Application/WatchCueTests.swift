@@ -246,3 +246,121 @@ final class WatchBundleTests: XCTestCase {
         audio.setBeepsOnly(beeps)
     }
 }
+
+// 2.2.1: the screen draws the clock for each frame's own moment, and the
+// engine ticks once a second on the turns of the clock. With the wrist
+// down, Always On draws frames ahead of time; drawn from the last tick,
+// the clock stood on one number for seconds, then jumped (Gareth's Ultra,
+// 15 Oct 2026).
+final class WatchClockTests: XCTestCase {
+    func testAFrameDrawnAheadReadsWhatTheTicksWillRead() {
+        for workout in [Workout.defaultForTime(), .defaultEmom(), .defaultAmrap(), .defaultTabata()] {
+            var base = TimerSession.fromWorkout(workout)
+            _ = base.start()
+            var ticked = base
+            let end = (workout.prepCountdown.seconds + workout.timerType.estimatedDuration.seconds + 2) * 1000
+            for ms in stride(from: 250, through: end, by: 250) {
+                if case let .success(next) = ticked.tick(deltaMs: 250) { ticked = next }
+                let frame = base.projected(byMs: ms)
+                let at = "\(workout.timerType.typeCode) at \(ms)ms"
+                XCTAssertEqual(LiveRules.clockText(frame), LiveRules.clockText(ticked), at)
+                XCTAssertEqual(frame.state, ticked.state, at)
+                XCTAssertEqual(frame.currentRound, ticked.currentRound, at)
+            }
+            XCTAssertEqual(base.state, .preparing, "projecting leaves the session alone")
+        }
+    }
+
+    func testAPausedOrFinishedSessionProjectsToItself() {
+        var session = TimerSession.fromWorkout(workout(.amrap(duration: TimerDuration(seconds: 60))))
+        _ = session.start()
+        _ = session.tick(deltaMs: 3000)
+        _ = session.pause()
+        XCTAssertEqual(session.projected(byMs: 30000), session)
+        _ = session.resume()
+        XCTAssertEqual(session.projected(byMs: -500), session, "a frame before the last tick shows the last tick")
+        _ = session.complete()
+        XCTAssertEqual(session.projected(byMs: 30000), session)
+    }
+
+    func testTheScreenShowsTheClockForTheFramesMoment() throws {
+        let (vm, _, _) = makeViewModel()
+        vm.start(workout: workout(.amrap(duration: TimerDuration(seconds: 60))))
+        let origin = try XCTUnwrap(vm.clockOrigin)
+        func shown(_ seconds: Double) -> String? {
+            vm.displaySession(at: origin.addingTimeInterval(seconds)).map(LiveRules.clockText)
+        }
+        XCTAssertEqual(shown(5.5), "55")
+        vm.debugTick(elapsed: 3)
+        XCTAssertEqual(shown(5.5), "55", "a tick in between changes no frame")
+        XCTAssertEqual(shown(49.2), "11")
+        XCTAssertEqual(shown(59.9), "1")
+        XCTAssertEqual(shown(75), "0")
+
+        vm.pause()
+        XCTAssertNil(vm.clockOrigin)
+        XCTAssertEqual(
+            vm.displaySession(at: Date().addingTimeInterval(30)).map(LiveRules.clockText), "57",
+            "paused, every frame shows the paused clock"
+        )
+        vm.resume()
+        XCTAssertNotNil(vm.clockOrigin)
+        vm.stop()
+        XCTAssertNil(vm.clockOrigin)
+    }
+
+    func testATickBehindTheLastOneAddsNothing() {
+        let (vm, _, _) = makeViewModel()
+        vm.start(workout: workout(.amrap(duration: TimerDuration(seconds: 600))))
+        vm.debugTick(elapsed: 5)
+        vm.debugTick(elapsed: 4.9)
+        XCTAssertEqual(vm.session?.elapsed.seconds, 5)
+        XCTAssertEqual(vm.session?.elapsedMillis, 0)
+        vm.debugTick(elapsed: 6.2)
+        XCTAssertEqual(vm.session?.elapsed.seconds, 6)
+        XCTAssertEqual(vm.session?.elapsedMillis, 200)
+    }
+
+    func testTheEngineAimsJustPastEachTurnOfTheClock() {
+        XCTAssertEqual(TimerEngine.delayToNextTick(after: 0), 1.005, accuracy: 1e-9)
+        XCTAssertEqual(TimerEngine.delayToNextTick(after: 4.005), 1.0, accuracy: 1e-9)
+        XCTAssertEqual(TimerEngine.delayToNextTick(after: 4.6), 0.405, accuracy: 1e-9)
+        XCTAssertEqual(TimerEngine.delayToNextTick(after: 3.998), 0.007, accuracy: 1e-9, "a hair early aims at the turn it missed")
+        XCTAssertEqual(TimerEngine.delayToNextTick(after: 3.9996), 1.0054, accuracy: 1e-9, "within half a millisecond is the turn")
+    }
+
+    func testTheRealEngineTicksOnTheTurns() {
+        let engine = TimerEngine()
+        var ticks: [TimeInterval] = []
+        let two = expectation(description: "two ticks")
+        engine.onTick = { elapsed in
+            ticks.append(elapsed)
+            if ticks.count == 2 { two.fulfill() }
+        }
+        engine.start()
+        wait(for: [two], timeout: 3)
+        engine.stop()
+        XCTAssertLessThan(ticks[0], 0.05, "the first tick fires at once")
+        XCTAssertGreaterThanOrEqual(ticks[1], 1.0, "the second waits for the turn")
+        XCTAssertLessThan(ticks[1], 1.25, "and lands just past it")
+    }
+
+    func testFramesSitOnTheTurnsOfTheWorkoutClock() {
+        let origin = Date(timeIntervalSinceReferenceDate: 1000.3)
+        let start = origin.addingTimeInterval(12.7)
+        let schedule = LiveClockSchedule(origin: origin)
+
+        let alwaysOn = Array(schedule.entries(from: start, mode: .lowFrequency).prefix(4))
+        XCTAssertEqual(alwaysOn[0], start, "the first frame is now")
+        for (i, seconds) in [13.0, 14.0, 15.0].enumerated() {
+            XCTAssertEqual(alwaysOn[i + 1].timeIntervalSince(origin), seconds, accuracy: 1e-6)
+        }
+
+        let live = Array(schedule.entries(from: start, mode: .normal).prefix(3))
+        XCTAssertEqual(live[1].timeIntervalSince(origin), 12.8, accuracy: 1e-6)
+        XCTAssertEqual(live[2].timeIntervalSince(origin), 12.9, accuracy: 1e-6)
+
+        let unanchored = Array(LiveClockSchedule(origin: nil).entries(from: start, mode: .lowFrequency).prefix(2))
+        XCTAssertEqual(unanchored[1].timeIntervalSince(start), 1, accuracy: 1e-6)
+    }
+}
