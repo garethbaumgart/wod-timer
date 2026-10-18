@@ -202,7 +202,9 @@ void main() {
   });
 
   group('Flat list', () {
-    testWidgets('rows and the rate block in order, no section headers', (tester) async {
+    testWidgets('rows and the rate block in order, no section headers', (
+      tester,
+    ) async {
       await pumpSettings(tester);
 
       const order = [

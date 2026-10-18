@@ -139,56 +139,60 @@ void main() {
   });
 
   group('golden fixture: a 1.2.x prefs file survives 1.3.0', () {
-    test('loads, saves and reloads with every pre-existing key intact',
-        () async {
-      boot(_v12Prefs);
-      await settle();
+    test(
+      'loads, saves and reloads with every pre-existing key intact',
+      () async {
+        boot(_v12Prefs);
+        await settle();
 
-      final settings = container.read(appSettingsNotifierProvider);
-      expect(settings.orientationLock, OrientationLockMode.landscape);
-      expect(settings.hapticEnabled, isFalse);
-      expect(settings.soundEnabled, isTrue);
-      expect(settings.keepScreenOn, isFalse);
-      expect(settings.voice, VoiceOption.holly);
+        final settings = container.read(appSettingsNotifierProvider);
+        expect(settings.orientationLock, OrientationLockMode.landscape);
+        expect(settings.hapticEnabled, isFalse);
+        expect(settings.soundEnabled, isTrue);
+        expect(settings.keepScreenOn, isFalse);
+        expect(settings.voice, VoiceOption.holly);
 
-      // Save through the one setter the 1.3.0 UI still has for voice.
-      await container
-          .read(appSettingsNotifierProvider.notifier)
-          .setVoice(VoiceOption.holly);
+        // Save through the one setter the 1.3.0 UI still has for voice.
+        await container
+            .read(appSettingsNotifierProvider.notifier)
+            .setVoice(VoiceOption.holly);
 
-      final prefs = await SharedPreferences.getInstance();
-      for (final entry in _v12Prefs.entries) {
+        final prefs = await SharedPreferences.getInstance();
+        for (final entry in _v12Prefs.entries) {
+          expect(
+            prefs.get(entry.key),
+            entry.value,
+            reason: '${entry.key} must survive the update unchanged',
+          );
+        }
+        // Only additive keys appear.
+        final added = prefs.getKeys().difference(_v12Prefs.keys.toSet());
+        expect(added, {AppSettingsNotifier.keySilentMigrated});
+
+        // A second launch reads the same settings back.
+        container.dispose();
+        container = ProviderContainer();
+        await settle();
+        final again = container.read(appSettingsNotifierProvider);
+        expect(again.voice, VoiceOption.holly);
+        expect(again.keepScreenOn, isFalse);
+        expect(again.orientationLock, OrientationLockMode.landscape);
+      },
+    );
+
+    test(
+      'a stored voice index from a newer build is clamped, not wiped',
+      () async {
+        boot({'app_voice': 99});
+        await settle();
+
         expect(
-          prefs.get(entry.key),
-          entry.value,
-          reason: '${entry.key} must survive the update unchanged',
+          container.read(appSettingsNotifierProvider).voice,
+          VoiceOption.values.last,
         );
-      }
-      // Only additive keys appear.
-      final added = prefs.getKeys().difference(_v12Prefs.keys.toSet());
-      expect(added, {AppSettingsNotifier.keySilentMigrated});
-
-      // A second launch reads the same settings back.
-      container.dispose();
-      container = ProviderContainer();
-      await settle();
-      final again = container.read(appSettingsNotifierProvider);
-      expect(again.voice, VoiceOption.holly);
-      expect(again.keepScreenOn, isFalse);
-      expect(again.orientationLock, OrientationLockMode.landscape);
-    });
-
-    test('a stored voice index from a newer build is clamped, not wiped',
-        () async {
-      boot({'app_voice': 99});
-      await settle();
-
-      expect(
-        container.read(appSettingsNotifierProvider).voice,
-        VoiceOption.values.last,
-      );
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt('app_voice'), 99);
-    });
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt('app_voice'), 99);
+      },
+    );
   });
 }

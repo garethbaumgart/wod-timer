@@ -31,31 +31,35 @@ void main() {
       );
     });
 
-    test('Android takes transient focus that may duck, on the media stream',
-        () {
-      expect(
-        config.androidAudioFocusGainType,
-        audio_session.AndroidAudioFocusGainType.gainTransientMayDuck,
-        reason: 'permanent focus stops the music for good',
-      );
-      expect(config.androidWillPauseWhenDucked, isFalse);
-      expect(
-        config.androidAudioAttributes?.usage,
-        audio_session.AndroidAudioUsage.media,
-      );
-    });
+    test(
+      'Android takes transient focus that may duck, on the media stream',
+      () {
+        expect(
+          config.androidAudioFocusGainType,
+          audio_session.AndroidAudioFocusGainType.gainTransientMayDuck,
+          reason: 'permanent focus stops the music for good',
+        );
+        expect(config.androidWillPauseWhenDucked, isFalse);
+        expect(
+          config.androidAudioAttributes?.usage,
+          audio_session.AndroidAudioUsage.media,
+        );
+      },
+    );
   });
 
   group('the players', () {
     final context = AudioService.cueContext;
 
-    test('on Android request no focus of their own and use the media stream',
-        () {
-      expect(context.android.audioFocus, AndroidAudioFocus.none);
-      expect(context.android.usageType, AndroidUsageType.media);
-      expect(context.android.stayAwake, isFalse);
-      expect(context.android.isSpeakerphoneOn, isFalse);
-    });
+    test(
+      'on Android request no focus of their own and use the media stream',
+      () {
+        expect(context.android.audioFocus, AndroidAudioFocus.none);
+        expect(context.android.usageType, AndroidUsageType.media);
+        expect(context.android.stayAwake, isFalse);
+        expect(context.android.isSpeakerphoneOn, isFalse);
+      },
+    );
 
     test('on iOS agree with the session', () {
       expect(context.iOS.category, AVAudioSessionCategory.playback);

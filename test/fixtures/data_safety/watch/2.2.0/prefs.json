@@ -1,0 +1,8 @@
+{
+  "watch_voice_pack": "major",
+  "watch_voice_random": true,
+  "watch_voice_muted": false,
+  "watch_voice_beeps": false,
+  "watch_hint_amrap_counted": true,
+  "watch_health_track": false
+}

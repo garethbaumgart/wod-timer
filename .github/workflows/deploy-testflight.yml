@@ -14,17 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # verify_fixtures.py git-shows each shipped SHA
+          fetch-depth: 0
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: "3.47.7"
           channel: stable
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run code generation
-        run: dart run build_runner build --delete-conflicting-outputs
+      # Do not run build_runner on 3.47.7: analyzer 7.6.0 hangs
+      # (visitDotShorthandPropertyAccess). Generated files are committed.
+      # Staleness is checked on PRs by the 3.44.9 job in pr-check.yml.
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -47,14 +52,14 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: "3.47.7"
           channel: stable
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run code generation
-        run: dart run build_runner build --delete-conflicting-outputs
+      # Do not run build_runner on 3.47.7 (hangs). Use committed generated Dart.
 
       - name: Build Flutter iOS (no codesign)
         run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}

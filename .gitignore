@@ -44,10 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Generated files - code generation
-*.g.dart
-*.freezed.dart
-lib/injection.config.dart
+# Generated Dart is committed: `dart run build_runner` hangs on Flutter
+# 3.47.7 (analyzer 7.6.0 missing visitDotShorthandPropertyAccess), so a
+# clean checkout must analyze/test without codegen. See docs/data-safety.md.
 
 # Environment files
 .env

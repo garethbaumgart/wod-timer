@@ -1,0 +1,44 @@
+{
+  "workouts": [
+    {
+      "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+      "name": "Tabata «quotes» & rest",
+      "code": "tabata",
+      "work": 20,
+      "rest": 10,
+      "rounds": 16,
+      "prep": 10
+    },
+    {
+      "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+      "name": "EMOM 90s × 12 — Gareth's “wod”",
+      "code": "emom",
+      "interval": 120,
+      "rounds": 5,
+      "prep": 10
+    },
+    {
+      "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+      "name": "AMRAP 💪 «Fran»\nsecond line",
+      "code": "amrap",
+      "seconds": 1200,
+      "prep": 10
+    }
+  ],
+  "setup": {
+    "amrapSeconds": 1200,
+    "forTimeCap": 480,
+    "forTimeCountUp": true,
+    "emomInterval": 120,
+    "emomRounds": 5,
+    "tabataWork": 20,
+    "tabataRest": 10,
+    "tabataRounds": 16
+  },
+  "voicePack": "major",
+  "random": true,
+  "muted": false,
+  "beeps": false,
+  "hintCounted": true,
+  "healthTrack": false
+}

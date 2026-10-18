@@ -1,0 +1,8 @@
+{
+  "forTime": {
+    "timeCap": {
+      "seconds": 480
+    },
+    "countUp": true
+  }
+}

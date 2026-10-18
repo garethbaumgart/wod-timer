@@ -1,0 +1,88 @@
+{
+  "app_version": "2.0.0",
+  "commit": "eac3086474735f719c61049f89e60b035451a9ff",
+  "keys": {
+    "app_orientation_lock": {
+      "int": 0
+    },
+    "app_haptic_enabled": {
+      "bool": false
+    },
+    "app_sound_enabled": {
+      "bool": false
+    },
+    "app_keep_screen_on": {
+      "bool": false
+    },
+    "app_voice": {
+      "int": 0
+    },
+    "app_sound_silent_migrated_v130": {
+      "bool": true
+    },
+    "review_value_moments": {
+      "int": 4
+    },
+    "review_ask_count": {
+      "int": 0
+    },
+    "review_last_asked_ms": {
+      "int": 0
+    },
+    "setup_amrap_duration_s": {
+      "int": 1800
+    },
+    "setup_fortime_cap_s": {
+      "int": 600
+    },
+    "setup_fortime_count_up": {
+      "bool": true
+    },
+    "setup_emom_interval_s": {
+      "int": 45
+    },
+    "setup_emom_rounds": {
+      "int": 20
+    },
+    "setup_tabata_work_s": {
+      "int": 30
+    },
+    "setup_tabata_rest_s": {
+      "int": 15
+    },
+    "setup_tabata_rounds": {
+      "int": 10
+    },
+    "setup_last_mode": {
+      "string": "amrap"
+    },
+    "hint_amrap_counted_round": {
+      "bool": false
+    },
+    "some_plugin_key": {
+      "string": "keep me — «Gareth» 💪\nעברית العربية \"quotes\""
+    }
+  },
+  "expect": {
+    "orientationLock": "auto",
+    "hapticEnabled": false,
+    "soundEnabled": false,
+    "keepScreenOn": false,
+    "voice": "major",
+    "voiceIndexAfterLoad": 0,
+    "silentMigratedAfterLoad": true,
+    "amrapDurationSeconds": 1800,
+    "forTimeCapSeconds": 600,
+    "forTimeCountUp": true,
+    "emomIntervalSeconds": 45,
+    "emomRounds": 20,
+    "tabataWorkSeconds": 30,
+    "tabataRestSeconds": 15,
+    "tabataRounds": 10,
+    "lastMode": "amrap",
+    "hasCountedRound": false,
+    "reviewMoments": 4,
+    "reviewAsks": 0,
+    "reviewLastAskedMs": 0
+  }
+}

@@ -1,0 +1,5 @@
+tags:
+  data-safety:
+    description: >-
+      Prefs/UserDefaults upgrade fixtures. Runs in plain `flutter test`
+      and alone via `flutter test --tags data-safety`.

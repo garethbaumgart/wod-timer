@@ -64,11 +64,8 @@ extension TimerNotifierStateX on TimerNotifierState {
   /// Not during the get-ready countdown (1.3.0): a nervous tap used to
   /// freeze the "3" into a seven-second workout that was paused. Skip or
   /// stop are the only actions there.
-  bool get canPause => maybeMap(
-    running: (_) => true,
-    resting: (_) => true,
-    orElse: () => false,
-  );
+  bool get canPause =>
+      maybeMap(running: (_) => true, resting: (_) => true, orElse: () => false);
 
   /// Whether the timer can be resumed.
   bool get canResume => maybeMap(paused: (_) => true, orElse: () => false);

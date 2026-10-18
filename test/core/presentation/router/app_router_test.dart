@@ -26,7 +26,10 @@ void main() {
   late GoRouter router;
   late MockHapticService haptic;
 
-  Future<void> pumpApp(WidgetTester tester, {String at = AppRoutes.home}) async {
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    String at = AppRoutes.home,
+  }) async {
     tester.view
       ..physicalSize = const Size(390 * 3, 844 * 3)
       ..devicePixelRatio = 3;

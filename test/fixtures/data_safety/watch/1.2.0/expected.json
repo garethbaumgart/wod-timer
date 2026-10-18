@@ -1,0 +1,27 @@
+{
+  "workouts": [
+    {
+      "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+      "name": "للوقت — For Time",
+      "code": "fortime",
+      "cap": 1200,
+      "countUp": false,
+      "prep": 10
+    },
+    {
+      "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+      "name": "EMOM 90s × 12 — Gareth's “wod”",
+      "code": "emom",
+      "interval": 45,
+      "rounds": 20,
+      "prep": 10
+    },
+    {
+      "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+      "name": "AMRAP 💪 «Fran»\nsecond line",
+      "code": "amrap",
+      "seconds": 300,
+      "prep": 10
+    }
+  ]
+}

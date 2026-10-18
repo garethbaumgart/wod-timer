@@ -1,0 +1,54 @@
+[
+  {
+    "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+    "name": "Tabata «quotes» & rest",
+    "timerType": {
+      "tabata": {
+        "workDuration": {
+          "seconds": 40
+        },
+        "restDuration": {
+          "seconds": 20
+        },
+        "rounds": {
+          "value": 6
+        }
+      }
+    },
+    "prepCountdown": {
+      "seconds": 10
+    },
+    "createdAt": 805701600.0
+  },
+  {
+    "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+    "name": "AMRAP 💪 «Fran»\nsecond line",
+    "timerType": {
+      "amrap": {
+        "duration": {
+          "seconds": 60
+        }
+      }
+    },
+    "prepCountdown": {
+      "seconds": 10
+    },
+    "createdAt": 812548800.0
+  },
+  {
+    "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+    "name": "للوقت — For Time",
+    "timerType": {
+      "forTime": {
+        "timeCap": {
+          "seconds": 3600
+        },
+        "countUp": true
+      }
+    },
+    "prepCountdown": {
+      "seconds": 10
+    },
+    "createdAt": 813866400.0
+  }
+]
