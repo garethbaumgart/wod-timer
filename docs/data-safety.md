@@ -10,7 +10,7 @@ Wharf WOD has no database. The only durable user data is key/value:
 
 Every storage shape that has shipped to the stores has a committed fixture under `test/fixtures/data_safety/`. HEAD must load each one through those real readers without dropping a key or rewriting a value, except the documented 1.3.0 Sound-Effects → Silent migration, which runs **once**.
 
-The release guard is a **storage-shape** check, not a pubspec version check. `scripts/ship.sh` bumps `version:` *after* the test gate, so requiring `pubspec.yaml` to equal a catalog version would fail the next ship and every subsequent `flutter test` on main with no storage change. HEAD's SharedPreferences keys and types (and watch / Wear payload shapes) must equal the **newest** committed fixture. A new or changed key without a new fixture directory fails.
+The release guard is a **storage-shape** check, not a pubspec version check. `scripts/ship.sh` bumps `version:` *after* the test gate, so requiring `pubspec.yaml` to equal a catalog version would fail the next ship and every subsequent `flutter test` on main with no storage change. HEAD's SharedPreferences keys and types are discovered by scanning every non-generated `lib/**/*.dart` file for prefs get/set calls and the const strings those calls use — not a hand-kept list and not a single writer file. Watch / Wear payload shapes are scanned from the companion sources. HEAD must equal the **newest** committed fixture. A new or changed key in any `lib/` file (including a brand-new file) without a new fixture directory fails.
 
 `test/fixtures/data_safety/MANIFEST.sha256` checksums every fixture file. Editing or deleting an old fixture without updating the manifest fails. Never edit an old fixture to make a test pass.
 
@@ -40,7 +40,17 @@ Watch JSON follows Swift `JSONEncoder` (`Date` = `timeIntervalSinceReferenceDate
 
 ## Code generation
 
-`dart run build_runner` hangs on the FVM pin (Flutter 3.47.7 / Dart 3.13.5) because `riverpod_generator` 2.6 pulls `analyzer` 7.6.0, which cannot visit Dart 3.13 dot shorthands. Generated `*.g.dart`, `*.freezed.dart`, and `lib/injection.config.dart` are committed so `flutter analyze`, `flutter test`, and `scripts/data_safety_gate.sh` run from a clean checkout without codegen. Do not add a CI `build_runner` step on 3.47.7.
+`dart run build_runner` hangs on the FVM pin (Flutter 3.47.7 / Dart 3.13.5) because `riverpod_generator` 2.6 pulls `analyzer` 7.6.0, which cannot visit Dart 3.13 dot shorthands. Generated `*.g.dart`, `*.freezed.dart`, and `lib/injection.config.dart` are committed so `flutter analyze`, `flutter test`, and `scripts/data_safety_gate.sh` run from a clean checkout without codegen.
+
+Do **not** run `build_runner` on 3.47.7 (including CI `pr-check.yml` Analyze & Test and `deploy-testflight.yml`). Codegen runs on **Flutter 3.44.9 / Dart 3.12.2**. Re-run and commit whenever `@Riverpod` / `@freezed` / `@injectable` sources change:
+
+```
+/path/to/flutter-3.44.9/bin/dart run build_runner build --delete-conflicting-outputs
+# restore pubspec.lock if 3.44.9 rewrote it, then fvm flutter pub get
+python3 tool/data_safety/compare_generated.py
+```
+
+CI job **Generated files up to date** in `.github/workflows/pr-check.yml` installs Flutter 3.44.9, regenerates, and fails on a real diff. Registration-order-only changes in `lib/injection.config.dart` (`gh.factory` / `gh.lazySingleton` shuffled) are ignored; alias renumbering (`as _i174` vs `as _i200`) and added/removed registrations fail.
 
 ## Running
 

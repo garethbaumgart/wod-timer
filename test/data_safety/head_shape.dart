@@ -1,55 +1,130 @@
 import 'dart:io';
 
-import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
-import 'package:wod_timer/core/review/review_prompter.dart';
-import 'package:wod_timer/features/timer/application/setup/live_hints.dart';
-import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
-
 import 'fixture_io.dart';
 
-const _prefsPrefixes = <String>[
-  'app_',
-  'setup_',
-  'review_',
-  'hint_',
-  'watch_',
-  'wear_',
-  'recent_workouts',
-];
+final _constString = RegExp(
+  r'''(?:static\s+)?const\s+(?:String\s+)?([a-z_][A-Za-z0-9_]*)\s*=\s*(?:'([^']*)'|"([^"]*)")''',
+);
 
-bool _isPersistedKey(String value) =>
-    _prefsPrefixes.any((prefix) => value == prefix || value.startsWith(prefix));
+final _prefsCall = RegExp(
+  r'''\b(getInt|setInt|getBool|setBool|getString|setString|getDouble|setDouble|getStringList|setStringList|writeInt|readInt|_readInt|_readBool)\s*\(\s*(?:'([^']+)'|"([^"]+)"|([a-z_][A-Za-z0-9_]*))''',
+);
+
+final _writeMap = RegExp(r'_write\(\s*\{([^}]+)\}');
+
+final _writeEntry = RegExp(
+  r'''(?:'([^']+)'|"([^"]+)"|([a-z_][A-Za-z0-9_]*))\s*:\s*('[^']*'|"[^"]*"|true|false|[^,\n]+)''',
+);
+
+const _callType = <String, String>{
+  'getInt': 'int',
+  'setInt': 'int',
+  'writeInt': 'int',
+  'readInt': 'int',
+  '_readInt': 'int',
+  'getBool': 'bool',
+  'setBool': 'bool',
+  '_readBool': 'bool',
+  'getString': 'string',
+  'setString': 'string',
+  'getDouble': 'double',
+  'setDouble': 'double',
+  'getStringList': 'stringList',
+  'setStringList': 'stringList',
+};
 
 /// SharedPreferences keys HEAD's phone writers read/write, with types.
 ///
-/// Public production constants are used where they exist. Private
-/// `AppSettingsNotifier` keys are recovered from that file's `static const`
-/// + `getInt`/`setInt`/`getBool`/`setBool` usage so this map cannot drift
-/// from source without the guard failing.
+/// Walks every non-generated Dart file under `lib/` for prefs get/set calls
+/// and the const strings those calls use. A new key in an existing file or
+/// a brand-new library file fails the shape guard unless a new fixture is
+/// added. No hand-kept key list.
 Map<String, String> headPhoneKeyTypes() {
-  final root = packageRoot();
-  final scanned = dartPrefsKeyTypes(
-    File(
-      '${root.path}/lib/core/application/providers/app_settings_provider.dart',
-    ).readAsStringSync(),
-  );
-  return {
-    ...scanned,
-    AppSettingsNotifier.keySilentMigrated: 'bool',
-    SetupMemory.amrapDurationKey: 'int',
-    SetupMemory.forTimeCapKey: 'int',
-    SetupMemory.forTimeCountUpKey: 'bool',
-    SetupMemory.emomIntervalKey: 'int',
-    SetupMemory.emomRoundsKey: 'int',
-    SetupMemory.tabataWorkKey: 'int',
-    SetupMemory.tabataRestKey: 'int',
-    SetupMemory.tabataRoundsKey: 'int',
-    SetupMemory.lastModeKey: 'string',
-    LiveHints.countedRoundKey: 'bool',
-    ReviewPrompter.momentsKey: 'int',
-    ReviewPrompter.asksKey: 'int',
-    ReviewPrompter.lastAskedKey: 'int',
-  };
+  return scanLibPrefsKeyTypes(packageRoot());
+}
+
+Map<String, String> scanLibPrefsKeyTypes(Directory root) {
+  final files = libProductionDartFiles(root);
+  final types = <String, String>{};
+  for (final file in files) {
+    final source = file.readAsStringSync();
+    _collectPrefsTypes(source, _constBindings(source), types);
+  }
+  if (types.isEmpty) {
+    throw StateError('scanLibPrefsKeyTypes found no SharedPreferences keys');
+  }
+  return types;
+}
+
+List<File> libProductionDartFiles(Directory root) {
+  final lib = Directory('${root.path}/lib');
+  final files =
+      lib
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.dart'))
+          .where((file) => !file.path.endsWith('.g.dart'))
+          .where((file) => !file.path.endsWith('.freezed.dart'))
+          .where((file) => !file.path.endsWith('injection.config.dart'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+  return files;
+}
+
+Map<String, String> _constBindings(String text) {
+  final out = <String, String>{};
+  for (final match in _constString.allMatches(text)) {
+    final value = match.group(2) ?? match.group(3)!;
+    if (value.contains('.') || value.contains('/') || value.contains('\n')) {
+      continue;
+    }
+    out[match.group(1)!] = value;
+  }
+  return out;
+}
+
+void _collectPrefsTypes(
+  String text,
+  Map<String, String> constToKey,
+  Map<String, String> types,
+) {
+  for (final match in _prefsCall.allMatches(text)) {
+    final method = match.group(1)!;
+    final key = match.group(2) ?? match.group(3) ?? constToKey[match.group(4)];
+    if (key == null || key.isEmpty) {
+      continue;
+    }
+    _putType(types, key, _callType[method]!);
+  }
+
+  for (final mapMatch in _writeMap.allMatches(text)) {
+    for (final entry in _writeEntry.allMatches(mapMatch.group(1)!)) {
+      final key =
+          entry.group(1) ?? entry.group(2) ?? constToKey[entry.group(3)!];
+      if (key == null || key.isEmpty || types.containsKey(key)) {
+        continue;
+      }
+      _putType(types, key, _typeFromWriteValue(entry.group(4)!.trim()));
+    }
+  }
+}
+
+String _typeFromWriteValue(String value) {
+  if (value == 'true' || value == 'false' || value.endsWith('.countUp')) {
+    return 'bool';
+  }
+  if (value.startsWith("'") || value.startsWith('"')) {
+    return 'string';
+  }
+  return 'int';
+}
+
+void _putType(Map<String, String> types, String key, String type) {
+  final existing = types[key];
+  if (existing != null && existing != type) {
+    throw StateError('prefs key $key has both $existing and $type');
+  }
+  types[key] = type;
 }
 
 /// Watch UserDefaults scalar keys HEAD writes (JSON blobs are separate).
@@ -144,36 +219,18 @@ Set<String> headWearEncodePrefixes() => {
   'tabata:',
 };
 
-Map<String, String> dartPrefsKeyTypes(String text) {
-  final nameToKey = <String, String>{};
-  for (final match in RegExp(
-    r"static const (?:String )?(\w+) = '([^']+)';",
-  ).allMatches(text)) {
-    final name = match.group(1)!;
-    final key = match.group(2)!;
-    if (_isPersistedKey(key)) {
-      nameToKey[name] = key;
-    }
-  }
+const _prefsPrefixes = <String>[
+  'app_',
+  'setup_',
+  'review_',
+  'hint_',
+  'watch_',
+  'wear_',
+  'recent_workouts',
+];
 
-  final types = <String, String>{};
-  for (final entry in nameToKey.entries) {
-    final name = entry.key;
-    final key = entry.value;
-    if (RegExp(
-      '(getInt|setInt|writeInt|_readInt)\\(\\s*$name\\b',
-    ).hasMatch(text)) {
-      types[key] = 'int';
-    } else if (RegExp(
-      '(getBool|setBool|_readBool)\\(\\s*$name\\b',
-    ).hasMatch(text)) {
-      types[key] = 'bool';
-    } else if (RegExp('(getString|setString)\\(\\s*$name\\b').hasMatch(text)) {
-      types[key] = 'string';
-    }
-  }
-  return types;
-}
+bool _isPersistedKey(String value) =>
+    _prefsPrefixes.any((prefix) => value == prefix || value.startsWith(prefix));
 
 Map<String, String> swiftDefaultsKeyTypes(String text) {
   final nameToKey = <String, String>{};

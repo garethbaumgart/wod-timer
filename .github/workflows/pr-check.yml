@@ -42,6 +42,31 @@ jobs:
       - name: Data-safety gate
         run: scripts/data_safety_gate.sh
 
+  generated-files:
+    name: Generated files up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Codegen hangs on 3.47.7 (analyzer 7.6.0 missing
+      # visitDotShorthandPropertyAccess). Regenerating here on 3.44.9
+      # proves the committed *.g.dart / *.freezed.dart /
+      # injection.config.dart still match the annotated sources.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.9"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Regenerate
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Compare generated files
+        run: python3 tool/data_safety/compare_generated.py
+
   test-watchos:
     name: Build & Test watchOS
     runs-on: macos-15
