@@ -190,7 +190,7 @@ void _expectOriginalKeysPreserved(
     prefs.getBool(AppSettingsNotifier.keySilentMigrated),
     migratedAfterLoad,
   );
-  final extra = prefs.getKeys().difference(original.keys.toSet());
-  extra.remove(AppSettingsNotifier.keySilentMigrated);
+  final extra = prefs.getKeys().difference(original.keys.toSet())
+    ..remove(AppSettingsNotifier.keySilentMigrated);
   expect(extra, isEmpty, reason: 'unexpected keys $extra');
 }
