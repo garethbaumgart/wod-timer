@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Write committed data-safety fixtures from each shipped version's keys.
 
-Keys were read from that version's source (`git show <sha>:<file>`), not from
-HEAD, and `tool/data_safety/verify_fixtures.py` re-checks those literals at
-every catalog SHA. Re-run:
+Values are synthesized. Key lists are taken from each SHA's source
+(`git show`) and re-checked by `verify_fixtures.py`. Real Dart writers at
+each SHA are run via `capture_phone_worktree.py` (Flutter 3.44.9). Re-run:
 
     python3 tool/data_safety/generate_fixtures.py
 

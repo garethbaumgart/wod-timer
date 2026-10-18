@@ -29,11 +29,14 @@ Never edit an old fixture to make a test pass. If HEAD cannot read it, that is a
 
 ## Fixture provenance
 
-Phone fixtures are synthesized from the key literals at each shipped SHA (`git show <sha>:<file>`), with non-default values. `tool/data_safety/verify_fixtures.py` re-extracts those literals at every catalog commit and requires them to equal the fixture key set (minus the foreign `some_plugin_key`).
+Phone fixture *values* are synthesized (non-default, unicode/RTL on the foreign plugin key). The *key set and types* are proven two ways:
 
-Running the real shipped Dart writers *at each old tag* in a worktree is not feasible on this toolchain (see `tool/data_safety/capture_phone_worktree.py`): generated `*.g.dart` files were not in git, `AppSettingsNotifier` needs `riverpod_generator`, and `build_runner` hangs on Flutter 3.47.7 (`analyzer` 7.6.0 missing `visitDotShorthandPropertyAccess`). HEAD's writers **are** run in `phone_prefs_test.dart` against `SharedPreferences.setMockInitialValues`.
+1. `tool/data_safety/verify_fixtures.py` `git show`s persistence sources at each catalog SHA and requires those key literals to equal the fixture (minus `some_plugin_key`).
+2. `tool/data_safety/capture_phone_worktree.py` checks out each SHA in a worktree, runs `build_runner` on **Flutter 3.44.9**, then invokes that tag's real `AppSettingsNotifier` / `SetupMemory` / `LiveHints` / `PrefsReviewStore` writers. The resulting key→type map must match the fixture. This does not work on the FVM pin (3.47.7): `build_runner` hangs (`analyzer` 7.6.0 missing `visitDotShorthandPropertyAccess`).
 
-Watch JSON follows Swift `JSONEncoder` (`Date` = `timeIntervalSinceReferenceDate` since 2001-01-01 UTC; UUID uppercase). Wear strings are that version's `SetupMemory.encode`.
+HEAD writers are also run in `phone_prefs_test.dart` against `SharedPreferences.setMockInitialValues`.
+
+Watch JSON follows Swift `JSONEncoder` (`Date` = `timeIntervalSinceReferenceDate` since 2001-01-01 UTC; UUID uppercase). Wear strings are that version's `SetupMemory.encode`. The committed fixtures are not rewritten by the worktree capture.
 
 ## Code generation
 

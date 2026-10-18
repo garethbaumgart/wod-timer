@@ -1,39 +1,27 @@
 #!/usr/bin/env python3
-"""Try to run each shipped tag's Dart prefs writers in a git worktree.
+"""Run each shipped tag's Dart prefs writers in a git worktree.
 
-Committed phone fixtures are produced by generate_fixtures.py and
-cross-checked by verify_fixtures.py (git show of key literals at each
-SHA). This script records whether compiling those tags and invoking the
-real writers is feasible on the current toolchain.
+Codegen uses Flutter 3.44.9. `dart run build_runner` hangs on the FVM pin
+(Flutter 3.47.7 / analyzer 7.6.0 missing visitDotShorthandPropertyAccess),
+so this never invokes 3.47.7's dart for generation.
 
-It is not feasible here, and the script prints the exact failure for
-each SHA rather than pretending to regenerate fixtures:
+When codegen succeeds, a generated harness calls that tag's real
+AppSettingsNotifier / SetupMemory / LiveHints / PrefsReviewStore writers
+and prints the key→type map. That map is compared to the committed
+fixture (minus `some_plugin_key`). Fixtures are never overwritten.
 
-- Generated *.g.dart / *.freezed.dart / injection.config.dart were not
-  in git at those tags (they were gitignored).
-- AppSettingsNotifier is a @Riverpod class and cannot be constructed
-  without app_settings_provider.g.dart.
-- `dart run build_runner` hangs on Flutter 3.47.7 / Dart 3.13.5 because
-  analyzer 7.6.0 has no visitDotShorthandPropertyAccess (riverpod_generator
-  2.6). HEAD even comments that riverpod_generator 2.6 cannot parse the
-  3.47 SDK.
-- Older tags need a matching Flutter; this VM has 3.47.7 and 3.44.9.
-
-HEAD writers *are* exercised in test/data_safety/phone_prefs_test.dart
-(the capture test uses AppSettingsNotifier, SetupMemory, LiveHints, and
-PrefsReviewStore against SharedPreferences.setMockInitialValues).
+HEAD (2.2.1) writers are also covered by test/data_safety/phone_prefs_test.dart.
 
 Usage:
 
     python3 tool/data_safety/capture_phone_worktree.py
-    python3 tool/data_safety/capture_phone_worktree.py --sha 998f9e3
-
-Never writes into test/fixtures/data_safety/.
+    python3 tool/data_safety/capture_phone_worktree.py --sha 96c5a86
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -42,6 +30,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / "test" / "fixtures" / "data_safety"
+FOREIGN = "some_plugin_key"
 
 PHONE = [
     ("1.1.0", "3876b5bf597cc99732c2be575af79a6b71495373"),
@@ -55,16 +45,8 @@ PHONE = [
     ("2.2.1", "998f9e3b81597e228376ed31784a815e209a3591"),
 ]
 
-FLUTTER_347 = os.environ.get("FLUTTER_347", "/home/ubuntu/sdk/flutter")
-FLUTTER_344 = os.environ.get("FLUTTER_344", "/home/ubuntu/sdk/flutter-3.44.9")
-BUILD_RUNNER_TIMEOUT = int(os.environ.get("BUILD_RUNNER_TIMEOUT", "90"))
-
-
-def flutter_for(sha: str) -> Path:
-    """v2.2.1 is after the 3.47.7 bump (77b25a1); earlier tags use 3.44.9."""
-    if sha.startswith("998f9e3"):
-        return Path(FLUTTER_347)
-    return Path(FLUTTER_344)
+FLUTTER_344 = Path(os.environ.get("FLUTTER_344", "/home/ubuntu/sdk/flutter-3.44.9"))
+BUILD_RUNNER_TIMEOUT = int(os.environ.get("BUILD_RUNNER_TIMEOUT", "180"))
 
 
 def run(
@@ -96,20 +78,148 @@ def run(
         )
 
 
-def snippet(text: str, limit: int = 600) -> str:
+def snippet(text: str, limit: int = 800) -> str:
     text = text.strip()
     if len(text) <= limit:
         return text
     return text[:limit] + "\n…"
 
 
+def write_harness(work: Path, capture_path: Path) -> None:
+    has_setup = (work / "lib/features/timer/application/setup/setup_memory.dart").is_file()
+    has_hints = (work / "lib/features/timer/application/setup/live_hints.dart").is_file()
+    has_review = (work / "lib/core/review/review_prompter.dart").is_file()
+    setup_src = (
+        (work / "lib/features/timer/application/setup/setup_memory.dart").read_text(encoding="utf-8")
+        if has_setup
+        else ""
+    )
+    has_last_mode = "lastModeKey" in setup_src
+    settings_src = (
+        work / "lib/core/application/providers/app_settings_provider.dart"
+    ).read_text(encoding="utf-8")
+    has_set_sound = "setSoundEnabled" in settings_src
+
+    imports = [
+        "import 'dart:convert';",
+        "import 'dart:io';",
+        "",
+        "import 'package:flutter_riverpod/flutter_riverpod.dart';",
+        "import 'package:flutter_test/flutter_test.dart';",
+        "import 'package:shared_preferences/shared_preferences.dart';",
+        "import 'package:wod_timer/core/application/providers/app_settings_provider.dart';",
+    ]
+    if has_review:
+        imports.append(
+            "import 'package:wod_timer/core/review/review_prompter.dart';"
+        )
+    if has_hints:
+        imports.append(
+            "import 'package:wod_timer/features/timer/application/setup/live_hints.dart';"
+        )
+    if has_setup:
+        imports.append(
+            "import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';"
+        )
+        imports.append(
+            "import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';"
+        )
+
+    body: list[str] = [
+        "    TestWidgetsFlutterBinding.ensureInitialized();",
+        "    SharedPreferences.setMockInitialValues(<String, Object>{});",
+        "    final prefs = await SharedPreferences.getInstance();",
+        "    final container = ProviderContainer();",
+        "    addTearDown(container.dispose);",
+        "    container.read(appSettingsNotifierProvider);",
+        "    for (var i = 0; i < 10; i++) {",
+        "      await Future<void>.delayed(Duration.zero);",
+        "    }",
+        "    final notifier = container.read(appSettingsNotifierProvider.notifier);",
+        "    await notifier.setOrientationLock(OrientationLockMode.portrait);",
+        "    await notifier.setHapticEnabled(enabled: false);",
+        "    await notifier.setVoice(VoiceOption.values[1]);",
+    ]
+    if has_set_sound:
+        body += [
+            "    await notifier.setSoundEnabled(enabled: true);",
+            "    await notifier.setKeepScreenOn(enabled: false);",
+        ]
+    if has_setup:
+        body += [
+            "    final memory = SetupMemory(prefs);",
+            "    await memory.saveAmrap(const AmrapSetup(durationSeconds: 720));",
+            "    await memory.saveForTime(const ForTimeSetup(capSeconds: 900, countUp: false));",
+            "    await memory.saveEmom(const EmomSetup(intervalSeconds: 90, rounds: 12));",
+            "    await memory.saveTabata(const TabataSetup(workSeconds: 40, restSeconds: 20, rounds: 6));",
+        ]
+        if not has_last_mode:
+            pass
+    if has_hints:
+        body.append("    await LiveHints(prefs).markCountedRound();")
+    if has_review:
+        body += [
+            "    const store = PrefsReviewStore();",
+            "    await store.writeInt(ReviewPrompter.momentsKey, 1);",
+            "    await store.writeInt(ReviewPrompter.asksKey, 1);",
+            "    await store.writeInt(ReviewPrompter.lastAskedKey, 1);",
+        ]
+    body += [
+        "    await prefs.reload();",
+        "    final written = <String, String>{};",
+        "    for (final key in prefs.getKeys()) {",
+        "      final value = prefs.get(key);",
+        "      if (value is int) {",
+        "        written[key] = 'int';",
+        "      } else if (value is bool) {",
+        "        written[key] = 'bool';",
+        "      } else if (value is String) {",
+        "        written[key] = 'string';",
+        "      }",
+        "    }",
+        f"    File({json.dumps(str(capture_path))}).writeAsStringSync(jsonEncode(written));",
+        "    expect(written, isNotEmpty);",
+    ]
+
+    dart = "\n".join(
+        [
+            *imports,
+            "",
+            "void main() {",
+            "  test('capture phone writers', () async {",
+            *body,
+            "  });",
+            "}",
+            "",
+        ]
+    )
+    dest = work / "test" / "data_safety_capture_test.dart"
+    dest.write_text(dart, encoding="utf-8")
+
+
+def fixture_types(version: str) -> dict[str, str]:
+    data = json.loads((OUT / "phone" / version / "prefs.json").read_text(encoding="utf-8"))
+    types: dict[str, str] = {}
+    for key, spec in data["keys"].items():
+        if key == FOREIGN:
+            continue
+        if "int" in spec:
+            types[key] = "int"
+        elif "bool" in spec:
+            types[key] = "bool"
+        elif "string" in spec:
+            types[key] = "string"
+    return types
+
+
 def try_sha(version: str, sha: str) -> str:
-    flutter = flutter_for(sha)
+    flutter = FLUTTER_344
     dart = flutter / "bin" / "dart"
     if not dart.is_file():
         return f"{version} {sha[:12]}: SKIP no dart at {dart}"
 
     work = Path(tempfile.mkdtemp(prefix=f"ds-phone-{version}-"))
+    capture_path = work / "captured_shape.json"
     try:
         add = run(
             ["git", "worktree", "add", "--detach", str(work), sha],
@@ -128,13 +238,6 @@ def try_sha(version: str, sha: str) -> str:
             return (
                 f"{version} {sha[:12]}: FAIL flutter pub get "
                 f"({flutter})\n{snippet(pub.stderr or pub.stdout)}"
-            )
-
-        generated = work / "lib/core/application/providers/app_settings_provider.g.dart"
-        if generated.is_file():
-            return (
-                f"{version} {sha[:12]}: UNEXPECTED generated file present; "
-                "refusing to treat this as a historical tag capture"
             )
 
         codegen = run(
@@ -156,10 +259,34 @@ def try_sha(version: str, sha: str) -> str:
                 f"{snippet(codegen.stderr or codegen.stdout)}"
             )
 
+        write_harness(work, capture_path)
+        test = run(
+            [
+                str(flutter / "bin" / "flutter"),
+                "test",
+                "test/data_safety_capture_test.dart",
+            ],
+            cwd=work,
+            timeout=180,
+        )
+        if test.returncode != 0:
+            return (
+                f"{version} {sha[:12]}: FAIL writer harness\n"
+                f"{snippet(test.stderr or test.stdout)}"
+            )
+        if not capture_path.is_file():
+            return f"{version} {sha[:12]}: FAIL harness wrote no capture file"
+
+        captured = json.loads(capture_path.read_text(encoding="utf-8"))
+        expected = fixture_types(version)
+        if captured != expected:
+            return (
+                f"{version} {sha[:12]}: FAIL writer keys {json.dumps(captured, sort_keys=True)} "
+                f"!= fixture {json.dumps(expected, sort_keys=True)}"
+            )
         return (
-            f"{version} {sha[:12]}: build_runner succeeded, but this script "
-            "still does not overwrite committed fixtures (verify_fixtures.py "
-            "is the historical check; HEAD writers run in phone_prefs_test.dart)"
+            f"{version} {sha[:12]}: OK writers via Flutter 3.44.9 "
+            f"({len(captured)} keys+types match fixture)"
         )
     finally:
         subprocess.run(
@@ -183,15 +310,15 @@ def main() -> int:
             return 2
 
     print(
-        "capture_phone_worktree: will not write fixtures. "
-        "Probing whether each SHA's Dart writers can compile.\n"
+        "capture_phone_worktree: codegen on Flutter 3.44.9, then run that "
+        "tag's Dart writers. Does not write fixtures.\n"
     )
     status = 0
     for version, sha in targets:
         line = try_sha(version, sha)
         print(line)
         print()
-        if line.startswith(f"{version}") and "build_runner succeeded" not in line:
+        if ": OK " not in line:
             status = 1
     return status
 

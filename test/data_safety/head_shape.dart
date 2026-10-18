@@ -55,26 +55,25 @@ Map<String, String> headPhoneKeyTypes() {
 /// Watch UserDefaults scalar keys HEAD writes (JSON blobs are separate).
 Map<String, String> headWatchScalarKeyTypes() {
   final root = packageRoot();
-  final types = <String, String>{
-    ...swiftDefaultsKeyTypes(
-      File(
-        '${root.path}/ios/WODTimerWatch/Services/WatchAudioService.swift',
-      ).readAsStringSync(),
-    ),
-    ...swiftDefaultsKeyTypes(
-      File(
-        '${root.path}/ios/WODTimerWatch/Services/WatchWorkoutTracker.swift',
-      ).readAsStringSync(),
-    ),
-    ...swiftDefaultsKeyTypes(
-      File(
-        '${root.path}/ios/WODTimerWatch/Application/TimerViewModel.swift',
-      ).readAsStringSync(),
-    ),
-  };
-  types.remove('recent_workouts');
-  types.removeWhere((key, _) => key.startsWith('watch_setup_'));
-  return types;
+  return <String, String>{
+      ...swiftDefaultsKeyTypes(
+        File(
+          '${root.path}/ios/WODTimerWatch/Services/WatchAudioService.swift',
+        ).readAsStringSync(),
+      ),
+      ...swiftDefaultsKeyTypes(
+        File(
+          '${root.path}/ios/WODTimerWatch/Services/WatchWorkoutTracker.swift',
+        ).readAsStringSync(),
+      ),
+      ...swiftDefaultsKeyTypes(
+        File(
+          '${root.path}/ios/WODTimerWatch/Application/TimerViewModel.swift',
+        ).readAsStringSync(),
+      ),
+    }
+    ..remove('recent_workouts')
+    ..removeWhere((key, _) => key.startsWith('watch_setup_'));
 }
 
 Set<String> headWatchSetupKeys() => {
@@ -189,7 +188,7 @@ Map<String, String> swiftDefaultsKeyTypes(String text) {
 
   final types = <String, String>{};
   for (final match in RegExp(
-    r'"((?:watch_|recent_workouts)[^"]*)"',
+    '"((?:watch_|recent_workouts)[^"]*)"',
   ).allMatches(text)) {
     final raw = match.group(1)!;
     for (final key in _expandTemplatedKey(raw)) {

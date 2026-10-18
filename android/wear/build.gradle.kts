@@ -101,4 +101,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+    // Real JSON on the JVM. android.jar's org.json.JSONObject is stubbed
+    // (testOptions.unitTests.isReturnDefaultValues) and returns null.
+    testImplementation("com.google.code.gson:gson:2.13.1")
 }
