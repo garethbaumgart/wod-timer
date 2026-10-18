@@ -1,0 +1,56 @@
+[
+  {
+    "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+    "name": "EMOM 90s × 12 — Gareth's “wod”",
+    "timerType": {
+      "emom": {
+        "intervalDuration": {
+          "seconds": 15
+        },
+        "rounds": {
+          "value": 30
+        }
+      }
+    },
+    "prepCountdown": {
+      "seconds": 10
+    },
+    "createdAt": 805701600.0
+  },
+  {
+    "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+    "name": "AMRAP 💪 «Fran»\nsecond line",
+    "timerType": {
+      "amrap": {
+        "duration": {
+          "seconds": 1800
+        }
+      }
+    },
+    "prepCountdown": {
+      "seconds": 10
+    },
+    "createdAt": 812548800.0
+  },
+  {
+    "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+    "name": "Tabata «quotes» & rest",
+    "timerType": {
+      "tabata": {
+        "workDuration": {
+          "seconds": 5
+        },
+        "restDuration": {
+          "seconds": 120
+        },
+        "rounds": {
+          "value": 1
+        }
+      }
+    },
+    "prepCountdown": {
+      "seconds": 10
+    },
+    "createdAt": 813866400.0
+  }
+]

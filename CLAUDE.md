@@ -21,6 +21,10 @@ through the `mentalmetal-flutter-upgrade` skill only.
 - Timer correctness is sacred: any change to `TimerSession.tick` or
   `TimerNotifier` needs regression tests, including the large-delta
   (app-suspension) cases.
+- Any change to persisted data (schema, prefs keys, file formats) must add a
+  new fixture + data-safety test in the same PR; run `scripts/data_safety_gate.sh`
+  before any release; never edit an old fixture to make a test pass.
+  See `docs/data-safety.md`.
 
 ## Architecture
 

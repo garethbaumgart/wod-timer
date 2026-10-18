@@ -1,0 +1,10 @@
+{
+  "emom": {
+    "intervalDuration": {
+      "seconds": 75
+    },
+    "rounds": {
+      "value": 8
+    }
+  }
+}

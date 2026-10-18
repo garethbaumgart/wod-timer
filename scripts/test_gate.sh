@@ -48,6 +48,9 @@ fvm flutter analyze --no-fatal-infos --fatal-warnings
 step "fvm flutter test"
 fvm flutter test
 
+step "data-safety gate"
+scripts/data_safety_gate.sh
+
 if [[ "$RUN_WATCH" == "1" ]]; then
   if ! command -v xcodebuild >/dev/null 2>&1; then
     echo "xcodebuild not found; the watch XCTests need Xcode (pass --no-watch to skip)" >&2

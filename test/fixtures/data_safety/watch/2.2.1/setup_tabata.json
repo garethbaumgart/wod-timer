@@ -1,0 +1,13 @@
+{
+  "tabata": {
+    "workDuration": {
+      "seconds": 50
+    },
+    "restDuration": {
+      "seconds": 25
+    },
+    "rounds": {
+      "value": 4
+    }
+  }
+}

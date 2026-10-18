@@ -1,0 +1,43 @@
+{
+  "workouts": [
+    {
+      "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+      "name": "للوقت — For Time",
+      "code": "fortime",
+      "cap": 1500,
+      "countUp": true,
+      "prep": 10
+    },
+    {
+      "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+      "name": "Tabata «quotes» & rest",
+      "code": "tabata",
+      "work": 25,
+      "rest": 10,
+      "rounds": 8,
+      "prep": 10
+    },
+    {
+      "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+      "name": "AMRAP 💪 «Fran»\nsecond line",
+      "code": "amrap",
+      "seconds": 900,
+      "prep": 10
+    }
+  ],
+  "setup": {
+    "amrapSeconds": 900,
+    "forTimeCap": 1500,
+    "forTimeCountUp": true,
+    "emomInterval": 75,
+    "emomRounds": 8,
+    "tabataWork": 25,
+    "tabataRest": 10,
+    "tabataRounds": 8
+  },
+  "voicePack": "liam",
+  "random": false,
+  "muted": true,
+  "beeps": false,
+  "hintCounted": false
+}

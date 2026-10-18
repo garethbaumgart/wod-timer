@@ -1,0 +1,28 @@
+{
+  "workouts": [
+    {
+      "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+      "name": "AMRAP 💪 «Fran»\nsecond line",
+      "code": "amrap",
+      "seconds": 900,
+      "prep": 10
+    },
+    {
+      "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+      "name": "Tabata «quotes» & rest",
+      "code": "tabata",
+      "work": 20,
+      "rest": 10,
+      "rounds": 8,
+      "prep": 10
+    },
+    {
+      "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+      "name": "للوقت — For Time",
+      "code": "fortime",
+      "cap": 600,
+      "countUp": true,
+      "prep": 10
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "workouts": [
+    {
+      "id": "A1B2C3D4-E5F6-4789-A012-3456789ABCDE",
+      "name": "EMOM 90s × 12 — Gareth's “wod”",
+      "code": "emom",
+      "interval": 150,
+      "rounds": 16,
+      "prep": 10
+    },
+    {
+      "id": "B2C3D4E5-F6A7-4890-B123-456789ABCDEF",
+      "name": "للوقت — For Time",
+      "code": "fortime",
+      "cap": 720,
+      "countUp": false,
+      "prep": 10
+    },
+    {
+      "id": "C3D4E5F6-A7B8-4901-C234-56789ABCDEF0",
+      "name": "AMRAP 💪 «Fran»\nsecond line",
+      "code": "amrap",
+      "seconds": 2400,
+      "prep": 10
+    }
+  ],
+  "setup": {
+    "amrapSeconds": 2400,
+    "forTimeCap": 720,
+    "forTimeCountUp": false,
+    "emomInterval": 150,
+    "emomRounds": 16,
+    "tabataWork": 50,
+    "tabataRest": 25,
+    "tabataRounds": 4
+  },
+  "voicePack": "holly",
+  "random": false,
+  "muted": false,
+  "beeps": true,
+  "hintCounted": false,
+  "healthTrack": true
+}

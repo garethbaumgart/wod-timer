@@ -23,6 +23,7 @@
 		FE30B824E6AC4BBE9BE7A6CC /* WatchWorkoutTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47C225227384812837D2DBE /* WatchWorkoutTracker.swift */; };
 		4255535D6DC0419687E87F34 /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700973055FAD4093BC92337E /* HealthSettingsView.swift */; };
 		684A2221E7BA4335AA2ED0B9 /* WatchCueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136178B8DC947FDA01C3010 /* WatchCueTests.swift */; };
+		A11C0DA7A5AFEC7E57D01A01 /* DataSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C0DA7A5AFEC7E57D01A02 /* DataSafetyTests.swift */; };
 		54A7BFF23D9F1747AD830EBF /* TimerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE21D82289B4B986266474 /* TimerSession.swift */; };
 		5F78DFB6D597B4EF43EA6091 /* CompletedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC615A9EACD98FA91BC4AC6 /* CompletedView.swift */; };
 		6771046830EA52DABCC6ED48 /* WorkoutFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2EA5E5FE5AD22A30E29F6F5 /* WorkoutFactory.swift */; };
@@ -162,6 +163,7 @@
 		700973055FAD4093BC92337E /* HealthSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthSettingsView.swift; sourceTree = "<group>"; };
 		F290BBF0F5B34D5BBF216D03 /* WODTimerWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WODTimerWatch.entitlements; sourceTree = "<group>"; };
 		C136178B8DC947FDA01C3010 /* WatchCueTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchCueTests.swift; sourceTree = "<group>"; };
+		A11C0DA7A5AFEC7E57D01A02 /* DataSafetyTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DataSafetyTests.swift; sourceTree = "<group>"; };
 		D9FEB30C945EA3D887BF9A99 /* TabataSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TabataSetupView.swift; sourceTree = "<group>"; };
 		E13289430A010C3C7405AD9B /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "AppIcon40x40@2x.png"; sourceTree = "<group>"; };
@@ -285,6 +287,7 @@
 			isa = PBXGroup;
 			children = (
 				C136178B8DC947FDA01C3010 /* WatchCueTests.swift */,
+				A11C0DA7A5AFEC7E57D01A02 /* DataSafetyTests.swift */,
 			);
 			name = Application;
 			path = Application;
@@ -702,6 +705,7 @@
 				BCFB3849863CF329232927B5 /* TimerDurationTests.swift in Sources */,
 				67875F49467C688A79CC3C41 /* TimerSessionTests.swift in Sources */,
 				684A2221E7BA4335AA2ED0B9 /* WatchCueTests.swift in Sources */,
+				A11C0DA7A5AFEC7E57D01A01 /* DataSafetyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

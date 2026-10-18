@@ -1,0 +1,63 @@
+{
+  "app_version": "2.2.0-wear",
+  "commit": "190a6e4ee87011f786b982e386bf1068127cc2a0",
+  "keys": {
+    "wear_setup_amrap": {
+      "string": "amrap:720"
+    },
+    "wear_setup_fortime": {
+      "string": "fortime:900:0"
+    },
+    "wear_setup_emom": {
+      "string": "emom:90:12"
+    },
+    "wear_setup_tabata": {
+      "string": "tabata:40:20:6"
+    },
+    "wear_voice_pack": {
+      "string": "holly"
+    },
+    "wear_voice_random": {
+      "bool": true
+    },
+    "wear_voice_muted": {
+      "bool": false
+    },
+    "wear_voice_beeps": {
+      "bool": true
+    },
+    "wear_health_track": {
+      "bool": false
+    },
+    "wear_hint_amrap_counted": {
+      "bool": true
+    },
+    "wear_perm_asked": {
+      "bool": true
+    },
+    "some_plugin_key": {
+      "string": "keep me — «Gareth» 💪\nעברית العربية \"quotes\""
+    }
+  },
+  "expect": {
+    "amrap": "amrap:720",
+    "fortime": "fortime:900:0",
+    "emom": "emom:90:12",
+    "tabata": "tabata:40:20:6",
+    "amrapSeconds": 720,
+    "forTimeCap": 900,
+    "forTimeCountUp": false,
+    "emomInterval": 90,
+    "emomRounds": 12,
+    "tabataWork": 40,
+    "tabataRest": 20,
+    "tabataRounds": 6,
+    "voicePack": "holly",
+    "random": true,
+    "muted": false,
+    "beeps": true,
+    "healthTrack": false,
+    "hintCounted": true,
+    "permAsked": true
+  }
+}

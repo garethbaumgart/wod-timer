@@ -1,0 +1,8 @@
+{
+  "watch_voice_pack": "holly",
+  "watch_voice_random": false,
+  "watch_voice_muted": false,
+  "watch_voice_beeps": true,
+  "watch_hint_amrap_counted": false,
+  "watch_health_track": true
+}

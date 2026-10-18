@@ -1,0 +1,46 @@
+{
+  "app_version": "1.1.2",
+  "commit": "c0ffb0a5f772a0dd9efe6df93ff59f695e4ba1f7",
+  "keys": {
+    "app_orientation_lock": {
+      "int": 2
+    },
+    "app_haptic_enabled": {
+      "bool": true
+    },
+    "app_sound_enabled": {
+      "bool": false
+    },
+    "app_keep_screen_on": {
+      "bool": true
+    },
+    "app_voice": {
+      "int": 2
+    },
+    "some_plugin_key": {
+      "string": "keep me — «Gareth» 💪\nעברית العربية \"quotes\""
+    }
+  },
+  "expect": {
+    "orientationLock": "landscape",
+    "hapticEnabled": true,
+    "soundEnabled": false,
+    "keepScreenOn": true,
+    "voice": "silent",
+    "voiceIndexAfterLoad": 5,
+    "silentMigratedAfterLoad": true,
+    "amrapDurationSeconds": 600,
+    "forTimeCapSeconds": 1200,
+    "forTimeCountUp": true,
+    "emomIntervalSeconds": 60,
+    "emomRounds": 10,
+    "tabataWorkSeconds": 20,
+    "tabataRestSeconds": 10,
+    "tabataRounds": 8,
+    "lastMode": "fortime",
+    "hasCountedRound": false,
+    "reviewMoments": 0,
+    "reviewAsks": 0,
+    "reviewLastAskedMs": 0
+  }
+}
