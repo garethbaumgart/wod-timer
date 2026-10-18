@@ -5,12 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
-import 'package:wod_timer/core/persistence/storage_catalog.dart';
 import 'package:wod_timer/core/review/review_prompter.dart';
 import 'package:wod_timer/features/timer/application/setup/live_hints.dart';
+import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 
 import 'fixture_io.dart';
+import 'head_shape.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +133,55 @@ void main() {
       container.dispose();
     },
   );
+
+  test('HEAD writers emit the newest phone fixture keys and types', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await _loadSettings(container);
+    final notifier = container.read(appSettingsNotifierProvider.notifier);
+    await notifier.setOrientationLock(OrientationLockMode.portrait);
+    await notifier.setHapticEnabled(enabled: false);
+    await notifier.setVoice(VoiceOption.off);
+
+    final memory = SetupMemory(prefs);
+    await memory.saveAmrap(const AmrapSetup(durationSeconds: 720));
+    await memory.saveForTime(
+      const ForTimeSetup(capSeconds: 900, countUp: false),
+    );
+    await memory.saveEmom(const EmomSetup(intervalSeconds: 90, rounds: 12));
+    await memory.saveTabata(
+      const TabataSetup(workSeconds: 40, restSeconds: 20, rounds: 6),
+    );
+    await LiveHints(prefs).markCountedRound();
+
+    const store = PrefsReviewStore();
+    await store.writeInt(ReviewPrompter.momentsKey, 1);
+    await store.writeInt(ReviewPrompter.asksKey, 1);
+    await store.writeInt(ReviewPrompter.lastAskedKey, 1);
+    await prefs.reload();
+
+    final written = <String, String>{
+      for (final key in prefs.getKeys()) key: prefsRuntimeType(prefs.get(key)),
+    };
+    expect(
+      written,
+      headPhoneKeyTypes(),
+      reason: 'HEAD writers must emit every current phone key+type',
+    );
+
+    final newest = PhoneFixture.load(StorageCatalog.newestPhone);
+    final want = typedKeyTypes(newest.keys)..remove(foreignPluginKey);
+    expect(
+      written,
+      want,
+      reason:
+          'A new or changed phone key needs a new fixture directory. '
+          'See docs/data-safety.md.',
+    );
+  });
 }
 
 Future<AppSettings> _loadSettings(ProviderContainer container) async {

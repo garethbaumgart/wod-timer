@@ -4,7 +4,6 @@ library;
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wod_timer/core/persistence/storage_catalog.dart';
 
 import 'fixture_io.dart';
 

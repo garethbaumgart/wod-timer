@@ -1,7 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:wod_timer/core/persistence/storage_catalog.dart';
+import 'storage_catalog.dart';
+
+export 'storage_catalog.dart';
+
+/// A key no Wharf WOD build wrote. HEAD must leave it in place; it is not
+/// part of the HEAD ↔ newest-fixture shape comparison.
+const foreignPluginKey = 'some_plugin_key';
 
 /// Package root (the directory that holds pubspec.yaml).
 Directory packageRoot() {
@@ -19,17 +25,10 @@ Directory packageRoot() {
   return Directory.current;
 }
 
-String pubspecVersion() {
-  final yaml = File('${packageRoot().path}/pubspec.yaml').readAsStringSync();
-  final match = RegExp(
-    r'^version:\s*([0-9.]+)',
-    multiLine: true,
-  ).firstMatch(yaml);
-  if (match == null) {
-    throw StateError('pubspec.yaml has no version: line');
-  }
-  return match.group(1)!;
-}
+Directory fixturesRoot() =>
+    Directory('${packageRoot().path}/test/fixtures/data_safety');
+
+File fixtureManifestFile() => File('${fixturesRoot().path}/MANIFEST.sha256');
 
 File phonePrefsFile(ShippedStorageVersion version) => File(
   '${packageRoot().path}/test/fixtures/data_safety/phone/${version.directory}/prefs.json',
@@ -82,6 +81,63 @@ Map<String, Object> mockValuesFromTypedKeys(Map<String, dynamic> keys) {
     }
   }
   return out;
+}
+
+Map<String, String> typedKeyTypes(Map<String, dynamic> keys) {
+  final out = <String, String>{};
+  for (final entry in keys.entries) {
+    final spec = entry.value;
+    if (spec is! Map) {
+      throw StateError('${entry.key} is not a typed value');
+    }
+    if (spec.containsKey('int')) {
+      out[entry.key] = 'int';
+    } else if (spec.containsKey('bool')) {
+      out[entry.key] = 'bool';
+    } else if (spec.containsKey('string')) {
+      out[entry.key] = 'string';
+    } else {
+      throw StateError('${entry.key} has no int/bool/string');
+    }
+  }
+  return out;
+}
+
+Map<String, String> jsonScalarTypes(Map<String, dynamic> values) {
+  final out = <String, String>{};
+  for (final entry in values.entries) {
+    final value = entry.value;
+    if (value is int) {
+      out[entry.key] = 'int';
+    } else if (value is bool) {
+      out[entry.key] = 'bool';
+    } else if (value is String) {
+      out[entry.key] = 'string';
+    } else if (value is double) {
+      out[entry.key] = 'double';
+    } else {
+      throw StateError(
+        '${entry.key} has unsupported scalar ${value.runtimeType}',
+      );
+    }
+  }
+  return out;
+}
+
+String prefsRuntimeType(Object? value) {
+  if (value is int) {
+    return 'int';
+  }
+  if (value is bool) {
+    return 'bool';
+  }
+  if (value is String) {
+    return 'string';
+  }
+  if (value is double) {
+    return 'double';
+  }
+  throw StateError('unsupported prefs type ${value.runtimeType}');
 }
 
 class PhoneFixture {

@@ -15,8 +15,9 @@
 #
 #   fvm flutter test integration_test/ux_review_tour_test.dart -d <device>
 #
-# Toolchain: Flutter via fvm (the .fvmrc pin). Never run build_runner: the
-# generated *.g.dart / *.freezed.dart files are copied in and gitignored.
+# Toolchain: Flutter via fvm (the .fvmrc pin). Do not run build_runner on
+# 3.47.7: analyzer 7.6.0 hangs (missing visitDotShorthandPropertyAccess).
+# Generated *.g.dart / *.freezed.dart / injection.config.dart are committed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

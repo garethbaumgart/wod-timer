@@ -7,13 +7,16 @@ pluginManagement {
         flutterSdkPath
     }
 
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
+    // Repositories must be declared before includeBuild so the Flutter
+    // gradle plugin's `kotlin-dsl` 5.2.0 can resolve from the plugin portal.
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven { url = uri("https://plugins.gradle.org/m2/") }
     }
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 }
 
 plugins {

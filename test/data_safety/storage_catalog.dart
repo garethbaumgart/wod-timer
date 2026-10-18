@@ -1,14 +1,11 @@
 /// Shipped SharedPreferences / UserDefaults shapes that must keep loading.
 ///
-/// Bump [currentAppVersion] in the same PR as pubspec `version:`, add a
-/// fixture under `test/fixtures/data_safety/`, and extend the data-safety
-/// tests. The guard in `test/data_safety/guard_test.dart` fails if you skip
-/// that. Never edit an old fixture to make a test pass.
+/// Test-only. Lists are oldest → newest; the last entry is the storage shape
+/// HEAD must still write. Adding or changing a key requires a **new** fixture
+/// directory and a new [ShippedStorageVersion] — never edit an old fixture,
+/// and never gate on pubspec `version:` (ship.sh bumps that after the gate).
 class StorageCatalog {
   StorageCatalog._();
-
-  /// Must match the `version:` line in pubspec.yaml (no build number).
-  static const currentAppVersion = '2.2.1';
 
   /// Phone/tablet SharedPreferences shapes that shipped to the stores.
   ///
@@ -119,6 +116,10 @@ class StorageCatalog {
       commitSha: '998f9e3b81597e228376ed31784a815e209a3591',
     ),
   ];
+
+  static ShippedStorageVersion get newestPhone => phoneVersions.last;
+  static ShippedStorageVersion get newestWatch => watchVersions.last;
+  static ShippedStorageVersion get newestWear => wearVersions.last;
 }
 
 /// One storage shape that reached users (or, for Wear, a watch-only tag).
