@@ -70,10 +70,11 @@ class MainActivity : ComponentActivity() {
         val workoutRunning = app.timer.phase != TimerState.READY
         val backStack by nav.currentBackStackEntryAsState()
         val onLive = backStack?.destination?.route == "live"
-        // The one permission ask, when Home first shows (as the Apple Watch app does with Health).
+        // The one permission ask, when Home first shows (as the Apple Watch app does with Health):
+        // the health foreground service that keeps the timer alive needs it, recording or not.
         LaunchedEffect(Unit) {
             val store = app.store
-            if (app.tracker.enabled && !app.tracker.hasPermission && !store.getBoolean("wear_perm_asked", false)) {
+            if (!app.tracker.hasPermission && !store.getBoolean("wear_perm_asked", false)) {
                 store.putBoolean("wear_perm_asked", true)
                 requestPermissions()
             }
