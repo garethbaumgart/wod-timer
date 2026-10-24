@@ -38,6 +38,8 @@ enum CaptureScene: String, CaseIterable {
     case homeScrolled = "home-scrolled"
     case setupAmrap = "setup-amrap", setupForTime = "setup-fortime"
     case setupEmom = "setup-emom", setupTabata = "setup-tabata"
+    /// Spike: opens the remembered EMOM / Tabata in the Workout app on appear.
+    case handoffEmom = "handoff-emom", handoffTabata = "handoff-tabata"
     case livePrep = "live-prep", liveAmrap = "live-amrap"
     case livePrepForTime = "live-prep-fortime", livePrepEmom = "live-prep-emom"
     case livePrepTabata = "live-prep-tabata"
@@ -77,8 +79,8 @@ struct CaptureRoot: View {
         case .health: HealthSettingsView(tracker: HealthWorkoutTracker())
         case .setupAmrap: AmrapSetupView(viewModel: viewModel)
         case .setupForTime: ForTimeSetupView(viewModel: viewModel)
-        case .setupEmom: EmomSetupView(viewModel: viewModel)
-        case .setupTabata: TabataSetupView(viewModel: viewModel)
+        case .setupEmom, .handoffEmom: EmomSetupView(viewModel: viewModel)
+        case .setupTabata, .handoffTabata: TabataSetupView(viewModel: viewModel)
         default:
             if ready { ActiveTimerView(viewModel: viewModel) } else { Color.black }
         }
@@ -95,6 +97,11 @@ struct CaptureRoot: View {
             viewModel.audio.setBeepsOnly(false)
             viewModel.audio.setRandomizePerCue(false)
             viewModel.audio.setVoicePack(.major)
+        case .handoffEmom, .handoffTabata:
+            let type = SetupMemory().type(scene == .handoffEmom ? "emom" : "tabata")
+            Task { @MainActor in
+                do { try await WorkoutHandoff.open(type) } catch { print("handoff: \(WorkoutHandoff.message(for: error))") }
+            }
         case .livePrep: run(Workout.defaultAmrap(), 4)
         case .livePrepForTime: run(Workout.defaultForTime(), 4)
         case .livePrepEmom: run(Workout.defaultEmom(), 4)

@@ -54,6 +54,9 @@ struct EmomSetupView: View {
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))
                 showingTimer = viewModel.session?.state != .ready
             }
+            // Spike (24 Oct 2026): the same WOD run by Apple's Workout app.
+            RunInWorkoutButton(type: type)
+                .padding(.top, CapsuleGeometry.gap)
         }
         .padding(.horizontal, CapsuleGeometry.sideMargin)
         .padding(.bottom, CapsuleGeometry.bottomMargin)

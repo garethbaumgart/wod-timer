@@ -65,9 +65,9 @@ fun HomeScreen(app: WodApp, onMode: (String) -> Unit, onVoice: () -> Unit, onHea
 }
 
 fun healthLabel(tracker: ExerciseTracker): String = when {
-    !tracker.enabled -> "Off"
     !tracker.hasPermission -> "Not allowed"
-    else -> "On"
+    tracker.recordWorkout -> "Records"
+    else -> "Timer only"
 }
 
 @Composable
@@ -294,12 +294,17 @@ private fun ChoiceRow(name: String, detail: String, selected: Boolean, accent: C
 
 // MARK: Health
 
-/** Health: the session that keeps the timer alive when the wrist drops. One switch, what it does, and where the permission stands. */
+/**
+ * Health (24 Oct 2026): the timer runs on its own by default and stays out
+ * of the way of a workout another app is recording. One opt-in switch makes
+ * the WOD the watch's recognised exercise, then where the permission stands
+ * (the foreground service that keeps the timer alive needs it either way).
+ */
 @Composable
 fun HealthScreen(tracker: ExerciseTracker, requestPermissions: () -> Unit) {
     val state = rememberScalingLazyListState()
     var version by remember { mutableIntStateOf(0) }
-    val enabled = run { version; tracker.enabled }
+    val enabled = run { version; tracker.recordWorkout }
     val allowed = run { version; tracker.hasPermission }
     ScalingLazyColumn(state = state, modifier = Modifier.fillMaxSize().background(Color.Black)) {
         item { Caption("HEALTH", color = Palette.brand, size = 12.sp, modifier = Modifier.padding(top = 4.dp)) }
@@ -309,14 +314,14 @@ fun HealthScreen(tracker: ExerciseTracker, requestPermissions: () -> Unit) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(Palette.soft)
-                    .clickable { tracker.setEnabled(!enabled); version++ }
-                    .semantics { contentDescription = "Track workouts, ${if (enabled) "on" else "off"}" }
+                    .clickable { tracker.setRecordWorkout(!enabled); version++ }
+                    .semantics { contentDescription = "Record as workout, ${if (enabled) "on" else "off"}" }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Track workouts", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text("Runs the timer as a workout", color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text("Record as workout", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text("Off: timer only", color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
                 Box(
                     Modifier.size(width = 34.dp, height = 20.dp).clip(RoundedCornerShape(50))
@@ -329,25 +334,23 @@ fun HealthScreen(tracker: ExerciseTracker, requestPermissions: () -> Unit) {
         }
         item {
             Text(
-                if (enabled) "Keeps the clock, beeps and taps going while your wrist is down, and shows the workout on the watch face."
-                else "Off: the timer only runs while it is on screen, so cues stop when your wrist drops.",
+                if (enabled) "GO starts an exercise, so the watch counts the WOD as a workout. Stays out of the way if another app is already recording one."
+                else "The timer keeps going while your wrist is down, and a workout you are recording in another app keeps going too.",
                 color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
-        if (enabled) {
+        item {
+            Text(
+                if (allowed) "Activity access: allowed" else "Activity access: not allowed yet, so the timer stops when the wrist drops",
+                color = if (allowed) Palette.label else Palette.error, fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
+        if (!allowed) {
             item {
-                Text(
-                    if (allowed) "Activity access: allowed" else "Activity access: not allowed yet",
-                    color = if (allowed) Palette.label else Palette.error, fontSize = 11.sp, fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                )
-            }
-            if (!allowed) {
-                item {
-                    CapsuleButton("ALLOW", fill = Palette.primary, text = Color.Black, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-                        requestPermissions(); version++
-                    }
+                CapsuleButton("ALLOW", fill = Palette.primary, text = Color.Black, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    requestPermissions(); version++
                 }
             }
         }
