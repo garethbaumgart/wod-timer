@@ -58,3 +58,19 @@ GO and stays out of its way (`getCurrentExerciseInfoAsync`).
   blocks per mode, activity types, names, the modes not composed yet.
 - `android/wear/.../services/ExerciseTrackerPolicyTest.kt`: the default, the
   old key ignored, the one-exercise guard.
+
+## Verdict (24 Oct 2026, Gareth's Ultra 2, build 25)
+
+RUN IN WORKOUT and Tabata work as expected; dimming and wrist raise behave
+(our app when nothing runs, the Workout app while the handed-off workout
+runs). With an Apple workout already running, RUN IN WORKOUT only brings
+that workout forward (the plan is not started) and our own START timer
+loses the wrist on raise to the Apple workout: Apple Watch runs one workout
+session at a time and the Workout app's keeps priority. A WOD cannot be put
+inside a workout the Workout app is already recording; the routes are to
+compose the whole class as one custom workout (open warm-up and cooldown,
+advanced by hand) or to end the Apple workout first.
+
+Decision: the hand-off stays the secondary capsule, our timer stays the
+default, and 2.3.0 ships as it is. Next: ideate a whole-WOD session
+(Tabata + EMOM + strength blocks in one workout).
