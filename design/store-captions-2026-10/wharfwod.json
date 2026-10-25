@@ -1,0 +1,34 @@
+{
+ "app": "wharfwod",
+ "_note": "Run caption_compose.py from the wod-timer repo root: raw_dir, fonts and icon are repo-relative.",
+ "raw_dir": "design/store-captions-2026-10/raw",
+ "fonts": {"head": "assets/fonts/Outfit-ExtraBold.ttf", "body": "assets/fonts/Outfit-Medium.ttf", "accent": null},
+ "style": {"bg": "#0b0b0f", "fg": "#ffffff", "muted": "#ffffff", "accent": "#1dff6a", "shadow": "#000000", "radius": 60,
+           "icon": "design/store-captions-2026-10/raw/icon_512.png"},
+ "frames": [
+  {"id": "01", "raw": "APP_IPHONE_67_04.png", "style": {"fg": "#1dff6a"}},
+  {"id": "02", "raw": "APP_IPHONE_67_01.png", "style": {"bg": "#ff7a1a", "fg": "#0b0b0f", "muted": "#0b0b0f"}},
+  {"id": "03", "raw": "APP_IPHONE_67_07.png", "style": {"fg": "#ff4fa3"}},
+  {"id": "04", "raw": "APP_IPHONE_67_03.png", "style": {"fg": "#ff7a1a"}},
+  {"id": "05", "raw": "APP_IPHONE_67_05.png", "style": {"fg": "#1dff6a"}},
+  {"id": "06", "raw": "APP_IPHONE_67_06.png", "style": {"fg": "#ff4fa3"}},
+  {"id": "07", "raw": "APP_IPHONE_67_02.png", "style": {"fg": "#35a4ff"}},
+  {"id": "08", "raw": "APP_IPHONE_67_08.png", "style": {"fg": "#ff7a1a"}},
+  {"id": "09", "raw": "APP_IPHONE_67_09.png", "style": {"fg": "#1dff6a"}},
+  {"id": "10", "raw": "APP_IPHONE_67_10.png", "style": {"fg": "#ff4fa3"}}
+ ],
+ "text": {"en-US": {
+  "01": {"headline": "Readable from\nacross the gym", "proof": "Giant numbers. Voice-coached rounds.\nBeeps over the music.",
+         "feature_headline": "Readable from\nacross the gym.",
+         "feature_proof": "Voice-coached EMOM, AMRAP, Tabata and For Time. Phone, tablet, watch."},
+  "02": {"headline": "EMOM · AMRAP\nTabata · For Time", "proof": "Set up in two taps. Round changes called out."},
+  "03": {"headline": "On your wrist too", "proof": "Apple Watch and Wear OS.\nHand an EMOM to Apple's Workout app."},
+  "04": {"headline": "Count up\nor count down", "proof": "For Time with a cap. Flip the toggle, hit START."},
+  "05": {"headline": "Three voices\nor just beeps", "proof": "Major, Liam or Holly.\nCues play through the silent switch."},
+  "06": {"headline": "Green means work.\nPink means rest.", "proof": "Colour-coded phases. A haptic hit on every change."},
+  "07": {"headline": "One glance.\nTime and round.", "proof": "Tap the screen to count a round.\nThe bar shows what's left."},
+  "08": {"headline": "Finish. Read it.\nGo again.", "proof": "Your time in giant digits.\nAGAIN reruns the same workout."},
+  "09": {"headline": "Stays awake.\nStays exact.", "proof": "Screen stays on. Lock it or switch apps,\nthe clock holds."},
+  "10": {"headline": "No account.\nNo ads. No clutter.", "proof": "Pick a format, set the time, hit START.\nThen just work."}
+ }}
+}
