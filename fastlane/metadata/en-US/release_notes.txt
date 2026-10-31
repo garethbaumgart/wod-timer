@@ -1,1 +1,1 @@
-Apple Watch: a new RUN IN WORKOUT button under START on EMOM and Tabata hands the workout to Apple's Workout app, which runs the intervals with its own heart rate, calories and alerts. Your usual START timer is unchanged.
+Under-the-hood updates, plus small fixes and polish.
