@@ -1,6 +1,7 @@
 import HealthKit
 import SwiftUI
 import UserNotifications
+import WatchKit
 import XCTest
 @testable import WODTimerWatch
 
@@ -79,6 +80,11 @@ private func emom(_ interval: Int, _ rounds: Int) -> TimerType {
 
 private func tabata(_ work: Int, _ rest: Int, _ rounds: Int) -> TimerType {
     .tabata(workDuration: seconds(work), restDuration: seconds(rest), rounds: RoundCount(value: rounds))
+}
+
+/// The workout clock the view model's session reads, in seconds.
+private func clock(_ vm: TimerViewModel) -> TimeInterval {
+    WristAlertPlan.workoutClock(vm.session!) ?? 0
 }
 
 /// Drives the real tick path in 100ms steps.
@@ -170,7 +176,13 @@ final class WristAlertViewModelTests: XCTestCase {
         vm.start(workout: workout(emom(5, 3)))
         XCTAssertEqual(tracker.calls, ["begin", "go"])
         XCTAssertEqual(alerts.pending.map(\.alert.title), ["Round 2 of 3", "Last round", "Finished"])
-        XCTAssertEqual(alerts.pending[0].delay, 5, accuracy: 0.05)
+        // The plan is made from the clock as it reads at that instant, so
+        // the delay is 5s less whatever the test machine took since START.
+        XCTAssertEqual(alerts.pending[0].delay, 5, accuracy: 0.5)
+        let shift = 5 - alerts.pending[0].delay
+        for (scheduled, at) in zip(alerts.pending, [5.0, 10.0, 15.0]) {
+            XCTAssertEqual(scheduled.delay, at - shift, accuracy: 0.001)
+        }
         XCTAssertEqual(vm.wristCueState, .alerts)
         XCTAssertNil(vm.sessionNote)
     }
@@ -179,11 +191,12 @@ final class WristAlertViewModelTests: XCTestCase {
         let (vm, _, alerts) = makeViewModel(status: .off)
         vm.start(workout: workout(emom(5, 2), prep: 3))
         XCTAssertEqual(alerts.pending.map(\.alert.title), ["Last round", "Finished"])
-        XCTAssertEqual(alerts.pending[0].delay, 8, accuracy: 0.05)
+        XCTAssertEqual(alerts.pending[0].delay, 8, accuracy: 0.5)
         // Skipping the countdown moves every alert up.
         vm.skipPrep()
         XCTAssertEqual(vm.phase, .running)
-        XCTAssertEqual(alerts.pending[0].delay, 5, accuracy: 0.05)
+        XCTAssertEqual(alerts.pending[0].delay, 5, accuracy: 0.5)
+        XCTAssertLessThan(alerts.pending[0].delay, 5.001)
     }
 
     func testARunningSessionNeedsNoAlerts() {
@@ -202,7 +215,10 @@ final class WristAlertViewModelTests: XCTestCase {
         XCTAssertTrue(alerts.pending.isEmpty, "a paused timer never rings")
         vm.resume()
         XCTAssertEqual(alerts.pending.map(\.alert.title), ["Round 2 of 3", "Last round", "Finished"])
-        XCTAssertEqual(alerts.pending[0].delay, 3, accuracy: 0.1)
+        // Pausing caught the session up to the wall clock first, so the
+        // replan counts from the session's own clock (about 2s in).
+        XCTAssertEqual(alerts.pending[0].delay, 5 - clock(vm), accuracy: 0.05)
+        XCTAssertEqual(alerts.pending[0].delay, 3, accuracy: 0.5)
     }
 
     func testStopFinishAndTheEndCancelTheAlerts() {
@@ -239,7 +255,7 @@ final class WristAlertViewModelTests: XCTestCase {
         XCTAssertTrue(alerts.scheduled.isEmpty)
         tracker.status = .takenOver
         XCTAssertEqual(alerts.pending.first?.alert.title, "Round 4 of 10")
-        XCTAssertEqual(alerts.pending[0].delay, 50, accuracy: 0.1)
+        XCTAssertEqual(alerts.pending[0].delay, 50, accuracy: 0.5)
         XCTAssertEqual(alerts.pending.last?.alert.title, "Finished")
         XCTAssertEqual(vm.wristCueState, .alerts)
         XCTAssertEqual(vm.sessionLostAt, 130)
@@ -312,5 +328,19 @@ final class SessionStateTests: XCTestCase {
         XCTAssertEqual(HealthSettingsView.alertsLine(.allowed), "Alerts: allowed")
         XCTAssertEqual(StayOnScreenView.steps.count, 4)
         XCTAssertTrue(StayOnScreenView.steps[1].contains("Return to Clock"))
+    }
+}
+
+final class WatchAppDelegateTests: XCTestCase {
+    /// WatchKit and UserNotifications call these by selector, so a
+    /// misspelt method would compile and never run.
+    func testTheDelegateAnswersTheSystemsSelectors() {
+        let delegate = WatchAppDelegate()
+        XCTAssertTrue(delegate.responds(to: #selector(WKApplicationDelegate.applicationDidFinishLaunching)))
+        XCTAssertTrue(delegate.responds(to: #selector(WKApplicationDelegate.handleActiveWorkoutRecovery)))
+        XCTAssertTrue(delegate.responds(
+            to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))
+        ))
+        XCTAssertTrue(delegate.conforms(to: UNUserNotificationCenterDelegate.self))
     }
 }
