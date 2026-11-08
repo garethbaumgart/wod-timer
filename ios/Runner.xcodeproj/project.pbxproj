@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		84C6AECD039243D7BBCD4CDE /* AppIcon40x40@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */; };
-		AA10EMBEDWATCH0000000001 /* WODTimerWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B4250CE524A45DCF1D4A4BEF /* WODTimerWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		01622E3E9F23251B4F0D371A /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 132E64E7768E363C5BCEDAE8 /* Pods_Runner.framework */; };
 		0AA83DFFE0F067E26335DD9F /* RoundCountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119156B33EE114893DAD865E /* RoundCountTests.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -17,24 +15,27 @@
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		38D2783F9C4866F99B7B2352 /* RoundCount.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD2C2213820C00C804E5B35A /* RoundCount.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3C65065F24E5E4A003ADFA3F /* WorkoutHandoffTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654D530162CA84B95CC1CA49 /* WorkoutHandoffTests.swift */; };
+		4255535D6DC0419687E87F34 /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700973055FAD4093BC92337E /* HealthSettingsView.swift */; };
+		444B59320F30CC3823E09601 /* StayOnScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E4FFDADA68081CCD689BF8 /* StayOnScreenView.swift */; };
 		4809E02A120296CF260FE339 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72B5592E9BBC0B382D4FEB4C /* Foundation.framework */; };
+		4B66C7FE9359B1A637C68002 /* WristAlertTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C229E166B985AFF4FE85FC66 /* WristAlertTests.swift */; };
 		4E4D226B88BFE4BB1AA01588 /* WODTimerWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECDA17D450854F2CC8163106 /* WODTimerWatchApp.swift */; };
 		4F1C1330BF3AF2408AB7C43B /* audio in Resources */ = {isa = PBXBuildFile; fileRef = D889A11A6B6C33B724EE9CAE /* audio */; };
-		FE30B824E6AC4BBE9BE7A6CC /* WatchWorkoutTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47C225227384812837D2DBE /* WatchWorkoutTracker.swift */; };
-		3C65065F24E5E4A003ADFA3F /* WorkoutHandoffTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654D530162CA84B95CC1CA49 /* WorkoutHandoffTests.swift */; };
-		A77E88731B827196F6FE5098 /* RunInWorkoutButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A67077B794C6C985581A275D /* RunInWorkoutButton.swift */; };
-		87E2B875E09BF2B12EE8BC55 /* WorkoutHandoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF1D7BD7B5E6975CFC3ABFC /* WorkoutHandoff.swift */; };
-		4255535D6DC0419687E87F34 /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700973055FAD4093BC92337E /* HealthSettingsView.swift */; };
-		684A2221E7BA4335AA2ED0B9 /* WatchCueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136178B8DC947FDA01C3010 /* WatchCueTests.swift */; };
 		54A7BFF23D9F1747AD830EBF /* TimerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE21D82289B4B986266474 /* TimerSession.swift */; };
 		5F78DFB6D597B4EF43EA6091 /* CompletedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC615A9EACD98FA91BC4AC6 /* CompletedView.swift */; };
+		61EEFCA2402B5C3DD7F24F2C /* WristAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF30276BC6D4F370D7C3DB9 /* WristAlerts.swift */; };
 		6771046830EA52DABCC6ED48 /* WorkoutFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2EA5E5FE5AD22A30E29F6F5 /* WorkoutFactory.swift */; };
 		67875F49467C688A79CC3C41 /* TimerSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 717D2486DACDA43C89A63F90 /* TimerSessionTests.swift */; };
 		67F1C90D2EE562578808D9D1 /* TimerDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CB4A9D61794AAA7A89B2A0D /* TimerDuration.swift */; };
+		684A2221E7BA4335AA2ED0B9 /* WatchCueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136178B8DC947FDA01C3010 /* WatchCueTests.swift */; };
 		68BC7BEBBA643D262360E6B1 /* TimerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 871141C413176D95D3506687 /* TimerError.swift */; };
 		72E478DDD1B1917AB2D03052 /* TimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF24BD6AFEF4C71FBBFC3DFD /* TimerState.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		838FFB81A48EC3B8189234FB /* WristAlertPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCED54B73C34906F91024E45 /* WristAlertPlan.swift */; };
+		84C6AECD039243D7BBCD4CDE /* AppIcon40x40@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */; };
 		855FFBFF3563F14E4CFAA2D1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F168591883E7BA44AA243E7F /* Assets.xcassets */; };
+		87E2B875E09BF2B12EE8BC55 /* WorkoutHandoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF1D7BD7B5E6975CFC3ABFC /* WorkoutHandoff.swift */; };
 		8A6099029411AFEE96CAF748 /* WatchAudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D2B29A192C7988114CCC97E /* WatchAudioService.swift */; };
 		8AF2FA67A7C4BA1701F114D0 /* EmomSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7118FCDEA46ABB34461485 /* EmomSetupView.swift */; };
 		9544D6CC14C1CF444284D393 /* PhaseBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4166CD0CA80CAE393AB4DA /* PhaseBadge.swift */; };
@@ -42,6 +43,8 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		A77E88731B827196F6FE5098 /* RunInWorkoutButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A67077B794C6C985581A275D /* RunInWorkoutButton.swift */; };
+		AA10EMBEDWATCH0000000001 /* WODTimerWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B4250CE524A45DCF1D4A4BEF /* WODTimerWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA311720158B7FB6FB294D27 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F50DA5261B988ABA2357CC5E /* HomeView.swift */; };
 		B4D1934567B25B2863A7E213 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F7E160BC4B6BF84728CA0AF /* Pods_RunnerTests.framework */; };
 		B5200C5D869C2337F6D52F48 /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836C01C9EB22E1EF50AD1F28 /* TimerViewModel.swift */; };
@@ -57,16 +60,10 @@
 		F683269213ECB9542BC4FA89 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 104D5726E3F21B882722E1D8 /* TimerEngine.swift */; };
 		FBC9D124509E2ED517FB2E8E /* CircularProgressRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD923D803A6A60674DDB3CF4 /* CircularProgressRing.swift */; };
 		FC38C23687F04EAF5A59D0A2 /* TimerDisplayText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF42CADBFCD0613B14C1292 /* TimerDisplayText.swift */; };
+		FE30B824E6AC4BBE9BE7A6CC /* WatchWorkoutTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47C225227384812837D2DBE /* WatchWorkoutTracker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		AA10EMBEDWATCH0000000003 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 31A572DEDEC401EC162B570B;
-			remoteInfo = WODTimerWatch;
-		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -81,9 +78,26 @@
 			remoteGlobalIDString = 31A572DEDEC401EC162B570B;
 			remoteInfo = WODTimerWatch;
 		};
+		AA10EMBEDWATCH0000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 31A572DEDEC401EC162B570B;
+			remoteInfo = WODTimerWatch;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA10EMBEDWATCH0000000002 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -93,16 +107,6 @@
 				AA10EMBEDWATCH0000000001 /* WODTimerWatch.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -123,6 +127,7 @@
 		30AE21D82289B4B986266474 /* TimerSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerSession.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "AppIcon40x40@2x.png"; sourceTree = "<group>"; };
 		3A4166CD0CA80CAE393AB4DA /* PhaseBadge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhaseBadge.swift; sourceTree = "<group>"; };
 		3A5083DFE8981F17EDD5C3CA /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
@@ -131,7 +136,10 @@
 		42A02274E4350620D506DDC6 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C0FAC003F1F1F7D0314994D /* ActiveTimerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActiveTimerView.swift; sourceTree = "<group>"; };
 		4F7E160BC4B6BF84728CA0AF /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		654D530162CA84B95CC1CA49 /* WorkoutHandoffTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutHandoffTests.swift; sourceTree = "<group>"; };
+		6CF1D7BD7B5E6975CFC3ABFC /* WorkoutHandoff.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutHandoff.swift; sourceTree = "<group>"; };
 		6D78222EB0E2C44AF5F707BE /* VoiceSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VoiceSettingsView.swift; path = VoiceSettingsView.swift; sourceTree = "<group>"; };
+		700973055FAD4093BC92337E /* HealthSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthSettingsView.swift; sourceTree = "<group>"; };
 		717D2486DACDA43C89A63F90 /* TimerSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerSessionTests.swift; sourceTree = "<group>"; };
 		72B5592E9BBC0B382D4FEB4C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -151,29 +159,29 @@
 		9876AE577C9579D0F407AD49 /* TimerType.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerType.swift; sourceTree = "<group>"; };
 		9EC615A9EACD98FA91BC4AC6 /* CompletedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompletedView.swift; sourceTree = "<group>"; };
 		A5AF068958E5F2BDF344D06D /* AmrapSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AmrapSetupView.swift; sourceTree = "<group>"; };
+		A67077B794C6C985581A275D /* RunInWorkoutButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RunInWorkoutButton.swift; sourceTree = "<group>"; };
 		AC0DBA11650400DEC337E7B4 /* TimerDurationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerDurationTests.swift; sourceTree = "<group>"; };
 		AD923D803A6A60674DDB3CF4 /* CircularProgressRing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircularProgressRing.swift; sourceTree = "<group>"; };
 		AF7ED829FA41928AE27D492E /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		B17275088D2292FCA48F61C5 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		B4250CE524A45DCF1D4A4BEF /* WODTimerWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WODTimerWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFA56D0BC952434196A3E0BB /* ForTimeSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ForTimeSetupView.swift; sourceTree = "<group>"; };
+		C136178B8DC947FDA01C3010 /* WatchCueTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchCueTests.swift; sourceTree = "<group>"; };
+		C229E166B985AFF4FE85FC66 /* WristAlertTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WristAlertTests.swift; sourceTree = "<group>"; };
 		C2EA5E5FE5AD22A30E29F6F5 /* WorkoutFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutFactory.swift; sourceTree = "<group>"; };
 		CD2C2213820C00C804E5B35A /* RoundCount.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RoundCount.swift; sourceTree = "<group>"; };
+		CDF30276BC6D4F370D7C3DB9 /* WristAlerts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WristAlerts.swift; sourceTree = "<group>"; };
 		CF24BD6AFEF4C71FBBFC3DFD /* TimerState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerState.swift; sourceTree = "<group>"; };
 		D889A11A6B6C33B724EE9CAE /* audio */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = audio; path = WODTimerWatch/Resources/audio; sourceTree = SOURCE_ROOT; };
-		E47C225227384812837D2DBE /* WatchWorkoutTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchWorkoutTracker.swift; sourceTree = "<group>"; };
-		654D530162CA84B95CC1CA49 /* WorkoutHandoffTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutHandoffTests.swift; sourceTree = "<group>"; };
-		A67077B794C6C985581A275D /* RunInWorkoutButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RunInWorkoutButton.swift; sourceTree = "<group>"; };
-		6CF1D7BD7B5E6975CFC3ABFC /* WorkoutHandoff.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutHandoff.swift; sourceTree = "<group>"; };
-		700973055FAD4093BC92337E /* HealthSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthSettingsView.swift; sourceTree = "<group>"; };
-		F290BBF0F5B34D5BBF216D03 /* WODTimerWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WODTimerWatch.entitlements; sourceTree = "<group>"; };
-		C136178B8DC947FDA01C3010 /* WatchCueTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchCueTests.swift; sourceTree = "<group>"; };
 		D9FEB30C945EA3D887BF9A99 /* TabataSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TabataSetupView.swift; sourceTree = "<group>"; };
 		E13289430A010C3C7405AD9B /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
-		376A576CCB41471386E78EE0 /* AppIcon40x40@2x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "AppIcon40x40@2x.png"; sourceTree = "<group>"; };
+		E47C225227384812837D2DBE /* WatchWorkoutTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchWorkoutTracker.swift; sourceTree = "<group>"; };
 		ECDA17D450854F2CC8163106 /* WODTimerWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WODTimerWatchApp.swift; sourceTree = "<group>"; };
 		F168591883E7BA44AA243E7F /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F1E4FFDADA68081CCD689BF8 /* StayOnScreenView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StayOnScreenView.swift; sourceTree = "<group>"; };
+		F290BBF0F5B34D5BBF216D03 /* WODTimerWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WODTimerWatch.entitlements; sourceTree = "<group>"; };
 		F50DA5261B988ABA2357CC5E /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		FCED54B73C34906F91024E45 /* WristAlertPlan.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WristAlertPlan.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -221,6 +229,7 @@
 				393116C4EF6230239AD22D75 /* Setup */,
 				B9A17013D08275FA9AC9415C /* Timer */,
 				6D78222EB0E2C44AF5F707BE /* VoiceSettingsView.swift */,
+				F1E4FFDADA68081CCD689BF8 /* StayOnScreenView.swift */,
 			);
 			name = Presentation;
 			path = Presentation;
@@ -244,6 +253,7 @@
 				104D5726E3F21B882722E1D8 /* TimerEngine.swift */,
 				836C01C9EB22E1EF50AD1F28 /* TimerViewModel.swift */,
 				C2EA5E5FE5AD22A30E29F6F5 /* WorkoutFactory.swift */,
+				FCED54B73C34906F91024E45 /* WristAlertPlan.swift */,
 			);
 			name = Application;
 			path = Application;
@@ -293,6 +303,7 @@
 			children = (
 				C136178B8DC947FDA01C3010 /* WatchCueTests.swift */,
 				654D530162CA84B95CC1CA49 /* WorkoutHandoffTests.swift */,
+				C229E166B985AFF4FE85FC66 /* WristAlertTests.swift */,
 			);
 			name = Application;
 			path = Application;
@@ -377,6 +388,7 @@
 				3D2B29A192C7988114CCC97E /* WatchAudioService.swift */,
 				E47C225227384812837D2DBE /* WatchWorkoutTracker.swift */,
 				6CF1D7BD7B5E6975CFC3ABFC /* WorkoutHandoff.swift */,
+				CDF30276BC6D4F370D7C3DB9 /* WristAlerts.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -712,6 +724,7 @@
 				67875F49467C688A79CC3C41 /* TimerSessionTests.swift in Sources */,
 				684A2221E7BA4335AA2ED0B9 /* WatchCueTests.swift in Sources */,
 				3C65065F24E5E4A003ADFA3F /* WorkoutHandoffTests.swift in Sources */,
+				4B66C7FE9359B1A637C68002 /* WristAlertTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -749,6 +762,9 @@
 				4E4D226B88BFE4BB1AA01588 /* WODTimerWatchApp.swift in Sources */,
 				8A6099029411AFEE96CAF748 /* WatchAudioService.swift in Sources */,
 				1BCA751472E2CA7199B35E7C /* VoiceSettingsView.swift in Sources */,
+				838FFB81A48EC3B8189234FB /* WristAlertPlan.swift in Sources */,
+				61EEFCA2402B5C3DD7F24F2C /* WristAlerts.swift in Sources */,
+				444B59320F30CC3823E09601 /* StayOnScreenView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -764,11 +780,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		AA10EMBEDWATCH0000000004 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 31A572DEDEC401EC162B570B /* WODTimerWatch */;
-			targetProxy = AA10EMBEDWATCH0000000003 /* PBXContainerItemProxy */;
-		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
@@ -779,6 +790,11 @@
 			name = WODTimerWatch;
 			target = 31A572DEDEC401EC162B570B /* WODTimerWatch */;
 			targetProxy = 7A4A115E975FD775AAABCDF3 /* PBXContainerItemProxy */;
+		};
+		AA10EMBEDWATCH0000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 31A572DEDEC401EC162B570B /* WODTimerWatch */;
+			targetProxy = AA10EMBEDWATCH0000000003 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -860,9 +876,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -943,10 +959,10 @@
 				INFOPLIST_FILE = WODTimerWatch/Info.plist;
 				MARKETING_VERSION = 2.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -962,9 +978,9 @@
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp.tests;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WODTimerWatch.app/WODTimerWatch";
@@ -981,9 +997,9 @@
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp.tests;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WODTimerWatch.app/WODTimerWatch";
@@ -1160,9 +1176,9 @@
 				DEVELOPMENT_TEAM = G9NY882LMJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp.tests;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WODTimerWatch.app/WODTimerWatch";
@@ -1185,11 +1201,11 @@
 				INFOPLIST_FILE = WODTimerWatch/Info.plist;
 				MARKETING_VERSION = 2.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*]" = "MM AppStore app.mentalmetal.wharfwod.watchkitapp";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -1213,11 +1229,11 @@
 				INFOPLIST_FILE = WODTimerWatch/Info.plist;
 				MARKETING_VERSION = 2.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = app.mentalmetal.wharfwod.watchkitapp;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*]" = "MM AppStore app.mentalmetal.wharfwod.watchkitapp";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;

@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 import WatchKit
 
 @main
@@ -20,11 +21,29 @@ struct WODTimerWatchApp: App {
     }
 }
 
-/// The WatchKit lifecycle hook the SwiftUI app needs: a workout session
-/// handed back after a crash (2.2.0).
-final class WatchAppDelegate: NSObject, WKApplicationDelegate {
+/// The WatchKit lifecycle hooks the SwiftUI app needs: a workout session
+/// handed back after a crash (2.2.0), and the wrist alerts' delegate (2.4.0).
+final class WatchAppDelegate: NSObject, WKApplicationDelegate, UNUserNotificationCenterDelegate {
+    func applicationDidFinishLaunching() {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        // A fresh launch has no timer, so alerts a killed run left behind
+        // could only ring stale.
+        center.removeAllPendingNotificationRequests()
+    }
+
     func handleActiveWorkoutRecovery() {
         HealthWorkoutTracker.recoverCrashedSession()
+    }
+
+    /// On screen, or frontmost with the wrist down, the app plays its own
+    /// cue for the change, so the alert for it stays quiet. Only once the
+    /// app is gone (suspended, the face back) does the system show them.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([])
     }
 }
 
@@ -35,6 +54,10 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate {
 /// device or App Store build contains it.
 enum CaptureScene: String, CaseIterable {
     case home, voice, health
+    /// 2.4.0: the Health page after another app took the session.
+    case healthLost = "health-lost"
+    /// 2.4.0: the Return to App page.
+    case stayOnScreen = "stay-on-screen"
     case homeScrolled = "home-scrolled"
     case setupAmrap = "setup-amrap", setupForTime = "setup-fortime"
     case setupEmom = "setup-emom", setupTabata = "setup-tabata"
@@ -44,6 +67,8 @@ enum CaptureScene: String, CaseIterable {
     case livePrepForTime = "live-prep-fortime", livePrepEmom = "live-prep-emom"
     case livePrepTabata = "live-prep-tabata"
     case liveForTime = "live-fortime", liveEmom = "live-emom"
+    /// 2.4.0: the live EMOM with no session, alerts standing in / nothing.
+    case liveEmomAlerts = "live-emom-alerts", liveEmomNoCues = "live-emom-nocues"
     case liveTabataWork = "live-tabata-work", liveTabataRest = "live-tabata-rest"
     case liveTabataNext = "live-tabata-next"
     case pausedForTime = "paused-fortime", pausedEmom = "paused-emom"
@@ -62,8 +87,26 @@ enum CaptureScene: String, CaseIterable {
 
 struct CaptureRoot: View {
     let scene: CaptureScene
-    @State private var viewModel = TimerViewModel()
+    @State private var viewModel: TimerViewModel
     @State private var ready = false
+
+    init(scene: CaptureScene) {
+        self.scene = scene
+        _viewModel = State(initialValue: Self.viewModel(for: scene))
+    }
+
+    /// The alert scenes run with no session, so the glyph shows the alerts
+    /// standing in, or nothing when they are not allowed.
+    static func viewModel(for scene: CaptureScene) -> TimerViewModel {
+        switch scene {
+        case .liveEmomAlerts:
+            TimerViewModel(tracker: NoopWorkoutTracker(status: .off), alerts: NoopWristAlerts(status: .allowed))
+        case .liveEmomNoCues:
+            TimerViewModel(tracker: NoopWorkoutTracker(status: .takenOver), alerts: NoopWristAlerts(status: .denied))
+        default:
+            TimerViewModel()
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -76,7 +119,13 @@ struct CaptureRoot: View {
         switch scene {
         case .home, .homeScrolled: HomeView()
         case .voice: VoiceSettingsView(viewModel: viewModel)
-        case .health: HealthSettingsView(tracker: HealthWorkoutTracker())
+        case .health: HealthSettingsView(tracker: HealthWorkoutTracker(), alerts: NoopWristAlerts())
+        case .healthLost:
+            HealthSettingsView(
+                tracker: HealthWorkoutTracker(), alerts: NoopWristAlerts(),
+                note: "Last workout: another app's workout took over at 4:12; the alerts carried on."
+            )
+        case .stayOnScreen: StayOnScreenView()
         case .setupAmrap: AmrapSetupView(viewModel: viewModel)
         case .setupForTime: ForTimeSetupView(viewModel: viewModel)
         case .setupEmom, .handoffEmom: EmomSetupView(viewModel: viewModel)
@@ -108,7 +157,7 @@ struct CaptureRoot: View {
         case .livePrepTabata: run(Workout.defaultTabata(), 4)
         case .liveAmrap: run(Workout.defaultAmrap(), 25); viewModel.debugCountRounds(3)
         case .liveForTime: run(Workout.defaultForTime(), 76)
-        case .liveEmom: run(Workout.defaultEmom(), 75)
+        case .liveEmom, .liveEmomAlerts, .liveEmomNoCues: run(Workout.defaultEmom(), 75)
         case .liveTabataWork: run(Workout.defaultTabata(), 16)
         case .liveTabataRest: run(Workout.defaultTabata(), 33)
         case .liveTabataNext: run(Workout.defaultTabata(), 37)

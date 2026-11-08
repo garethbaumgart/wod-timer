@@ -34,7 +34,13 @@ final class TimerViewModel {
     let audio = WatchAudioService()
     /// The workout session that keeps the app alive off screen (2.2.0).
     let tracker: WorkoutTracking
+    /// The alerts that stand in for the cues when no session does (2.4.0).
+    let alerts: WristAlerting
     let recentsStore = RecentWorkoutsStore()
+
+    /// Workout seconds when another app took the session mid-workout, for
+    /// the Health page's note.
+    private(set) var sessionLostAt: Int?
 
     // MARK: - Internal State
 
@@ -70,29 +76,44 @@ final class TimerViewModel {
 
     init(
         tracker: WorkoutTracking = TimerViewModel.defaultTracker(),
-        haptics: WatchHapticService = WatchHapticService()
+        haptics: WatchHapticService = WatchHapticService(),
+        alerts: WristAlerting = TimerViewModel.defaultAlerts()
     ) {
         self.tracker = tracker
         self.haptics = haptics
+        self.alerts = alerts
         engine.onTick = { [weak self] elapsed in
             self?.onTick(elapsed: elapsed)
         }
+        tracker.onStatusChange = { [weak self] status in
+            self?.sessionStatusChanged(status)
+        }
     }
 
-    /// The tracker for this run: the Health session on a watch; nothing
-    /// under tests, previews and the simulator capture and promo hooks,
-    /// where a permission sheet would get in the way.
-    static func defaultTracker() -> WorkoutTracking {
+    /// Tests, previews and the simulator capture and promo hooks run
+    /// without Health or notifications, where a permission sheet would
+    /// get in the way.
+    static var runsWithoutServices: Bool {
         let env = ProcessInfo.processInfo.environment
         if env["XCTestConfigurationFilePath"] != nil || env["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            return NoopWorkoutTracker()
+            return true
         }
         #if targetEnvironment(simulator)
         if CaptureScene.fromLaunchArguments() != nil || CommandLine.arguments.contains("--promo-autostart") {
-            return NoopWorkoutTracker()
+            return true
         }
         #endif
-        return HealthWorkoutTracker()
+        return false
+    }
+
+    /// The tracker for this run: the Health session on a watch.
+    static func defaultTracker() -> WorkoutTracking {
+        runsWithoutServices ? NoopWorkoutTracker() : HealthWorkoutTracker()
+    }
+
+    /// The alerts for this run: local notifications on a watch.
+    static func defaultAlerts() -> WristAlerting {
+        runsWithoutServices ? NoopWristAlerts() : NotificationWristAlerts()
     }
 
     // MARK: - Public Actions
@@ -114,6 +135,7 @@ final class TimerViewModel {
             engine.start()
             clockOrigin = engine.origin
             recentsStore.save(workout)
+            sessionLostAt = nil
             tracker.begin(workout)
             if started.state == .running {
                 // No get-ready countdown: GO on the high beep right away.
@@ -124,6 +146,7 @@ final class TimerViewModel {
                 tracker.go()
                 blockRoundCount()
             }
+            planAlerts()
         case .failure:
             break
         }
@@ -144,6 +167,7 @@ final class TimerViewModel {
             clockOrigin = nil
             haptics.play(.pause)
             tracker.pause()
+            alerts.cancelAll()
         case .failure:
             break
         }
@@ -162,6 +186,7 @@ final class TimerViewModel {
             haptics.play(.resume)
             tracker.resume()
             blockRoundCount()
+            planAlerts()
         case .failure:
             break
         }
@@ -182,6 +207,7 @@ final class TimerViewModel {
             haptics.cancelPending()
             haptics.play(.pause)
             tracker.end(keep: completed.elapsed.seconds >= Self.keepHealthRecordAfter)
+            alerts.cancelAll()
         case .failure:
             break
         }
@@ -201,6 +227,7 @@ final class TimerViewModel {
             stopClock()
             haptics.play(.complete)
             tracker.end(keep: true)
+            alerts.cancelAll()
             audio.playHighBeep()
             playCompletionEncouragement()
         case .failure:
@@ -223,6 +250,7 @@ final class TimerViewModel {
             handleCues(old: old, new: updated)
             session = updated
             phase = updated.state
+            planAlerts()
         }
     }
 
@@ -259,6 +287,7 @@ final class TimerViewModel {
         stopClock()
         haptics.cancelPending()
         tracker.end(keep: false)
+        alerts.cancelAll()
         session = nil
         phase = .ready
         endedEarly = false
@@ -294,6 +323,61 @@ final class TimerViewModel {
         return session.projected(byMs: clockMs - lastTickMillis)
     }
 
+    // MARK: - Wrist alerts (2.4.0)
+
+    /// What reaches the wrist once the app is off screen.
+    enum WristCueState: Equatable {
+        /// The Health session keeps the app, its beeps and its taps alive.
+        case session
+        /// No session: the system alerts at each change instead.
+        case alerts
+        /// No session and alerts not allowed: nothing until the app is
+        /// reopened.
+        case none
+        /// The session is still coming up.
+        case pending
+    }
+
+    var wristCueState: WristCueState {
+        if tracker.status.keepsAppAlive { return .session }
+        if tracker.status == .starting { return .pending }
+        return alerts.status == .allowed ? .alerts : .none
+    }
+
+    /// The Health page's line about the last workout, when another app
+    /// took the session under it.
+    var sessionNote: String? {
+        guard let lostAt = sessionLostAt else { return nil }
+        let when = TimerDuration(seconds: lostAt).clock
+        let rest = alerts.status == .allowed ? "the alerts carried on." : "nothing reached your wrist off screen."
+        return "Last workout: another app's workout took over at \(when); " + rest
+    }
+
+    /// Schedules an alert for every change still to come, when no session
+    /// keeps the app alive. Planned from the clock as it reads now, not
+    /// from the last tick.
+    private func planAlerts() {
+        guard let session, session.state.isActive, !tracker.status.keepsAppAlive else { return }
+        let now = displaySession(at: Date()) ?? session
+        alerts.schedule(WristAlertPlan.schedule(for: now))
+    }
+
+    /// The session came up, or went: alerts off when it keeps the app
+    /// alive, on from this moment when it does not. `.starting` is neither
+    /// yet; the plan made at START stands until the answer.
+    private func sessionStatusChanged(_ status: HealthWorkoutTracker.Status) {
+        guard let session, session.state != .ready, session.state != .completed else { return }
+        if status.keepsAppAlive {
+            alerts.cancelAll()
+            return
+        }
+        if status == .starting { return }
+        if status == .takenOver, sessionLostAt == nil {
+            sessionLostAt = session.elapsed.seconds
+        }
+        if session.state != .paused { planAlerts() }
+    }
+
     // MARK: - Tick Handler
 
     private func onTick(elapsed: TimeInterval) {
@@ -323,6 +407,7 @@ final class TimerViewModel {
                 stopClock()
                 haptics.play(.complete)
                 tracker.end(keep: true)
+                alerts.cancelAll()
                 playEndCues()
             } else {
                 session = updated
@@ -336,6 +421,7 @@ final class TimerViewModel {
                 stopClock()
                 haptics.play(.complete)
                 tracker.end(keep: true)
+                alerts.cancelAll()
                 playEndCues()
             }
         }
