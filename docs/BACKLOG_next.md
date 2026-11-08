@@ -15,20 +15,27 @@ Notes from Gareth to pick up in the next set of changes. Add new items here as t
   Sound check row, Health row, whole-millisecond ticks. Plan:
   `docs/PLAN_2.2.0_watch_background.md`.
 
-## Shipped as 2.4.0 (8 Nov 2026): wrist alerts, honest session state
+## Shipped as 2.4.0 (8 Nov 2026): wrist alerts, honest session state, cue cleanup
 
 - Local notifications stand in for the cues when no Health session keeps
   the watch app alive (Track workouts off, permission unanswered, Apple's
   Workout app recording); the live screen says which; no restart after a
   takeover; Stay on screen row (Return to App). Plan:
   `docs/PLAN_2.4.0_watch_wrist_alerts.md`.
+- **Cue cleanup asked for on 24 Oct 2026.** The encouragement lines are
+  gone on all three ports (Keep going / Come on at a third, Almost there at
+  85%), and so are the coin flips: GO always says "Go", the end always
+  "Good job" (a capped For Time keeps the neutral end tone). Get ready,
+  Rest, Next round / Last round, Halfway, Ten seconds and the gym beeps
+  stay. Beeps is the voice for an athlete who never chose one: a missing
+  phone `app_voice` reads as Beeps only (a stored index keeps its meaning,
+  so a saved Major stays Major), a missing watch `watch_voice_beeps` or
+  Wear `wear_voice_beeps` reads as on unless another voice key shows an
+  earlier choice. Nothing stored is rewritten. The retired clips stay in
+  the bundles (the watch and Wear sound checks still play "Let's go").
+  Rides the 2.4.0 release with the wrist alerts.
 
 ## Still open
-
-- Cue cleanup asked for on 24 Oct 2026: no random encouragement lines
-  (Keep going / Come on / Almost there, the coin flips on GO and the end),
-  Beeps as the default voice. Three ports: phone `timer_notifier.dart`,
-  watch `TimerViewModel.swift`, Wear `TimerViewModel.kt`, plus their tests.
 
 - Heart rate on the watch live screen (the session already collects it; a
   read permission and one line of UI).

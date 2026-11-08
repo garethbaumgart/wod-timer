@@ -253,20 +253,18 @@ class NotifierHarness {
 
   DateTime now = DateTime(2026, 10, 4, 6);
 
+  /// Only the cues the notifier still asks for are stubbed: a call to one
+  /// of the retired lines (Let's go, Keep going, Come on, Almost there,
+  /// That's it; gone 8 Nov 2026) has no stub and fails the test.
   late final Map<String, Future<Either<AudioFailure, Unit>> Function()> cues = {
     'go': audio.playGo,
-    'lets go': audio.playLetsGo,
     'get ready': audio.playGetReady,
     'rest': audio.playRest,
     'next round': audio.playNextRound,
     'last round': audio.playLastRound,
     'halfway': audio.playHalfway,
-    'keep going': audio.playKeepGoing,
-    'come on': audio.playComeOn,
-    'almost there': audio.playAlmostThere,
     'ten seconds': audio.playTenSeconds,
     'good job': audio.playGoodJob,
-    'thats it': audio.playThatsIt,
     'complete': audio.playComplete,
   };
 

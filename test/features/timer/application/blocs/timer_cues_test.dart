@@ -1,8 +1,10 @@
 // The cue schedule: which beep, voice cue and haptic fire at which second
-// of a workout, and what happens at the end (encouragement, the time-cap
-// tone, the review payoff). Since 2.1.0 every phase change is the gym-timer
+// of a workout, and what happens at the end (Good job, the time-cap tone,
+// the review payoff). Since 2.1.0 every phase change is the gym-timer
 // pattern: low beeps with 3, 2 and 1 seconds left, then the high beep with
-// the voice line on it.
+// the voice line on it. Since 8 Nov 2026 there are no encouragement lines
+// (Keep going / Come on, Almost there) and no coin flips: GO is "Go", the
+// end is "Good job".
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
@@ -25,16 +27,9 @@ void main() {
     }
   }
 
-  /// What was heard, second by second, with the random picks folded to one
-  /// name each ('lets go' -> 'go', 'come on' -> 'keep going',
-  /// 'thats it' -> 'good job').
-  List<String> heard() => [
-    for (final line in h.heard)
-      line
-          .replaceAll('lets go', 'go')
-          .replaceAll('come on', 'keep going')
-          .replaceAll('thats it', 'good job'),
-  ];
+  /// What was heard, second by second. Every cue says one thing, so there
+  /// is nothing to fold.
+  List<String> heard() => h.heard;
 
   /// Low beeps 3 seconds before [second], then the high beep on it.
   List<String> countIn(int second) => [
@@ -43,10 +38,6 @@ void main() {
     '${second - 1}s low 1',
     '${second}s high',
   ];
-
-  final go = anyOf('go', 'lets go');
-  final motivation = anyOf('keep going', 'come on');
-  final encouragement = anyOf('good job', 'thats it');
 
   group('get ready and GO', () {
     test('Get ready, low beeps at 3 2 1 with a tap each, then the high '
@@ -70,7 +61,7 @@ void main() {
       h.tick(10);
       expect(h.state, isA<TimerRunning>());
       expect(h.beeped.last, 'high');
-      expect(h.played.last, go);
+      expect(h.played.last, 'go');
       expect(h.felt.last, 'heavy');
     });
 
@@ -79,7 +70,7 @@ void main() {
       for (var ms = 100; ms <= 5000; ms += 100) {
         h.tick(ms ~/ 1000, ms % 1000);
       }
-      expect(h.played, ['get ready', go]);
+      expect(h.played, ['get ready', 'go']);
       expect(h.beeped, ['low 3', 'low 2', 'low 1', 'high']);
     });
 
@@ -101,7 +92,7 @@ void main() {
       h.notifier.skipPrep();
       expect(h.state, isA<TimerRunning>());
       expect(h.state.sessionOrNull!.elapsed.seconds, 0);
-      expect(h.played, ['get ready', go]);
+      expect(h.played, ['get ready', 'go']);
       expect(h.beeped, ['high']);
       expect(h.felt, ['heavy']);
       // The GO cooldown: a tap that skipped the countdown cannot count.
@@ -118,8 +109,8 @@ void main() {
   });
 
   group('AMRAP schedule (60s)', () {
-    test('GO on the high beep; motivation, halfway and ten seconds; the '
-        'count-in to the end with the payoff on the high beep', () async {
+    test('GO on the high beep; halfway and ten seconds; the count-in to '
+        'the end with Good job on the high beep', () async {
       await h.notifier.start(amrapWorkout(seconds: 60));
       expect(heard(), ['0s high', '0s go']);
       expect(h.felt, ['heavy']);
@@ -128,10 +119,8 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
-        '20s keep going',
         '30s halfway',
         '50s ten seconds',
-        // Almost there (51s) would talk over Ten seconds, so it sits out.
         ...countIn(60),
         '60s good job',
       ]);
@@ -151,28 +140,28 @@ void main() {
     });
 
     test('a finish the app slept through still ends on the high beep and '
-        'the encouragement', () async {
+        'Good job', () async {
       await h.notifier.start(amrapWorkout(seconds: 60));
       h
         ..tick(1)
         ..tick(60);
       expect(h.state, isA<TimerCompleted>());
       expect(h.beeped, ['high', 'high'], reason: 'no count-in was due');
-      expect(h.played.last, encouragement);
+      expect(h.played.last, 'good job');
     });
 
     test('no optional voice cue lands inside the count-in', () async {
-      // 85% of 12s is 10.2s: Almost there would land on the low 2 beep.
-      await h.notifier.start(amrapWorkout(seconds: 12));
-      h.run(1, 12);
-      expect(heard(), [
-        '0s high',
-        '0s go',
-        '4s keep going',
-        '6s halfway',
-        ...countIn(12),
-        '12s good job',
-      ]);
+      // Halfway of 6s is 3s: it would land on the low 3 beep, so it sits out.
+      await h.notifier.start(amrapWorkout(seconds: 6));
+      h.run(1, 6);
+      expect(heard(), ['0s high', '0s go', ...countIn(6), '6s good job']);
+    });
+
+    test('no encouragement lines: a 120s AMRAP hears GO, Halfway, Ten '
+        'seconds and Good job, nothing else spoken', () async {
+      await h.notifier.start(amrapWorkout(seconds: 120));
+      h.run(1, 120);
+      expect(h.played, ['go', 'halfway', 'ten seconds', 'good job']);
     });
   });
 
@@ -198,12 +187,10 @@ void main() {
         '0s high',
         '0s go',
         ...countIn(60),
-        // 60s is also 33% of the workout: the round cue took the slot.
         '60s next round',
         '90s halfway',
         ...countIn(120),
         '120s last round',
-        '153s almost there',
         '170s ten seconds',
         ...countIn(180),
         '180s good job',
@@ -223,7 +210,7 @@ void main() {
         final session = h.state.sessionOrNull!;
         expect(session.currentRound, 4);
         expect(session.currentIntervalElapsed.seconds, 1);
-        expect(h.played, [go, 'next round']);
+        expect(h.played, ['go', 'next round']);
         expect(h.beeped, ['high', 'high']);
       },
     );
@@ -259,7 +246,7 @@ void main() {
         '30s last round',
         ...countIn(50),
         '50s rest',
-        // Almost there and Ten seconds would talk over Rest: they sit out.
+        // Ten seconds (50s) would talk over Rest, so it sits out.
         ...countIn(60),
         '60s good job',
       ]);
@@ -278,7 +265,7 @@ void main() {
           ..tick(32);
         expect(h.state, isA<TimerRunning>());
         expect(h.state.sessionOrNull!.currentRound, 2);
-        expect(h.played, [go, 'next round']);
+        expect(h.played, ['go', 'next round']);
         expect(h.beeped, ['high', 'high'], reason: 'one beep per change');
       },
     );
@@ -301,7 +288,6 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
-        '20s keep going',
         '30s halfway',
         '50s ten seconds',
         ...countIn(60),
@@ -311,17 +297,22 @@ void main() {
       expect(h.valueMoments, 0);
     });
 
-    test('FINISH celebrates: the high beep, a success buzz and the '
-        'encouragement', () async {
-      await h.notifier.start(forTimeWorkout(cap: 600));
-      h.run(1, 30);
-      h.notifier.finish();
-      expect(h.state, isA<TimerCompleted>());
-      expect((h.state as TimerCompleted).endedEarly, isFalse);
-      expect(h.felt.last, 'success');
-      expect(h.engine.calls.last, 'stop');
-      expect(heard().sublist(heard().length - 2), ['30s high', '30s good job']);
-    });
+    test(
+      'FINISH celebrates: the high beep, a success buzz and Good job',
+      () async {
+        await h.notifier.start(forTimeWorkout(cap: 600));
+        h.run(1, 30);
+        h.notifier.finish();
+        expect(h.state, isA<TimerCompleted>());
+        expect((h.state as TimerCompleted).endedEarly, isFalse);
+        expect(h.felt.last, 'success');
+        expect(h.engine.calls.last, 'stop');
+        expect(heard().sublist(heard().length - 2), [
+          '30s high',
+          '30s good job',
+        ]);
+      },
+    );
 
     test('FINISH during the count-in cuts it short at once', () async {
       await h.notifier.start(forTimeWorkout(cap: 60));
@@ -329,7 +320,7 @@ void main() {
       expect(h.beeped.last, 'low 2');
       h.notifier.finish();
       expect(h.beeped.last, 'high');
-      expect(h.played.last, encouragement);
+      expect(h.played.last, 'good job');
       h.tick(59);
       expect(h.beeped.last, 'high', reason: 'no beeps after the end');
     });
@@ -340,7 +331,6 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
-        '20s keep going',
         '30s halfway',
         '50s ten seconds',
         '57s low 3',
@@ -360,7 +350,7 @@ void main() {
       expect(h.felt.last, 'medium');
       expect(h.engine.calls.last, 'stop');
       await settle();
-      expect(h.played, [go]);
+      expect(h.played, ['go']);
       expect(h.valueMoments, 0);
     });
 
@@ -399,9 +389,13 @@ void main() {
       expect(h.state, isA<TimerRunning>());
       expect(h.state.sessionOrNull!.elapsed.seconds, 0);
       expect(h.engine.calls, ['stop', 'stop', 'reset', 'start']);
-      expect(h.played.where((c) => c == 'go' || c == 'lets go'), hasLength(2));
+      expect(
+        h.played.where((c) => c == 'go'),
+        hasLength(2),
+        reason: 'GO re-armed',
+      );
       h.run(1, 5);
-      expect(h.played.last, motivation, reason: 'one-shot cues re-armed');
+      expect(h.played.last, 'halfway', reason: 'the schedule runs again');
       expect(h.beeped.where((b) => b == 'high'), hasLength(3));
     });
 
@@ -500,6 +494,14 @@ void main() {
           () => h.audio.setRandomizePerCue(enabled: any(named: 'enabled')),
         );
       }
+    });
+
+    test('an athlete who never chose a voice gets Beeps only', () async {
+      h.dispose();
+      h = NotifierHarness();
+      await h.notifier.start(amrapWorkout(seconds: 60));
+      verify(() => h.audio.setVoiceMuted(muted: true)).called(1);
+      verifyNever(() => h.audio.setVoicePack(any()));
     });
   });
 }

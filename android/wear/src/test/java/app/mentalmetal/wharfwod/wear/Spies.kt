@@ -21,17 +21,17 @@ class SpyAudio : AudioCues {
     override fun playHighBeep() { log.add("beep:high") }
     override fun playLowBeep(secondsLeft: Int) { log.add("beep:low_$secondsLeft") }
     override fun playGo() { log.add("voice:go") }
-    override fun playLetsGo() { log.add("voice:go") }
+    override fun playLetsGo() { log.add("voice:lets_go") }
     override fun playRest() { log.add("voice:rest") }
     override fun playHalfway() { log.add("voice:halfway") }
     override fun playGetReady() { log.add("voice:get_ready") }
     override fun playTenSeconds() { log.add("voice:ten_seconds") }
     override fun playLastRound() { log.add("voice:last_round") }
     override fun playKeepGoing() { log.add("voice:keep_going") }
-    override fun playComeOn() { log.add("voice:keep_going") }
+    override fun playComeOn() { log.add("voice:come_on") }
     override fun playAlmostThere() { log.add("voice:almost_there") }
     override fun playGoodJob() { log.add("voice:good_job") }
-    override fun playThatsIt() { log.add("voice:good_job") }
+    override fun playThatsIt() { log.add("voice:thats_it") }
     override fun playNextRound() { log.add("voice:next_round") }
     override fun playComplete() { log.add("voice:complete") }
 }

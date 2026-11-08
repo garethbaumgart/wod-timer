@@ -25,6 +25,14 @@ class VoiceSettings(private val store: KeyValueStore, private val random: Random
         const val RANDOM_KEY = "wear_voice_random"
         const val MUTED_KEY = "wear_voice_muted"
         const val BEEPS_KEY = "wear_voice_beeps"
+
+        /**
+         * Beeps is the default for an athlete who has never chosen a voice
+         * (8 Nov 2026): no voice key written yet. Any voice key present is a
+         * choice (Silent writes only its own key) and keeps its voice.
+         */
+        fun defaultBeepsOnly(store: KeyValueStore): Boolean =
+            listOf(PACK_KEY, RANDOM_KEY, MUTED_KEY).none { store.contains(it) }
     }
 
     var voicePack: VoicePack = VoicePack.from(store.getString(PACK_KEY))
@@ -33,7 +41,8 @@ class VoiceSettings(private val store: KeyValueStore, private val random: Random
         private set
     var muted: Boolean = store.getBoolean(MUTED_KEY, false)
         private set
-    var beepsOnly: Boolean = store.getBoolean(BEEPS_KEY, false)
+    /** As stored when the key is there; see [defaultBeepsOnly]. Additive: nothing stored is rewritten. */
+    var beepsOnly: Boolean = store.getBoolean(BEEPS_KEY, defaultBeepsOnly(store))
         private set
 
     fun setVoicePack(pack: VoicePack) { voicePack = pack; store.putString(PACK_KEY, pack.code) }

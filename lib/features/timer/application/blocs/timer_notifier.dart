@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -50,9 +49,6 @@ class TimerNotifier extends _$TimerNotifier {
   bool _playedGetReady = false;
   bool _playedTenSeconds = false;
   bool _playedLastRound = false;
-  bool _playedAlmostThere = false;
-  bool _playedKeepGoing = false;
-  final _random = Random();
 
   /// Taps that count AMRAP rounds are ignored for this long after the last
   /// counted round, after GO and after a resume, so a double tap, a late
@@ -132,17 +128,13 @@ class TimerNotifier extends _$TimerNotifier {
         trackEvent('workout_started', {
           'type': session.workout.timerType.typeCode,
         });
-        // With no prep countdown the session starts directly in running —
-        // there is no preparing→running tick transition to catch, so play
-        // the GO cue here.
+        // With no prep countdown the session starts directly in running:
+        // there is no preparing to running tick transition to catch, so
+        // play the GO cue here.
         if (session.state == domain.TimerState.running && !_playedGo) {
           _playedGo = true;
           _audioService.playHighBeep();
-          _say(
-            _random.nextBool()
-                ? _audioService.playGo
-                : _audioService.playLetsGo,
-          );
+          _say(_audioService.playGo);
           _hapticService.heavyImpact();
           _blockRoundCount();
         }
@@ -257,10 +249,10 @@ class TimerNotifier extends _$TimerNotifier {
           'type': session.workout.timerType.typeCode,
           'ended_by': 'user_finish',
         });
-        // The change beep with the encouragement cue on it ("Good job" or
-        // "That's it, you're done"); not playComplete() as well.
+        // The change beep with the end line on it ("Good job"); not
+        // playComplete() as well.
         _audioService.playHighBeep();
-        _playCompletionEncouragement();
+        _audioService.playGoodJob();
         _hapticService.success();
       },
     );
@@ -424,9 +416,11 @@ class TimerNotifier extends _$TimerNotifier {
   /// The gym-timer cue pattern (2.1.0, matched to the SmartWOD recording
   /// Gareth chose): three low beeps in the last three seconds of every
   /// phase, then on the change a high beep with the voice line starting on
-  /// it. The optional voice cues (motivation, halfway, almost there, ten
-  /// seconds) keep clear of the countdown and of another line still being
-  /// spoken.
+  /// it. The optional voice cues (halfway, ten seconds) keep clear of the
+  /// countdown and of another line still being spoken. The encouragement
+  /// lines (Keep going / Come on at a third, Almost there at 85%) and the
+  /// coin flips on GO and the end went on 8 Nov 2026 at Gareth's request:
+  /// every cue says one thing, every time.
   void _handleAudioCues(TimerSession oldSession, TimerSession newSession) {
     // Track whether a voice cue already played this tick so we don't
     // overlap two spoken clips (e.g. "Halfway" + "Next round").
@@ -449,16 +443,13 @@ class TimerNotifier extends _$TimerNotifier {
     // Low beeps in the last three seconds of the phase (prep included).
     _playPhaseCountdown(newSession);
 
-    // High beep + "Go" or "Let's go" when the prep countdown ends
+    // High beep + "Go" when the prep countdown ends
     if (oldSession.state == domain.TimerState.preparing &&
         newSession.state == domain.TimerState.running &&
         !_playedGo) {
       _playedGo = true;
       changeBeep();
-      // Randomly alternate between "Go" and "Let's go"
-      _say(
-        _random.nextBool() ? _audioService.playGo : _audioService.playLetsGo,
-      );
+      _say(_audioService.playGo);
       _hapticService.heavyImpact(); // Strong haptic for GO!
       _blockRoundCount();
       voiceCuePlayed = true;
@@ -514,33 +505,10 @@ class TimerNotifier extends _$TimerNotifier {
     // The optional cues below wait for a clear moment.
     if (voiceCuePlayed || !_clearToSpeak(newSession)) return;
 
-    // Handle motivational cue around 33% progress
-    if (newSession.progress >= 0.33 &&
-        oldSession.progress < 0.33 &&
-        !_playedKeepGoing) {
-      _playedKeepGoing = true;
-      // Randomly alternate between motivation cues
-      _say(
-        _random.nextBool()
-            ? _audioService.playKeepGoing
-            : _audioService.playComeOn,
-      );
-      return;
-    }
-
     // Handle halfway point
     if (newSession.progress >= 0.5 && oldSession.progress < 0.5) {
       _say(_audioService.playHalfway);
       _hapticService.mediumImpact();
-      return;
-    }
-
-    // Handle "Almost there" at ~85% progress
-    if (newSession.progress >= 0.85 &&
-        oldSession.progress < 0.85 &&
-        !_playedAlmostThere) {
-      _playedAlmostThere = true;
-      _say(_audioService.playAlmostThere);
       return;
     }
 
@@ -652,7 +620,7 @@ class TimerNotifier extends _$TimerNotifier {
       _hapticService.heavyImpact();
       return false;
     }
-    _playCompletionEncouragement();
+    _audioService.playGoodJob();
     _hapticService.success(); // Haptic success for natural completion
     // The workout ran all the way out: the payoff, and the only
     // unambiguous one. Deliberately NOT the manual-finish, ended-early or
@@ -660,16 +628,6 @@ class TimerNotifier extends _$TimerNotifier {
     // prompter stays quiet until the app has earned it and never throws.
     unawaited(ref.read(reviewPrompterProvider).recordValueMoment());
     return true;
-  }
-
-  /// Play a random encouragement cue on workout completion, on the high
-  /// beep (no spoken final countdown to wait for since 2.1.0).
-  void _playCompletionEncouragement() {
-    if (_random.nextBool()) {
-      _audioService.playGoodJob();
-    } else {
-      _audioService.playThatsIt();
-    }
   }
 
   void _resetAudioState() {
@@ -682,8 +640,6 @@ class TimerNotifier extends _$TimerNotifier {
     _playedGetReady = false;
     _playedTenSeconds = false;
     _playedLastRound = false;
-    _playedAlmostThere = false;
-    _playedKeepGoing = false;
   }
 
   void _dispose() {

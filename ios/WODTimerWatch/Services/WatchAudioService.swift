@@ -21,7 +21,8 @@ final class WatchAudioService {
     private(set) var muted: Bool = false
     /// Beeps only (1.3.1, as on the phone): no voice. Since 2.1.0 the beeps
     /// carry every countdown and change in every mode, so Beeps only is the
-    /// beeps with the voice taken away.
+    /// beeps with the voice taken away. The default for an athlete who has
+    /// never chosen a voice (8 Nov 2026); see defaultBeepsOnly.
     private(set) var beepsOnly: Bool = false
     private(set) var volume: Float = 1.0
 
@@ -53,13 +54,24 @@ final class WatchAudioService {
     private static let mutedKey = "watch_voice_muted"
     private static let beepsKey = "watch_voice_beeps"
 
+    /// Beeps only as stored when the key is there. Without it, Beeps is the
+    /// default for an athlete who has never chosen a voice, but a 1.3.0
+    /// install that chose a pack, Random or Silent before the Beeps key
+    /// existed (1.3.1) keeps its voice: any other voice key present means a
+    /// choice was made. Additive: nothing stored is rewritten.
+    static func defaultBeepsOnly(_ defaults: UserDefaults) -> Bool {
+        if let stored = defaults.object(forKey: beepsKey) as? Bool { return stored }
+        let chose = [packKey, randomKey, mutedKey].contains { defaults.object(forKey: $0) != nil }
+        return !chose
+    }
+
     init() {
         if let raw = defaults.string(forKey: Self.packKey), let pack = VoicePack(rawValue: raw) {
             voicePack = pack
         }
         randomizePerCue = defaults.bool(forKey: Self.randomKey)
         muted = defaults.bool(forKey: Self.mutedKey)
-        beepsOnly = defaults.bool(forKey: Self.beepsKey)
+        beepsOnly = Self.defaultBeepsOnly(defaults)
         configureAudioSession()
         playbackDelegate.isIdle = { [weak self] in
             guard let self else { return true }

@@ -138,57 +138,106 @@ void main() {
     });
   });
 
-  group('golden fixture: a 1.2.x prefs file survives 1.3.0', () {
-    test('loads, saves and reloads with every pre-existing key intact',
-        () async {
-      boot(_v12Prefs);
-      await settle();
+  group('Beeps is the default voice (8 Nov 2026)', () {
+    test(
+      'a fresh install reads Beeps only and writes nothing for it',
+      () async {
+        boot({});
+        await settle();
 
-      final settings = container.read(appSettingsNotifierProvider);
-      expect(settings.orientationLock, OrientationLockMode.landscape);
-      expect(settings.hapticEnabled, isFalse);
-      expect(settings.soundEnabled, isTrue);
-      expect(settings.keepScreenOn, isFalse);
-      expect(settings.voice, VoiceOption.holly);
-
-      // Save through the one setter the 1.3.0 UI still has for voice.
-      await container
-          .read(appSettingsNotifierProvider.notifier)
-          .setVoice(VoiceOption.holly);
-
-      final prefs = await SharedPreferences.getInstance();
-      for (final entry in _v12Prefs.entries) {
         expect(
-          prefs.get(entry.key),
-          entry.value,
-          reason: '${entry.key} must survive the update unchanged',
+          container.read(appSettingsNotifierProvider).voice,
+          VoiceOption.off,
         );
-      }
-      // Only additive keys appear.
-      final added = prefs.getKeys().difference(_v12Prefs.keys.toSet());
-      expect(added, {AppSettingsNotifier.keySilentMigrated});
+        verify(() => audio.setMuted(muted: false)).called(1);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt('app_voice'), isNull);
+      },
+    );
 
-      // A second launch reads the same settings back.
-      container.dispose();
-      container = ProviderContainer();
-      await settle();
-      final again = container.read(appSettingsNotifierProvider);
-      expect(again.voice, VoiceOption.holly);
-      expect(again.keepScreenOn, isFalse);
-      expect(again.orientationLock, OrientationLockMode.landscape);
-    });
-
-    test('a stored voice index from a newer build is clamped, not wiped',
-        () async {
-      boot({'app_voice': 99});
+    test('a stored Major (index 0) is a choice and stays Major', () async {
+      boot({'app_voice': 0, AppSettingsNotifier.keySilentMigrated: true});
       await settle();
 
       expect(
         container.read(appSettingsNotifierProvider).voice,
-        VoiceOption.values.last,
+        VoiceOption.major,
+      );
+    });
+
+    test('an install that never saved a setting now hears Beeps, with every '
+        'other key as found', () async {
+      boot({
+        'setup_amrap_duration_s': 720,
+        AppSettingsNotifier.keySilentMigrated: true,
+      });
+      await settle();
+
+      expect(
+        container.read(appSettingsNotifierProvider).voice,
+        VoiceOption.off,
       );
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt('app_voice'), 99);
+      expect(prefs.getInt('setup_amrap_duration_s'), 720);
+      expect(prefs.getInt('app_voice'), isNull);
     });
+  });
+
+  group('golden fixture: a 1.2.x prefs file survives 1.3.0', () {
+    test(
+      'loads, saves and reloads with every pre-existing key intact',
+      () async {
+        boot(_v12Prefs);
+        await settle();
+
+        final settings = container.read(appSettingsNotifierProvider);
+        expect(settings.orientationLock, OrientationLockMode.landscape);
+        expect(settings.hapticEnabled, isFalse);
+        expect(settings.soundEnabled, isTrue);
+        expect(settings.keepScreenOn, isFalse);
+        expect(settings.voice, VoiceOption.holly);
+
+        // Save through the one setter the 1.3.0 UI still has for voice.
+        await container
+            .read(appSettingsNotifierProvider.notifier)
+            .setVoice(VoiceOption.holly);
+
+        final prefs = await SharedPreferences.getInstance();
+        for (final entry in _v12Prefs.entries) {
+          expect(
+            prefs.get(entry.key),
+            entry.value,
+            reason: '${entry.key} must survive the update unchanged',
+          );
+        }
+        // Only additive keys appear.
+        final added = prefs.getKeys().difference(_v12Prefs.keys.toSet());
+        expect(added, {AppSettingsNotifier.keySilentMigrated});
+
+        // A second launch reads the same settings back.
+        container.dispose();
+        container = ProviderContainer();
+        await settle();
+        final again = container.read(appSettingsNotifierProvider);
+        expect(again.voice, VoiceOption.holly);
+        expect(again.keepScreenOn, isFalse);
+        expect(again.orientationLock, OrientationLockMode.landscape);
+      },
+    );
+
+    test(
+      'a stored voice index from a newer build is clamped, not wiped',
+      () async {
+        boot({'app_voice': 99});
+        await settle();
+
+        expect(
+          container.read(appSettingsNotifierProvider).voice,
+          VoiceOption.values.last,
+        );
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt('app_voice'), 99);
+      },
+    );
   });
 }

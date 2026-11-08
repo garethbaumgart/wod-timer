@@ -11,7 +11,7 @@ Needed in all three voices (Major, Liam, Holly): 31 clips each, 93 in total.
 | File | Says | Why |
 |---|---|---|
 | `round_2.mp3` to `round_30.mp3` | "Round 2" to "Round 30" | Every EMOM and Tabata round change except the last ("Last round" stays), as SmartWOD does. EMOM goes to 30 rounds, Tabata to 20; Round 2 to 20 is the minimum, and above that the app falls back to "Next round". |
-| `well_done.mp3` | "Well done" | The end of a workout, added to the "Good job" / "That's it" mix. |
+| `well_done.mp3` | "Well done" | The end of a workout, in place of "Good job" (the one end line since 8 Nov 2026; no coin flip). |
 | `one_minute.mp3` | "One minute" | One minute left in an AMRAP or For Time longer than 2 minutes. |
 
 Also: re-record Major's `rest.mp3` if it doesn't sound clearly like "Rest"

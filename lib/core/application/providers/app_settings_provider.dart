@@ -21,8 +21,10 @@ enum VoiceOption {
   /// Random - randomly pick a different voice for each cue.
   random,
 
-  /// Off - no spoken cues; timing-critical moments fall back to beeps.
-  /// Shown as "Beeps only".
+  /// Off - no spoken cues; the beeps carry every countdown and change.
+  /// Shown as "Beeps only". The default for an athlete who has never
+  /// chosen a voice (8 Nov 2026, Gareth's call); a stored choice is read
+  /// exactly as stored, so nobody's Major turns into Beeps.
   off,
 
   /// Silent - no voice and no beeps. Replaces the old Sound Effects switch
@@ -49,7 +51,7 @@ class AppSettings {
     this.hapticEnabled = true,
     this.soundEnabled = true,
     this.keepScreenOn = true,
-    this.voice = VoiceOption.major,
+    this.voice = VoiceOption.off,
   });
 
   /// Orientation lock preference.
@@ -117,7 +119,9 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       final hapticEnabled = prefs.getBool(_keyHapticEnabled) ?? true;
       final soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
       final keepScreenOn = prefs.getBool(_keyKeepScreenOn) ?? true;
-      final voiceIndex = prefs.getInt(_keyVoice) ?? 0;
+      // A missing key is an athlete who never chose a voice: Beeps. A
+      // stored index keeps its meaning (the enum is never renumbered).
+      final voiceIndex = prefs.getInt(_keyVoice) ?? VoiceOption.off.index;
       final safeVoiceIndex = voiceIndex.clamp(0, VoiceOption.values.length - 1);
       var voice = VoiceOption.values[safeVoiceIndex];
 
