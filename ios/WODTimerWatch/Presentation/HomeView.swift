@@ -1,3 +1,4 @@
+import HealthKit
 import SwiftUI
 
 /// Home (1.3.1): the stacked Wharf WOD wordmark as the first row, then the
@@ -9,6 +10,8 @@ struct HomeView: View {
     @State private var showingTimer = false
     /// Bumped on appear so the remembered workouts refresh after a run.
     @State private var refresh = 0
+    /// The Return to App row shows until the athlete has read it (2.4.0).
+    @State private var stayOnScreenSeen = UserDefaults.standard.bool(forKey: StayOnScreenView.seenKey)
 
     /// Every Home screen lists the modes in this order.
     static let modeOrder = Palette.modeOrder
@@ -42,6 +45,19 @@ struct HomeView: View {
                         modeRow(code, summary: memory.summary(code))
                             .id(code)
                     }
+                    if !stayOnScreenSeen {
+                        NavigationLink {
+                            StayOnScreenView { stayOnScreenSeen = true }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Stay on screen")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Text("One watch setting")
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundStyle(Palette.label)
+                            }
+                        }
+                    }
                     NavigationLink {
                         VoiceSettingsView(viewModel: viewModel)
                     } label: {
@@ -56,7 +72,7 @@ struct HomeView: View {
                     }
                     if let tracker = viewModel.tracker as? HealthWorkoutTracker {
                         NavigationLink {
-                            HealthSettingsView(tracker: tracker)
+                            HealthSettingsView(tracker: tracker, alerts: viewModel.alerts, note: viewModel.sessionNote)
                         } label: {
                             HStack {
                                 Text("Health")
@@ -79,6 +95,10 @@ struct HomeView: View {
                 // The one Health permission (save workouts), asked here as
                 // workout apps do, never during a countdown.
                 (viewModel.tracker as? HealthWorkoutTracker)?.requestAuthorizationIfNeeded()
+                // The alerts permission (2.4.0), asked the same way: the
+                // system taps the wrist at each change when no Health
+                // session keeps the app alive.
+                viewModel.alerts.requestAuthorizationIfNeeded(completion: nil)
                 // Promo-footage hook: `simctl launch ... --promo-autostart`
                 // starts a default AMRAP after a beat so the simulator can be
                 // recorded without driving the UI. No effect in normal use.
@@ -104,8 +124,18 @@ struct HomeView: View {
     }
 
     static func healthLabel(_ tracker: HealthWorkoutTracker) -> String {
-        guard tracker.enabled else { return "Off" }
-        return tracker.authorization == .sharingDenied ? "Not allowed" : "On"
+        healthLabel(enabled: tracker.enabled, authorization: tracker.authorization)
+    }
+
+    /// Honest about the one case 2.2.0 hid: a permission sheet dismissed
+    /// without an answer left the row on "On" while no session ever ran.
+    static func healthLabel(enabled: Bool, authorization: HKAuthorizationStatus) -> String {
+        guard enabled else { return "Off" }
+        switch authorization {
+        case .sharingDenied: return "Not allowed"
+        case .notDetermined: return "Not answered"
+        default: return "On"
+        }
     }
 
     private var voiceLabel: String {

@@ -15,7 +15,20 @@ Notes from Gareth to pick up in the next set of changes. Add new items here as t
   Sound check row, Health row, whole-millisecond ticks. Plan:
   `docs/PLAN_2.2.0_watch_background.md`.
 
+## Shipped as 2.4.0 (8 Nov 2026): wrist alerts, honest session state
+
+- Local notifications stand in for the cues when no Health session keeps
+  the watch app alive (Track workouts off, permission unanswered, Apple's
+  Workout app recording); the live screen says which; no restart after a
+  takeover; Stay on screen row (Return to App). Plan:
+  `docs/PLAN_2.4.0_watch_wrist_alerts.md`.
+
 ## Still open
+
+- Cue cleanup asked for on 24 Oct 2026: no random encouragement lines
+  (Keep going / Come on / Almost there, the coin flips on GO and the end),
+  Beeps as the default voice. Three ports: phone `timer_notifier.dart`,
+  watch `TimerViewModel.swift`, Wear `TimerViewModel.kt`, plus their tests.
 
 - Heart rate on the watch live screen (the session already collects it; a
   read permission and one line of UI).

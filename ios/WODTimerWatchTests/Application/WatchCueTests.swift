@@ -9,6 +9,10 @@ import XCTest
 
 private final class SpyTracker: WorkoutTracking {
     var calls: [String] = []
+    var status: HealthWorkoutTracker.Status = .running {
+        didSet { onStatusChange?(status) }
+    }
+    var onStatusChange: ((HealthWorkoutTracker.Status) -> Void)?
     func begin(_ workout: Workout) { calls.append("begin:\(workout.timerType.typeCode)") }
     func go() { calls.append("go") }
     func pause() { calls.append("pause") }

@@ -13,6 +13,12 @@ import os
 /// haptics and short audio clips there, comes back on wrist raise, and the
 /// WOD lands in Health as a workout.
 protocol WorkoutTracking: AnyObject {
+    /// Where the session stands. `keepsAppAlive` says whether the app
+    /// survives wrist-down on its own; when it does not, the view model
+    /// schedules wrist alerts instead (2.4.0, WristAlertPlan).
+    var status: HealthWorkoutTracker.Status { get }
+    /// Called on the main queue whenever `status` changes.
+    var onStatusChange: ((HealthWorkoutTracker.Status) -> Void)? { get set }
     /// START: open the session, so the app survives the get-ready countdown.
     func begin(_ workout: Workout)
     /// GO: the Health workout starts here, not at START.
@@ -27,6 +33,15 @@ protocol WorkoutTracking: AnyObject {
 /// No session: tests, previews, the simulator capture hooks and the promo
 /// hook, where a Health permission sheet would cover the screen.
 final class NoopWorkoutTracker: WorkoutTracking {
+    /// Previews and captures show the normal state (a session running)
+    /// unless a scene asks for another.
+    var status: HealthWorkoutTracker.Status
+    var onStatusChange: ((HealthWorkoutTracker.Status) -> Void)?
+
+    init(status: HealthWorkoutTracker.Status = .running) {
+        self.status = status
+    }
+
     func begin(_ workout: Workout) {}
     func go() {}
     func pause() {}
@@ -47,9 +62,18 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         case unavailable
         case denied
         case failed(String)
+        /// Another app started a workout session mid-workout (Apple's
+        /// Workout app, or its own "looks like a workout" prompt): Apple
+        /// Watch runs one session at a time, and ours ended.
+        case takenOver
+
+        /// Whether the app keeps running off screen on this state's
+        /// account. A paused session is still a session.
+        var keepsAppAlive: Bool { self == .running || self == .paused }
     }
 
     private(set) var status: Status = .idle
+    var onStatusChange: ((Status) -> Void)?
     /// Health only reveals share decisions; the one the app asks for.
     private(set) var authorization: HKAuthorizationStatus = .notDetermined
     /// The switch in Health settings. One additive key: missing reads as
@@ -82,6 +106,12 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
 
     static var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
+    private func setStatus(_ new: Status) {
+        guard new != status else { return }
+        status = new
+        onStatusChange?(new)
+    }
+
     /// Tabata is interval training; the others are what the Workout app
     /// calls functional strength training (the CrossFit choice).
     static func activityType(for type: TimerType) -> HKWorkoutActivityType {
@@ -95,7 +125,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         if on {
             requestAuthorizationIfNeeded()
         } else if session == nil {
-            status = .off
+            setStatus(.off)
         }
     }
 
@@ -133,16 +163,16 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         // A session still open from an interrupted run is discarded first.
         if session != nil, !ending { end(keep: false) }
         guard enabled else {
-            status = .off
+            setStatus(.off)
             return
         }
         guard Self.isAvailable else {
-            status = .unavailable
+            setStatus(.unavailable)
             return
         }
         pendingWorkout = workout
         goPending = false
-        status = .starting
+        setStatus(.starting)
         // AGAIN right after a finish: the last session is still closing,
         // so this one starts when it reports ended.
         if session != nil { return }
@@ -153,7 +183,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         requestAuthorizationIfNeeded { [weak self] authorized in
             guard let self, self.pendingWorkout?.id == workout.id else { return }
             guard authorized else {
-                self.status = .denied
+                self.setStatus(.denied)
                 Self.log.notice("workout session not started: Health sharing not authorized")
                 return
             }
@@ -169,20 +199,20 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     func pause() {
         guard let session, session.state == .running else { return }
         session.pause()
-        status = .paused
+        setStatus(.paused)
     }
 
     func resume() {
         guard let session, session.state == .paused else { return }
         session.resume()
-        status = .running
+        setStatus(.running)
     }
 
     func end(keep: Bool) {
         pendingWorkout = nil
         goPending = false
         guard let session, !ending else {
-            if status == .starting { status = .idle }
+            if status == .starting { setStatus(.idle) }
             return
         }
         ending = true
@@ -210,11 +240,11 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
             collecting = false
             keepOnEnd = true
             session.startActivity(with: Date())
-            status = .running
+            setStatus(.running)
             Self.log.info("workout session started (\(configuration.activityType.rawValue))")
             if goPending { beginCollection() }
         } catch {
-            status = .failed(error.localizedDescription)
+            setStatus(.failed(error.localizedDescription))
             Self.log.error("workout session failed to start: \(error.localizedDescription)")
         }
     }
@@ -227,16 +257,21 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         }
     }
 
-    /// The session is gone: forget it, and start the workout waiting on it.
-    private func clear(_ ended: HKWorkoutSession) {
+    /// The session is gone: forget it and, when we closed it ourselves,
+    /// start the workout waiting on it (AGAIN right after a finish). A
+    /// session that died under the workout is not restarted: 2.3.x did,
+    /// at once and without backoff, which ends the athlete's Apple workout
+    /// or loops against it (one session at a time); the view model
+    /// switches to wrist alerts instead.
+    private func clear(_ ended: HKWorkoutSession, restart: Bool) {
         guard ended === session else { return }
         session = nil
         collecting = false
         ending = false
-        if let pending = pendingWorkout {
+        if restart, let pending = pendingWorkout {
             startWhenAuthorized(pending)
-        } else if status != .off {
-            status = .idle
+        } else if [.starting, .running, .paused].contains(status) {
+            setStatus(.idle)
         }
     }
 
@@ -311,7 +346,7 @@ extension HealthWorkoutTracker: HKWorkoutSessionDelegate {
         case .ended:
             DispatchQueue.main.async { [weak self] in
                 guard let self, workoutSession === self.session else { return }
-                self.clear(workoutSession)
+                self.clear(workoutSession, restart: true)
             }
         default:
             break
@@ -322,8 +357,26 @@ extension HealthWorkoutTracker: HKWorkoutSessionDelegate {
         Self.log.error("workout session failed: \(error.localizedDescription)")
         DispatchQueue.main.async { [weak self] in
             guard let self, workoutSession === self.session else { return }
-            self.status = .failed(error.localizedDescription)
-            self.clear(workoutSession)
+            if self.ending {
+                // The session we were closing failed instead of ending:
+                // closed is closed, and a workout waiting on it still starts.
+                self.clear(workoutSession, restart: true)
+                return
+            }
+            // The live session died under the workout, usually because
+            // another app started one. Leave it: the alerts take over.
+            self.pendingWorkout = nil
+            self.goPending = false
+            self.setStatus(Self.status(for: error))
+            self.clear(workoutSession, restart: false)
         }
+    }
+
+    /// Another app's session ending ours is its own state, not a failure.
+    static func status(for error: Error) -> Status {
+        if let hkError = error as? HKError, hkError.code == .errorAnotherWorkoutSessionStarted {
+            return .takenOver
+        }
+        return .failed(error.localizedDescription)
     }
 }

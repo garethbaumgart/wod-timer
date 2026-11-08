@@ -26,6 +26,17 @@ struct ActiveTimerView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            // The state of the cues off screen (2.4.0), in the back
+            // button's slot: Apple asks a workout app to show when a
+            // session is running, and the athlete sees at a glance
+            // whether the wrist will be tapped once the screen is gone.
+            ToolbarItem(placement: .topBarLeading) {
+                if viewModel.phase != .completed {
+                    WristCueGlyph(state: viewModel.wristCueState)
+                }
+            }
+        }
         .onChange(of: viewModel.phase) { _, newPhase in
             if newPhase == .ready {
                 dismiss()
@@ -231,6 +242,42 @@ struct ScoreSlot: View {
             .font(.system(size: 14, weight: .heavy, design: .rounded))
             .tracking(1.2)
             .foregroundStyle(Palette.label)
+    }
+}
+
+/// What reaches the wrist off screen (2.4.0): the figure means the Health
+/// session keeps the app alive (beeps and taps as on screen), the bell
+/// means the system's alerts stand in (one tap per change), the crossed
+/// bell means nothing does until the app is reopened. Nothing while the
+/// session is still coming up.
+struct WristCueGlyph: View {
+    let state: TimerViewModel.WristCueState
+
+    static func symbol(_ state: TimerViewModel.WristCueState) -> String? {
+        switch state {
+        case .session: "figure.strengthtraining.traditional"
+        case .alerts: "bell.fill"
+        case .none: "bell.slash.fill"
+        case .pending: nil
+        }
+    }
+
+    static func label(_ state: TimerViewModel.WristCueState) -> String {
+        switch state {
+        case .session: "Health session on: cues continue with your wrist down"
+        case .alerts: "No Health session: the watch alerts you at each change"
+        case .none: "No Health session and alerts not allowed: no cues off screen"
+        case .pending: "Health session starting"
+        }
+    }
+
+    var body: some View {
+        if let symbol = Self.symbol(state) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(state == .none ? Palette.error : Palette.label)
+                .accessibilityLabel(Self.label(state))
+        }
     }
 }
 
