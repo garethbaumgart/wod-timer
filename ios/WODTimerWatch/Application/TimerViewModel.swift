@@ -46,9 +46,7 @@ final class TimerViewModel {
     private var lastRound: Int = 0
     private var playedGetReady = false
     private var playedLastRound = false
-    private var playedKeepGoing = false
     private var playedHalfway = false
-    private var playedAlmostThere = false
     private var playedTenSeconds = false
     private var lastWorkout: Workout?
 
@@ -119,7 +117,7 @@ final class TimerViewModel {
                 // No get-ready countdown: GO on the high beep right away.
                 playedGo = true
                 audio.playHighBeep()
-                say(Bool.random() ? audio.playGo : audio.playLetsGo)
+                say(audio.playGo)
                 haptics.play(.go)
                 tracker.go()
                 blockRoundCount()
@@ -202,7 +200,7 @@ final class TimerViewModel {
             haptics.play(.complete)
             tracker.end(keep: true)
             audio.playHighBeep()
-            playCompletionEncouragement()
+            audio.playGoodJob()
         case .failure:
             break
         }
@@ -342,13 +340,13 @@ final class TimerViewModel {
     }
 
     /// The end is a change like any other: the high beep with the line on
-    /// it. A capped For Time is a DNF: the neutral end line, no "Good job".
+    /// it ("Good job"). A capped For Time is a DNF: the neutral end line.
     private func playEndCues() {
         audio.playHighBeep()
         if endedAtTimeCap {
             audio.playComplete()
         } else {
-            playCompletionEncouragement()
+            audio.playGoodJob()
         }
     }
 
@@ -357,9 +355,11 @@ final class TimerViewModel {
     /// Ported from timer_notifier.dart _handleAudioCues. The gym-timer
     /// pattern (2.1.0): three low beeps in the last three seconds of every
     /// phase, then on the change a high beep with the voice line starting on
-    /// it. The optional voice cues keep clear of the countdown and of a line
-    /// still being spoken. The wrist gets one pattern per change (2.2.0,
-    /// see WatchHapticService) and the Health session hears GO.
+    /// it. The optional voice cues (halfway, ten seconds) keep clear of the
+    /// countdown and of a line still being spoken; the encouragement lines
+    /// and the coin flips on GO and the end went on 8 Nov 2026. The wrist
+    /// gets one pattern per change (2.2.0, see WatchHapticService) and the
+    /// Health session hears GO.
     private func handleCues(old: TimerSession, new: TimerSession) {
         var voiceCuePlayed = false
         // One high beep per change, even when two things change on one tick.
@@ -385,11 +385,11 @@ final class TimerViewModel {
         // GO, then last round, round, rest, work.
         var wristCue: WatchHapticService.Cue?
 
-        // High beep + "Go!" or "Let's go!" when prep → running
+        // High beep + "Go!" when prep ends and the work starts
         if old.state == .preparing && new.state == .running && !playedGo {
             playedGo = true
             changeBeep()
-            say(Bool.random() ? audio.playGo : audio.playLetsGo)
+            say(audio.playGo)
             wristCue = .go
             tracker.go()
             blockRoundCount()
@@ -437,25 +437,11 @@ final class TimerViewModel {
         // The optional cues below wait for a clear moment.
         guard !voiceCuePlayed, clearToSpeak(new) else { return }
 
-        // Motivational cue at ~33% progress
-        if new.progress >= 0.33 && old.progress < 0.33 && !playedKeepGoing {
-            playedKeepGoing = true
-            say(Bool.random() ? audio.playKeepGoing : audio.playComeOn)
-            return
-        }
-
         // Halfway point
         if new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
             playedHalfway = true
             say(audio.playHalfway)
             haptics.play(.halfway)
-            return
-        }
-
-        // "Almost there" at ~85% progress
-        if new.progress >= 0.85 && old.progress < 0.85 && !playedAlmostThere {
-            playedAlmostThere = true
-            say(audio.playAlmostThere)
             return
         }
 
@@ -521,15 +507,6 @@ final class TimerViewModel {
         return max(0, total - session.elapsed.seconds)
     }
 
-    /// Plays "Good job" or "That's it" on the high beep at the end.
-    private func playCompletionEncouragement() {
-        if Bool.random() {
-            audio.playGoodJob()
-        } else {
-            audio.playThatsIt()
-        }
-    }
-
     private func resetCueState() {
         lastLowBeep = nil
         lastVoiceAt = nil
@@ -537,9 +514,7 @@ final class TimerViewModel {
         lastRound = 0
         playedGetReady = false
         playedLastRound = false
-        playedKeepGoing = false
         playedHalfway = false
-        playedAlmostThere = false
         playedTenSeconds = false
     }
 }

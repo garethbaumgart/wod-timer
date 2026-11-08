@@ -14,8 +14,11 @@ Formerly "WOD Timer"; renamed and adopted into the portfolio July 2026
 - **EMOM** — every minute (or custom interval) on the minute
 - **Tabata** — work/rest intervals with phase previews ("REST in 3s")
 - **Voice cues** — 3 recorded voice packs (Major, Liam, Holly) + random mode:
-  countdowns, GO, halfway, last round, ten seconds, final 5-4-3-2-1,
-  encouragement. Plays through the silent switch (playback audio session).
+  Get ready, GO, Next round / Last round, Rest, Halfway, Ten seconds and
+  Good job, on the gym-timer beeps (low with 3, 2, 1 to go, high on the
+  change). No encouragement lines since 8 Nov 2026; Beeps only is the
+  default until a voice is chosen. Plays through the silent switch
+  (playback audio session).
 - **Suspension-proof timing** — wall-clock catch-up: backgrounding the app
   mid-workout can't desync EMOM/Tabata rounds
 - **Gym-visible UI** — the "Signal" dark design system, giant timer text,

@@ -11,15 +11,16 @@ import app.mentalmetal.wharfwod.wear.services.AudioCues
 import app.mentalmetal.wharfwod.wear.services.HapticCue
 import app.mentalmetal.wharfwod.wear.services.WorkoutTracking
 import app.mentalmetal.wharfwod.wear.services.WristHaptics
-import kotlin.random.Random
 
 /**
  * The timer's state and cue logic, a port of the watch's TimerViewModel:
  * the gym-timer beep pattern (three low beeps, then the high beep with the
  * voice line on it), one wrist cue per change with GO, last round, round,
- * rest, work precedence, optional lines that keep clear of the countdown,
- * and the workout session hooks. Ticks are whole milliseconds of the
- * engine clock, so the deltas sum to the elapsed time itself.
+ * rest, work precedence, the optional halfway and ten-second lines that
+ * keep clear of the countdown (the encouragement lines and the coin flips
+ * on GO and the end went on 8 Nov 2026), and the workout session hooks.
+ * Ticks are whole milliseconds of the engine clock, so the deltas sum to
+ * the elapsed time itself.
  */
 /** What the view model needs from the engine; the real one is [TimerEngine]. */
 interface Ticker {
@@ -42,7 +43,6 @@ class TimerViewModel(
     val tracker: WorkoutTracking,
     private val store: KeyValueStore,
     private val engine: Ticker = NoopTicker,
-    private val random: Random = Random.Default,
     private val now: () -> Long = { System.currentTimeMillis() },
 ) {
     companion object {
@@ -78,9 +78,7 @@ class TimerViewModel(
     private var lastRound = 0
     private var playedGetReady = false
     private var playedLastRound = false
-    private var playedKeepGoing = false
     private var playedHalfway = false
-    private var playedAlmostThere = false
     private var playedTenSeconds = false
     private var lastWorkout: Workout? = null
     private var roundCountBlockedUntil: Long? = null
@@ -102,7 +100,7 @@ class TimerViewModel(
                     // No get-ready countdown: GO on the high beep right away.
                     playedGo = true
                     audio.playHighBeep()
-                    say { if (random.nextBoolean()) audio.playGo() else audio.playLetsGo() }
+                    say { audio.playGo() }
                     haptics.play(HapticCue.GO)
                     tracker.go()
                     blockRoundCount()
@@ -161,7 +159,7 @@ class TimerViewModel(
         haptics.play(HapticCue.COMPLETE)
         tracker.end(keep = true)
         audio.playHighBeep()
-        playCompletionEncouragement()
+        audio.playGoodJob()
     }
 
     /** Cancel the get-ready countdown (nothing has happened yet). */
@@ -250,10 +248,10 @@ class TimerViewModel(
         }
     }
 
-    /** The end is a change like any other: the high beep with the line on it; a capped For Time is a DNF. */
+    /** The end is a change like any other: the high beep with "Good job" on it; a capped For Time is a DNF. */
     private fun playEndCues() {
         audio.playHighBeep()
-        if (endedAtTimeCap) audio.playComplete() else playCompletionEncouragement()
+        if (endedAtTimeCap) audio.playComplete() else audio.playGoodJob()
     }
 
     private fun handleCues(old: TimerSession, new: TimerSession) {
@@ -278,7 +276,7 @@ class TimerViewModel(
         if (old.state == TimerState.PREPARING && new.state == TimerState.RUNNING && !playedGo) {
             playedGo = true
             changeBeep()
-            say { if (random.nextBoolean()) audio.playGo() else audio.playLetsGo() }
+            say { audio.playGo() }
             wristCue = HapticCue.GO
             tracker.go()
             blockRoundCount()
@@ -319,20 +317,10 @@ class TimerViewModel(
 
         if (voiceCuePlayed || !clearToSpeak(new)) return
 
-        if (new.progress >= 0.33 && old.progress < 0.33 && !playedKeepGoing) {
-            playedKeepGoing = true
-            say { if (random.nextBoolean()) audio.playKeepGoing() else audio.playComeOn() }
-            return
-        }
         if (new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway) {
             playedHalfway = true
             say { audio.playHalfway() }
             haptics.play(HapticCue.HALFWAY)
-            return
-        }
-        if (new.progress >= 0.85 && old.progress < 0.85 && !playedAlmostThere) {
-            playedAlmostThere = true
-            say { audio.playAlmostThere() }
             return
         }
         if (new.state != TimerState.PREPARING && !playedTenSeconds && new.workout.timerType.estimatedDuration.seconds > 15) {
@@ -381,10 +369,6 @@ class TimerViewModel(
     private fun workoutRemaining(s: TimerSession): Int =
         maxOf(0, s.workout.timerType.estimatedDuration.seconds - s.elapsed.seconds)
 
-    private fun playCompletionEncouragement() {
-        if (random.nextBoolean()) audio.playGoodJob() else audio.playThatsIt()
-    }
-
     private fun resetCueState() {
         lastLowBeep = null
         lastVoiceAtMs = null
@@ -392,9 +376,7 @@ class TimerViewModel(
         lastRound = 0
         playedGetReady = false
         playedLastRound = false
-        playedKeepGoing = false
         playedHalfway = false
-        playedAlmostThere = false
         playedTenSeconds = false
     }
 }

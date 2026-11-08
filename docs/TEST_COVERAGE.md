@@ -56,13 +56,13 @@ audioplayers pool and audio_session calls inside `AudioService`,
 | Behaviour | Flutter | Watch |
 |---|---|---|
 | Engine: ticks, pause keeps elapsed, resume continues, stop resets, dispose closes | `timer_engine_test`, `timer_e2e_test` | (DispatchSourceTimer; exercised through `debugAdvance`) |
-| Get ready on the first prep tick; 3, 2, 1 once each with a tap; GO / Let's go with a thump; a 3s prep says Get ready not 3 | `timer_cues_test` get ready and GO | `handleCues` port; `testGetReadyCannotBePaused` |
+| Get ready on the first prep tick; 3, 2, 1 once each with a tap; GO with a thump; a 3s prep says Get ready not 3 | `timer_cues_test` get ready and GO | `handleCues` port; `testGetReadyCannotBePaused` |
 | Skipping the countdown plays GO, starts at 0, arms the tap cooldown | `timer_cues_test` | `testSkipPrepStartsTheClockAtZero...` |
-| AMRAP schedule: motivation at a third, halfway (with a tap), ten seconds, almost there, the final five, then the payoff | `timer_cues_test` AMRAP schedule | ported logic (same thresholds) |
+| AMRAP schedule: halfway (with a tap), ten seconds, the count-in, then Good job; no encouragement lines and no coin flips (8 Nov 2026) | `timer_cues_test` AMRAP schedule | ported logic (same thresholds) |
 | EMOM: Next round each minute, Last round on the final one, the round cue beats halfway on the same tick, Last round never repeats, catch-up cues once | `timer_cues_test` EMOM schedule; `timer_notifier_test` cue timing | |
 | Tabata: Rest with a warning buzz, work and round thumps, Last round as the final work starts, the final rest counts, no Rest cue when rest and round change share a tick | `timer_cues_test` Tabata schedule | |
 | One voice cue per tick; ten seconds and the final five measure the whole workout, not the interval | `timer_cues_test`; `timer_notifier_test` whole-workout scale | `testEndSummary...` (whole-workout remaining) |
-| Natural end: encouragement (delayed past the final-countdown clip) and a success buzz; **records the review payoff** | `timer_cues_test` AMRAP schedule, "a natural finish records the review payoff moment" | |
+| Natural end: Good job on the high beep and a success buzz; **records the review payoff** | `timer_cues_test` AMRAP schedule, "a natural finish records the review payoff moment" | |
 | Time cap: end tone and a plain thump, no Good job, no review | `timer_cues_test` For Time; `timer_notifier_test` reaching the cap | `testReachingTheCapIsATimeCap`, `testTimeCapOnlyWhen...` |
 | FINISH is a finish (celebrates); Stop is honest (medium tap, no cue, Stopped) | `timer_cues_test` For Time, stop | `testStopIsHonestAndFinishIsAFinish`, `testStopAndFinishAfterTheEndAreNoOps` |
 | Pause / resume drive the engine with one tap each; a paused Tabata resumes in its phase | `timer_cues_test` | `testPauseAndResumeKeepATabataInItsPhase` |
@@ -78,11 +78,11 @@ audioplayers pool and audio_session calls inside `AudioService`,
 |---|---|---|
 | Every cue plays its clip; 3, 2, 1 spoken and any other number a beep; the beep is one file | `audio_service_test` voice on | `BeepsOnlyTests` (cue set) |
 | Voice pack switch; unknown pack is Major; Random picks a real pack per cue | `audio_service_test` | `WatchAudioSettingsTests` |
-| Beeps only: timing cues beep, encouragement goes quiet and still succeeds | `audio_service_test` Beeps only | `testTimingCuesBeepAndEncouragementStaysQuiet` |
+| Beeps only: the beeps play, every voice line goes quiet and still succeeds | `audio_service_test` Beeps only | `testTimingCuesBeepAndEncouragementStaysQuiet` |
 | Silent: nothing plays, not even the beep; Silent over Beeps only is silent | `audio_service_test` Silent | `play(file:)` guard (not unit-testable without AVAudio) |
 | The picker preview plays GO from the asked pack and ignores Silent and Beeps only | `audio_service_test` voice preview | |
 | Haptics: each impact's vibration, success / warning / error patterns, Haptics off reports disabled, a failing platform is silent | `haptic_service_test` | (WKInterfaceDevice; not unit-testable) |
-| Voice, Random, Silent and Beeps only persist across launches; an unknown stored pack reads Major; volume clamps | | `WatchAudioSettingsTests`, `BeepsOnlyTests` |
+| Voice, Random, Silent and Beeps only persist across launches; a fresh install is Beeps only and an earlier choice without the Beeps key keeps its voice (8 Nov 2026); an unknown stored pack reads Major; volume clamps | | `WatchAudioSettingsTests`, `BeepsOnlyTests` |
 
 ## Persistence (app updates never remove stored data)
 

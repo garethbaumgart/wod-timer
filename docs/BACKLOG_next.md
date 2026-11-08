@@ -15,6 +15,22 @@ Notes from Gareth to pick up in the next set of changes. Add new items here as t
   Sound check row, Health row, whole-millisecond ticks. Plan:
   `docs/PLAN_2.2.0_watch_background.md`.
 
+## Built on feat/cue-cleanup (8 Nov 2026), not shipped
+
+- **Cue cleanup asked for on 24 Oct 2026.** The encouragement lines are
+  gone on all three ports (Keep going / Come on at a third, Almost there at
+  85%), and so are the coin flips: GO always says "Go", the end always
+  "Good job" (a capped For Time keeps the neutral end tone). Get ready,
+  Rest, Next round / Last round, Halfway, Ten seconds and the gym beeps
+  stay. Beeps is the voice for an athlete who never chose one: a missing
+  phone `app_voice` reads as Beeps only (a stored index keeps its meaning,
+  so a saved Major stays Major), a missing watch `watch_voice_beeps` or
+  Wear `wear_voice_beeps` reads as on unless another voice key shows an
+  earlier choice. Nothing stored is rewritten. The retired clips stay in
+  the bundles (the watch and Wear sound checks still play "Let's go").
+  Branched from main after 2.3.3; merge after `fix/watch-wrist-alerts`
+  and drop its Still open bullet for this item.
+
 ## Still open
 
 - Heart rate on the watch live screen (the session already collects it; a

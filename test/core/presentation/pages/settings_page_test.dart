@@ -202,7 +202,9 @@ void main() {
   });
 
   group('Flat list', () {
-    testWidgets('rows and the rate block in order, no section headers', (tester) async {
+    testWidgets('rows and the rate block in order, no section headers', (
+      tester,
+    ) async {
       await pumpSettings(tester);
 
       const order = [
@@ -327,7 +329,7 @@ void main() {
 
       verify(() => audio.playVoicePreview('liam')).called(1);
       expect(find.text('Liam (Male Coach)'), findsOneWidget);
-      expect(find.text('Major >'), findsOneWidget);
+      expect(find.text('Beeps >'), findsOneWidget, reason: 'the default');
     });
 
     testWidgets('tapping the row selects and closes', (tester) async {

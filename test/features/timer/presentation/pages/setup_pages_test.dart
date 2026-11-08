@@ -248,7 +248,7 @@ void main() {
         AppColors.secondary,
       );
       expect(find.byType(SetupWheel), findsNWidgets(2));
-      expect(find.text('Major'), findsOneWidget); // voice chip
+      expect(find.text('Beeps'), findsOneWidget); // voice chip
 
       // The selected rows are the big white ones.
       final every = tester.widget<Text>(find.text('1:00'));
@@ -276,7 +276,7 @@ void main() {
     testWidgets('voice chip sits flush right in the header', (tester) async {
       await pumpSetup(tester, const EmomSetupPage());
 
-      final chip = tester.getRect(find.text('Major'));
+      final chip = tester.getRect(find.text('Beeps'));
       // 16pt screen padding + 15pt chip padding + 1.5pt border.
       expect(chip.right, greaterThan(390 - 16 - 15 - 4));
     });
@@ -386,14 +386,15 @@ void main() {
     ) async {
       await pumpSetup(tester, const EmomSetupPage());
 
-      final label = tester.widget<Text>(find.text('Major'));
+      // Beeps only is the default voice (8 Nov 2026): the volume-down icon.
+      final label = tester.widget<Text>(find.text('Beeps'));
       expect(label.style!.color, AppColors.textSecondaryDark);
-      final icon = tester.widget<Icon>(find.byIcon(Icons.volume_up_outlined));
+      final icon = tester.widget<Icon>(find.byIcon(Icons.volume_down_outlined));
       expect(icon.color, AppColors.textSecondaryDark);
 
       final chip = tester.widget<Container>(
         find
-            .ancestor(of: find.text('Major'), matching: find.byType(Container))
+            .ancestor(of: find.text('Beeps'), matching: find.byType(Container))
             .first,
       );
       final decoration = chip.decoration! as BoxDecoration;
@@ -404,7 +405,7 @@ void main() {
       // Same size and tap target as before.
       final chipRect = tester.getRect(
         find
-            .ancestor(of: find.text('Major'), matching: find.byType(SizedBox))
+            .ancestor(of: find.text('Beeps'), matching: find.byType(SizedBox))
             .first,
       );
       expect(chipRect.height, 48);

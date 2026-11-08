@@ -97,17 +97,35 @@ class FocusLeaseTest {
 }
 
 class VoiceSettingsTest {
-    @Test fun `a fresh install is Major with the voice on, and every choice persists`() {
+    @Test fun `a fresh install is Beeps until a voice is chosen, and every choice persists`() {
         val store = MemoryStore()
         val v = VoiceSettings(store)
-        assertEquals(VoicePack.MAJOR, v.voicePack)
-        assertEquals("audio/major/countdown_go.mp3", v.voiceFile("countdown_go"))
+        assertTrue("8 Nov 2026: no voice chosen yet means the beeps alone", v.beepsOnly)
+        assertEquals("Beeps", v.label)
+        assertNull(v.voiceFile("countdown_go"))
         assertEquals("audio/beeps/high.wav", v.beepFile("high"))
+        assertFalse("the default is not written", store.contains(VoiceSettings.BEEPS_KEY))
+        v.setMuted(false); v.setBeepsOnly(false); v.setRandomizePerCue(false); v.setVoicePack(VoicePack.MAJOR)
+        assertEquals("audio/major/countdown_go.mp3", v.voiceFile("countdown_go"))
         v.setVoicePack(VoicePack.HOLLY); v.setBeepsOnly(true)
         val again = VoiceSettings(store)
         assertEquals(VoicePack.HOLLY, again.voicePack)
         assertTrue(again.beepsOnly)
         assertEquals("Beeps", again.label)
+    }
+
+    @Test fun `a store with a voice chosen before and no Beeps key keeps its voice`() {
+        val chosen = MemoryStore()
+        chosen.putString(VoiceSettings.PACK_KEY, "holly")
+        assertFalse(VoiceSettings(chosen).beepsOnly)
+        assertEquals("Holly", VoiceSettings(chosen).label)
+        val silent = MemoryStore()
+        silent.putBoolean(VoiceSettings.MUTED_KEY, true)
+        assertFalse(VoiceSettings(silent).beepsOnly)
+        assertEquals("Silent", VoiceSettings(silent).label)
+        val off = MemoryStore()
+        off.putBoolean(VoiceSettings.BEEPS_KEY, false)
+        assertFalse("an explicit Beeps off is kept", VoiceSettings(off).beepsOnly)
     }
 
     @Test fun `Beeps only drops the voice and keeps the beeps, Silent drops both`() {

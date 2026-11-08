@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/infrastructure/audio/audio_service.dart';
 import 'package:wod_timer/features/timer/domain/entities/workout.dart';
 
@@ -31,7 +32,12 @@ void main() {
       final audio = AudioService.withSink((asset) async {
         events.add({'ms': h.engine.elapsed.inMilliseconds, 'asset': asset});
       });
-      h = NotifierHarness(audioService: audio);
+      // The mocks are the Major voice; Beeps only is the default (8 Nov
+      // 2026), so the voice is chosen here as an athlete would.
+      h = NotifierHarness(
+        audioService: audio,
+        settings: const AppSettings(voice: VoiceOption.major),
+      );
       addTearDown(h.dispose);
 
       final workout = entry.value();
@@ -46,6 +52,16 @@ void main() {
       for (final event in events) {
         final asset = event['asset']! as String;
         expect(File('assets/$asset').existsSync(), isTrue, reason: asset);
+        // The retired lines (8 Nov 2026) never reach the timeline.
+        for (final retired in const [
+          'lets_go',
+          'keep_going',
+          'come_on',
+          'almost_there',
+          'thats_it',
+        ]) {
+          expect(asset, isNot(contains(retired)));
+        }
       }
       final end = events.where((e) => e['ms'] == total * 1000).toList();
       expect(end.first['asset'], 'audio/beeps/high.wav');

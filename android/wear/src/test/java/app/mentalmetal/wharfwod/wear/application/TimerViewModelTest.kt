@@ -13,7 +13,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.random.Random
 
 class TimerViewModelTest {
     private class Rig {
@@ -23,7 +22,7 @@ class TimerViewModelTest {
         val ticker = SpyTicker()
         val store = MemoryStore()
         var clock = 0L
-        val vm = TimerViewModel(haptics, audio, tracker, store, ticker, Random(1), now = { clock })
+        val vm = TimerViewModel(haptics, audio, tracker, store, ticker, now = { clock })
 
         /** Drives the real tick path in 100ms steps. */
         fun tick(fromSec: Double, toSec: Double) {
@@ -171,14 +170,22 @@ class TimerViewModelTest {
         assertEquals(604, r.vm.session?.elapsed?.seconds)
     }
 
-    @Test fun `the optional lines wait for a clear moment and the ten-second call fires once`() {
+    @Test fun `GO, halfway, ten seconds and Good job are the only spoken lines, each once`() {
         val r = Rig()
-        // 120s: 33% at 40s, halfway at 60s, 85% at 102s, ten seconds at 110s.
-        // (In a 60s AMRAP the ten-second call at 50s silences "almost there" at 51s.)
+        // 120s: halfway at 60s, ten seconds at 110s. No encouragement lines and
+        // no coin flips since 8 Nov 2026: GO is "Go", the end is "Good job".
         r.vm.start(amrap(seconds = 120))
         r.tick(0.0, 120.0)
         val voices = r.audio.log.filter { it.startsWith("voice:") }
-        assertEquals(listOf("voice:go", "voice:keep_going", "voice:halfway", "voice:almost_there", "voice:ten_seconds", "voice:good_job"), voices)
+        assertEquals(listOf("voice:go", "voice:halfway", "voice:ten_seconds", "voice:good_job"), voices)
         assertEquals(1, r.haptics.log.count { it == "HALFWAY" })
+    }
+
+    @Test fun `halfway sits out when it would land on the count-in`() {
+        val r = Rig()
+        // Halfway of 6s is 3s, on the low 3 beep.
+        r.vm.start(amrap(seconds = 6))
+        r.tick(0.0, 6.0)
+        assertEquals(listOf("voice:go", "voice:good_job"), r.audio.log.filter { it.startsWith("voice:") })
     }
 }

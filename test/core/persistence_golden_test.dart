@@ -169,7 +169,7 @@ void main() {
       expect(LiveHints(prefs).hasCountedRound, isFalse);
 
       final settings = await loadSettings();
-      expect(settings.voice, VoiceOption.major);
+      expect(settings.voice, VoiceOption.off, reason: 'the default');
       expect(settings.hapticEnabled, isTrue);
 
       await LiveHints(prefs).markCountedRound();
@@ -186,7 +186,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     final settings = await loadSettings();
-    expect(settings.voice, VoiceOption.major);
+    // Beeps only until a voice is chosen (8 Nov 2026).
+    expect(settings.voice, VoiceOption.off);
     expect(SetupMemory(prefs).lastMode, 'fortime');
     expect(LiveHints(prefs).hasCountedRound, isFalse);
     expect(
@@ -202,4 +203,26 @@ void main() {
       LiveHints.countedRoundKey,
     });
   });
+
+  test(
+    'a stored Major stays Major: only a missing voice reads as Beeps',
+    () async {
+      // Major is index 0, which used to be the fallback for a missing key; a
+      // stored 0 is a choice and is read as one (the enum is never renumbered).
+      SharedPreferences.setMockInitialValues({
+        'app_voice': 0,
+        'app_sound_silent_migrated_v130': true,
+      });
+      prefs = await SharedPreferences.getInstance();
+      final settings = await loadSettings();
+      expect(settings.voice, VoiceOption.major);
+
+      // Saving another setting writes the voice back exactly as it was.
+      await container
+          .read(appSettingsNotifierProvider.notifier)
+          .setHapticEnabled(enabled: false);
+      await prefs.reload();
+      expect(prefs.getInt('app_voice'), 0);
+    },
+  );
 }
