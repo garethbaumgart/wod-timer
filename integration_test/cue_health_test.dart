@@ -10,7 +10,6 @@
 // Prints are the progress log that shows up in the flutter test output.
 // ignore_for_file: avoid_print
 
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
