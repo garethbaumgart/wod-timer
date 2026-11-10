@@ -33,7 +33,9 @@ dependencies:
   wakelock_plus: ^1.2.10
 
 dev_dependencies:
+  audioplayers_platform_interface: ^7.1.1
   build_runner: ^2.4.15
+  fake_async: ^1.3.3
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.7
   flutter_test:

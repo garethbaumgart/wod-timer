@@ -9,6 +9,7 @@ import 'package:meta/meta.dart';
 import 'package:wod_timer/core/domain/failures/audio_failure.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/audio/session_lease.dart';
+import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 
 /// Implementation of [IAudioService] using audioplayers package.
 ///
@@ -95,8 +96,12 @@ class AudioService implements IAudioService {
   );
 
   final Map<String, AudioPlayer> _players = {};
-  final List<StreamSubscription<PlayerState>> _subscriptions = [];
+  final Map<String, StreamSubscription<PlayerState>> _subscriptions = {};
   Completer<void>? _initCompleter;
+
+  /// Holds on the session open right now (cues still sounding).
+  @visibleForTesting
+  int get activeHolds => _lease.active;
 
   double _volume = 1;
   bool _isMuted = false;
@@ -117,34 +122,44 @@ class AudioService implements IAudioService {
         // Desktop and web have no audio context; the session still applies.
       }
 
+      // A cue that cannot start while its hold on the session is still
+      // open is dropped, never played late: the plugin's own wait is 30
+      // seconds, long enough for a "3" to land after the "Go".
+      AudioPlayer.preparationTimeout = releaseAfter;
+
       // Two players for the voice and two for the beeps, so a high beep
       // and the voice line that starts on it play together, and a beep can
       // never cut off a line that is still being spoken.
       for (var i = 0; i < _poolSize; i++) {
         for (final channel in ['voice', 'beep']) {
+          final key = '${channel}_$i';
           final player = AudioPlayer();
           await player.setPlayerMode(PlayerMode.lowLatency);
-          _players['${channel}_$i'] = player;
+          _players[key] = player;
+          _watch(key, player);
         }
-      }
-
-      // A player's completion (or stop) releases its hold on the session;
-      // a player that never reports one is released by the lease's timeout.
-      for (final entry in _players.entries) {
-        final key = entry.key;
-        final sub = entry.value.onPlayerStateChanged.listen((state) async {
-          if (state == PlayerState.completed || state == PlayerState.stopped) {
-            await _lease.complete(key);
-          }
-        });
-        _subscriptions.add(sub);
       }
 
       _initCompleter!.complete();
     } on Exception catch (e) {
-      _initCompleter!.completeError(e);
+      // The launch call is not awaited and nobody may be waiting on the
+      // completer, so its error must not go looking for a handler; a cue
+      // that is waiting still gets it, and drops itself.
+      final failed = _initCompleter!;
       _initCompleter = null; // Allow retry on failure
+      failed.future.ignore();
+      failed.completeError(e);
     }
+  }
+
+  /// A player's completion (or stop) releases its hold on the session; a
+  /// player that never reports one is released by the lease's timeout.
+  void _watch(String key, AudioPlayer player) {
+    _subscriptions[key] = player.onPlayerStateChanged.listen((state) async {
+      if (state == PlayerState.completed || state == PlayerState.stopped) {
+        await _lease.complete(key);
+      }
+    });
   }
 
   static const _poolSize = 2;
@@ -296,12 +311,72 @@ class AudioService implements IAudioService {
       await _lease.acquire(key);
       final player = _players[key]!;
       await player.setVolume(_volume);
-      // Not awaiting - fire and forget for responsiveness
-      unawaited(player.play(AssetSource(assetPath)));
+      // Not awaited (a cue never holds up the timer), but never left
+      // without a handler either: see [_start].
+      unawaited(_start(key, channel, player, assetPath));
     } on Exception {
       // Audio is non-critical - ignore errors
       await _lease.complete(key);
     }
+  }
+
+  /// Plays [assetPath] on [player] and owns whatever goes wrong. A play
+  /// that was simply not awaited sent its error to the app's top-level
+  /// handler as a fatal one: on an Infinix X657 (Android 10 Go) five cues
+  /// in a minute never loaded, each reported 30 seconds later
+  /// (WHARFWOD-3, 10 Nov 2026).
+  Future<void> _start(
+    String key,
+    String channel,
+    AudioPlayer player,
+    String assetPath,
+  ) async {
+    try {
+      await player.play(AssetSource(assetPath));
+    } on Object catch (error) {
+      try {
+        await _lease.complete(key);
+        _reportCueFailure(channel, player, error);
+        await _replace(key, player);
+      } on Object {
+        // Audio is non-critical: the next cue starts from what is there.
+      }
+    }
+  }
+
+  /// A player that failed to load a clip is rebuilt as a standard one.
+  /// Android's low-latency player shares each loaded sound between
+  /// players, and a player whose load was cut short can wait on it for
+  /// good, as can every later player that asks for the same clip. The
+  /// standard player shares nothing: a few milliseconds slower to start,
+  /// but it plays. The cue that failed is not replayed, it is late by now.
+  Future<void> _replace(String key, AudioPlayer failed) async {
+    if (!identical(_players[key], failed)) return;
+    final player = AudioPlayer();
+    _players[key] = player;
+    unawaited(_subscriptions.remove(key)?.cancel());
+    _watch(key, player);
+    try {
+      await failed.dispose();
+    } on Object {
+      // It is out of the pool either way.
+    }
+  }
+
+  static const _maxFailureReports = 4;
+  int _failureReports = 0;
+
+  /// Counts failed cues (anonymous, a handful per launch at most), so a
+  /// phone whose cues go quiet is still seen now that the error is
+  /// handled here.
+  void _reportCueFailure(String channel, AudioPlayer player, Object error) {
+    if (_failureReports >= _maxFailureReports) return;
+    _failureReports++;
+    trackEvent('cue_failed', {
+      'channel': channel,
+      'mode': player.mode == PlayerMode.lowLatency ? 'low_latency' : 'standard',
+      'error': error is TimeoutException ? 'timeout' : 'other',
+    });
   }
 
   @override
@@ -312,7 +387,7 @@ class AudioService implements IAudioService {
   @override
   Future<void> dispose() async {
     await _lease.releaseAll();
-    for (final sub in _subscriptions) {
+    for (final sub in _subscriptions.values) {
       await sub.cancel();
     }
     _subscriptions.clear();

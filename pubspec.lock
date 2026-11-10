@@ -106,7 +106,7 @@ packages:
     source: hosted
     version: "4.2.1"
   audioplayers_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: audioplayers_platform_interface
       sha256: "0e2f6a919ab56d0fec272e801abc07b26ae7f31980f912f24af4748763e5a656"
@@ -338,7 +338,7 @@ packages:
     source: hosted
     version: "2.0.8"
   fake_async:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: fake_async
       sha256: "5368f224a74523e8d2e7399ea1638b37aecfca824a3cc4dfdf77bf1fa905ac44"
