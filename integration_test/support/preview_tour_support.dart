@@ -8,16 +8,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'tap_dots.dart';
-
 int nowMs() => DateTime.now().millisecondsSinceEpoch;
 
 /// A cut point in the drive log: `MARK <name> <epoch ms>`.
 void mark(String name) => print('MARK $name ${nowMs()}');
 
-/// The app under [TapDots], with a full-screen white flash the tour fires
+/// The app with a full-screen white flash over it, which the tour fires
 /// once at the start and once at the end. The cut script finds the flash in
 /// the recording (mean luma) and so ties the log's wall clock to video time.
+/// Nothing marks a touch on screen: the footage carries no tap dots.
 class RecordingRoot extends StatelessWidget {
   const RecordingRoot({required this.child, super.key});
 
@@ -32,7 +31,7 @@ class RecordingRoot extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          TapDots(child: child),
+          child,
           ValueListenableBuilder<bool>(
             valueListenable: flash,
             builder: (context, on, _) => on

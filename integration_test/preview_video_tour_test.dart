@@ -14,10 +14,10 @@
 //   MARK T:<event> <ms>  a moment inside a scene (GO, a counted round)
 //   CUE <asset> <ms>     every clip the app's own AudioService chose to play
 //
-// Differences from a real launch, all test-only: the root widget is wrapped
-// in tap dots, preferences start empty with the voice set to Major, and the
-// audio service is the production class with its test sink (AudioService
-// .withSink), so the cue rules are the shipped ones and the Mac stays quiet.
+// Differences from a real launch, all test-only: preferences start empty
+// with the voice set to Major, and the audio service is the production
+// class with its test sink (AudioService.withSink), so the cue rules are the
+// shipped ones and the Mac stays quiet. Touches are not marked on screen.
 // Timers run in real time: nothing here may pumpAndSettle once one is live.
 //
 // ignore_for_file: avoid_print
@@ -88,7 +88,7 @@ Future<void> spinWheel(
   final rect = tester.getRect(rows);
   final row = rect.height / 3;
   final sign = steps > 0 ? 1 : -1;
-  // Right of the digits, so the finger's dot does not cover the value.
+  // Right of the digits, where a thumb would drag a wheel.
   final start = rect.center + Offset(rect.width * 0.36, sign * row * 0.8);
   // The first 18 points only arm the scroll (touch slop).
   final travel = -(steps * row + sign * 16);
@@ -433,7 +433,8 @@ void main() {
     final tours = wanted.isEmpty ? allTours : wanted;
     print('TOURS ${tours.join(',')}');
 
-    // main() without runApp, so the root can carry the tap dots.
+    // main() without runApp, so the root can carry the sync flash and the
+    // audio service can be the logging one.
     configureBundledFonts();
     await configureDependencies();
     final prefs = await SharedPreferences.getInstance();
