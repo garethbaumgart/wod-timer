@@ -123,12 +123,22 @@ class WorkoutTimeline extends StatelessWidget {
     this.height = 12,
     this.elapsedSeconds,
     this.gap = 3,
+    this.beepAt,
+    this.beepColor = Colors.white,
+    this.beepQuarters = false,
+    this.beepHandle = false,
   });
 
   final WorkoutShape shape;
   final double height;
   final double? elapsedSeconds;
   final double gap;
+
+  /// Mock: a notch at this fraction of every work part.
+  final double? beepAt;
+  final Color beepColor;
+  final bool beepQuarters;
+  final bool beepHandle;
 
   /// Corner radius: 3 on a Home card, 4 on the live screen's 14pt bar.
   static double radiusFor(double height) => height >= 14 ? 4 : 3;
@@ -145,6 +155,10 @@ class WorkoutTimeline extends StatelessWidget {
             elapsedSeconds: elapsedSeconds,
             gap: gap,
             radius: radiusFor(height),
+            beepAt: beepAt,
+            beepColor: beepColor,
+            beepQuarters: beepQuarters,
+            beepHandle: beepHandle,
           ),
         ),
       ),
@@ -159,7 +173,16 @@ class TimelinePainter extends CustomPainter {
     required this.gap,
     required this.radius,
     this.elapsedSeconds,
+    this.beepAt,
+    this.beepColor = Colors.white,
+    this.beepQuarters = false,
+    this.beepHandle = false,
   });
+
+  final double? beepAt;
+  final Color beepColor;
+  final bool beepQuarters;
+  final bool beepHandle;
 
   final WorkoutShape shape;
   final double gap;
@@ -202,15 +225,48 @@ class TimelinePainter extends CustomPainter {
             ..restore();
         }
       }
+      final beep = beepAt;
+      if (beep != null && !part.rest) {
+        final fractions = beepQuarters ? [0.25, 0.5, 0.75] : [beep];
+        for (final f in fractions) {
+          final nx = x + width * f;
+          final main = f == beep;
+          final over = size.height >= 18 ? 4.0 : 3.0;
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromCenter(
+                center: Offset(nx, size.height / 2),
+                width: main ? 3 : 2,
+                height: main ? size.height + over * 2 : size.height,
+              ),
+              const Radius.circular(1.5),
+            ),
+            Paint()..color = beepColor,
+          );
+        }
+        if (beepHandle && start == 0) {
+          canvas
+            ..drawCircle(
+              Offset(x + width * beep, -over(size) - 5),
+              6,
+              Paint()..color = beepColor,
+            );
+        }
+      }
       x += width + gap;
       start += part.seconds;
     }
   }
+
+  static double over(Size size) => size.height >= 18 ? 4.0 : 3.0;
 
   @override
   bool shouldRepaint(TimelinePainter old) =>
       old.shape != shape ||
       old.elapsedSeconds != elapsedSeconds ||
       old.gap != gap ||
-      old.radius != radius;
+      old.radius != radius ||
+      old.beepAt != beepAt ||
+      old.beepColor != beepColor ||
+      old.beepQuarters != beepQuarters;
 }

@@ -3,6 +3,7 @@ import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
+import 'package:wod_timer/mock/mock.dart';
 
 /// A setup value as a snapping wheel (1.3.1): a label over three visible
 /// rows, the selected row larger and white on a soft highlight, the
@@ -140,6 +141,16 @@ class _SetupWheelState extends State<SetupWheel> {
 
   @override
   Widget build(BuildContext context) {
+    if (mockVariant == 5) {
+      return MockRulerDial(
+        label: widget.label,
+        labelColor: widget.labelColor,
+        range: widget.range,
+        value: widget.value,
+        format: widget.format,
+        onChanged: widget.onChanged,
+      );
+    }
     final row = widget.rowHeight;
     final value = _values[_selected];
     final canIncrease = _selected < _values.length - 1;
@@ -170,7 +181,7 @@ class _SetupWheelState extends State<SetupWheel> {
           : null,
       excludeSemantics: true,
       child: SizedBox(
-        width: SetupWheel.width,
+        width: mockWheelWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

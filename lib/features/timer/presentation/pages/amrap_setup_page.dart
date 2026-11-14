@@ -7,6 +7,7 @@ import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
+import 'package:wod_timer/mock/mock.dart';
 
 /// Setup page for AMRAP (As Many Rounds As Possible) timer.
 ///
@@ -20,6 +21,7 @@ class AmrapSetupPage extends ConsumerStatefulWidget {
 
 class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
   late AmrapSetup _setup = ref.read(setupMemoryProvider).amrap;
+  int? _mockBeep;
 
   Future<void> _onStart() async {
     await ref.read(setupMemoryProvider).saveAmrap(_setup);
@@ -48,11 +50,33 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
           label: 'Duration',
           accent: AppColors.amrapAccent,
           size: size,
+          beepMinute: mockVariant == 3 ? _setup.durationSeconds ~/ 120 : null,
           onChanged: (minutes) => setState(
             () => _setup = _setup.copyWith(durationSeconds: minutes * 60),
           ),
         ),
-        below: const BezelHint('Turn the bezel · one turn is 60 minutes'),
+        below: switch (mockVariant) {
+          1 => const MockBeepPill(label: 'HALFWAY BEEP'),
+          3 => const BezelHint('Drag the white knob to move the beep'),
+          4 => SetupWheel(
+            key: ValueKey('beep${_setup.durationSeconds}'),
+            label: 'Beep',
+            labelColor: mockBeepLabel,
+            range: SetupRange(
+              min: 0,
+              max: _setup.durationSeconds - 60,
+              step: 60,
+              fallback: 0,
+            ),
+            value: _mockBeep ?? (_setup.durationSeconds ~/ 120) * 60,
+            format: (v) => v == 0 ? 'OFF' : setupClock(v),
+            spoken: (v) => v == 0 ? 'off' : setupSpokenDuration(v),
+            rowHeight: 48,
+            onChanged: (v) => setState(() => _mockBeep = v),
+          ),
+          5 => const MockBeepSplitSwitch(title: 'MID-WORKOUT BEEP'),
+          _ => const BezelHint('Turn the bezel · one turn is 60 minutes'),
+        },
       ),
     );
   }

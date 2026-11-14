@@ -17,6 +17,7 @@ import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/stopwatch_bezel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
+import 'package:wod_timer/mock/mock.dart';
 
 /// The frame every setup screen shares (1.3.1): header (back, mode in
 /// white, voice chip), the mode's controls, then the edge-to-edge START
@@ -193,7 +194,30 @@ class _VoiceChip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final voice = ref.watch(appSettingsNotifierProvider).voice;
-    final label = voiceShortLabel(voice);
+    final base = voiceShortLabel(voice);
+    if (mockVariant == 2 && mockOpenSheet && !_mockSheetShown) {
+      _mockSheetShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) showVoicePickerSheet(context, ref);
+      });
+    }
+    return ValueListenableBuilder<bool>(
+      valueListenable: mockBeepOn,
+      builder: (context, beepOn, _) => _chip(
+        context,
+        ref,
+        voice,
+        mockVariant == 2 && beepOn ? '$base · Mid' : base,
+      ),
+    );
+  }
+
+  Widget _chip(
+    BuildContext context,
+    WidgetRef ref,
+    VoiceOption voice,
+    String label,
+  ) {
     return Semantics(
       button: true,
       label: 'Voice: $label. Tap to change.',
@@ -241,6 +265,8 @@ class _VoiceChip extends ConsumerWidget {
   }
 }
 
+bool _mockSheetShown = false;
+
 /// AMRAP and For Time: the stopwatch bezel centred in the space with one
 /// line under it (the direction switch, or a hint). The bezel is 270pt
 /// where it fits and shrinks where it doesn't (a phone held sideways,
@@ -269,7 +295,7 @@ class BezelSetupBody extends StatelessWidget {
       builder: (context, constraints) {
         if (landscape) {
           final size = math.min(
-            fullSize,
+            math.min(fullSize, mockBezelSize),
             math.min(constraints.maxHeight - 16, constraints.maxWidth * 0.45),
           );
           return Center(
@@ -283,13 +309,13 @@ class BezelSetupBody extends StatelessWidget {
         // below (large text makes that line taller).
         final size = math
             .min(
-              fullSize,
+              mockOn ? mockBezelSize : fullSize,
               math.min(
                 constraints.maxHeight - gap - 96,
                 constraints.maxWidth - 32,
               ),
             )
-            .clamp(140.0, fullSize);
+            .clamp(140.0, mockOn ? mockBezelSize : fullSize);
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -315,7 +341,11 @@ class WheelsSetupBody extends StatelessWidget {
     required this.shape,
     super.key,
     this.accessory,
+    this.beepCaption,
   });
+
+  /// Mock direction 3: "0:30" under the timeline.
+  final String? beepCaption;
 
   final bool landscape;
 
@@ -329,7 +359,7 @@ class WheelsSetupBody extends StatelessWidget {
 
   static const double timelineHeight = 12;
 
-  double get rowHeight => landscape ? 44 : 56;
+  double get rowHeight => landscape ? 44 : mockRowHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -349,34 +379,90 @@ class WheelsSetupBody extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 10,
-            children: [
-              for (final wheel in wheels(rowHeight))
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: SetupWheel.width,
-                    ),
-                    child: wheel,
-                  ),
-                ),
-            ],
-          ),
+          child: _mockWheelBlock(wheels(rowHeight)),
         ),
         Expanded(
-          child: CentredTimeline(
-            aboveInkInset: SetupWheel.inkInset(context, rowHeight),
-            height: timelineHeight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: WorkoutTimeline(shape: shape, height: timelineHeight),
-            ),
+          child: ListenableBuilder(
+            listenable: Listenable.merge([mockBeepOn, mockBeepSplit]),
+            builder: (context, _) {
+              final tall = mockVariant == 3;
+              final barHeight = tall ? 22.0 : timelineHeight;
+              final caption = beepCaption;
+              final showCaption = tall && caption != null;
+              final timeline = WorkoutTimeline(
+                shape: shape,
+                height: barHeight,
+                beepAt: mockBeepFraction(),
+                beepColor: mockBeepColor,
+                beepQuarters: mockQuarters,
+                beepHandle: tall,
+              );
+              return CentredTimeline(
+                aboveInkInset: mockVariant == 5
+                    ? 0
+                    : SetupWheel.inkInset(context, rowHeight),
+                height: showCaption ? barHeight + 14 + 20 : barHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: showCaption
+                      ? Column(
+                          children: [
+                            timeline,
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              height: 20,
+                              child: MockTickCaption(at: caption),
+                            ),
+                          ],
+                        )
+                      : timeline,
+                ),
+              );
+            },
           ),
         ),
       ],
+    );
+  }
+}
+
+extension on WheelsSetupBody {
+  Widget _mockWheelBlock(List<Widget> built) {
+    Widget sized(Widget w) => Flexible(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: mockWheelWidth),
+        child: w,
+      ),
+    );
+    if (mockVariant == 5 && !landscape) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [...built, const MockBeepSplitSwitch()],
+      );
+    }
+    if (mockVariant == 4 && !landscape) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 14,
+        children: [
+          for (var i = 0; i < built.length; i += 2)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 10,
+              children: [
+                for (final w in built.skip(i).take(2)) sized(w),
+              ],
+            ),
+        ],
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 10,
+      children: [for (final w in built) sized(w)],
     );
   }
 }
@@ -474,11 +560,13 @@ Widget setupBezel({
   required Color accent,
   required double size,
   required ValueChanged<int> onChanged,
+  int? beepMinute,
 }) => StopwatchBezel(
   minutes: minutes,
   label: label,
   accent: accent,
   size: size,
+  beepMinute: beepMinute,
   onChanged: (next) {
     ref.read(hapticServiceProvider).selectionClick();
     onChanged(next);

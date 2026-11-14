@@ -10,6 +10,7 @@ import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
+import 'package:wod_timer/mock/mock.dart';
 
 /// Setup page for Tabata timer.
 ///
@@ -25,6 +26,7 @@ class TabataSetupPage extends ConsumerStatefulWidget {
 
 class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
   late TabataSetup _setup = ref.read(setupMemoryProvider).tabata;
+  int? _mockBeep;
 
   Future<void> _onStart() async {
     await ref.read(setupMemoryProvider).saveTabata(_setup);
@@ -56,7 +58,19 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
       body: (context, {required landscape}) => WheelsSetupBody(
         landscape: landscape,
         shape: WorkoutShape.ofSetup(_setup),
-        accessory: _buildClassicChip(),
+        accessory: switch (mockVariant) {
+          1 => Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              const MockBeepPill(label: 'MID-ROUND BEEP'),
+              _buildClassicChip(),
+            ],
+          ),
+          5 => null,
+          _ => _buildClassicChip(),
+        },
+        beepCaption: setupClock(_setup.workSeconds ~/ 2),
         wheels: (rowHeight) => [
           SetupWheel(
             label: 'Work',
@@ -88,6 +102,26 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
             rowHeight: rowHeight,
             onChanged: (v) => _update(_setup.copyWith(rounds: v)),
           ),
+          if (mockVariant == 4)
+            SetupWheel(
+              key: ValueKey('beep${_setup.workSeconds}'),
+              label: 'Beep',
+              labelColor: mockBeepLabel,
+              range: SetupRange(
+                min: 0,
+                max: _setup.workSeconds - 5,
+                step: 5,
+                fallback: 0,
+              ),
+              value: _mockBeep ?? (_setup.workSeconds ~/ 2) ~/ 5 * 5,
+              format: (v) => v == 0 ? 'OFF' : setupPhase(v),
+              spoken: (v) => v == 0 ? 'off' : setupSpokenDuration(v),
+              rowHeight: rowHeight,
+              onChanged: (v) {
+                setState(() => _mockBeep = v);
+                mockBeepOn.value = v != 0;
+              },
+            ),
         ],
       ),
     );

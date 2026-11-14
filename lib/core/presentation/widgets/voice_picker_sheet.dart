@@ -4,6 +4,7 @@ import 'package:wod_timer/core/application/providers/app_settings_provider.dart'
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
+import 'package:wod_timer/mock/mock.dart';
 
 /// Short label for a voice option ("Major", "Off", ...).
 String voiceShortLabel(VoiceOption voice) {
@@ -70,6 +71,7 @@ Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
     context: context,
     backgroundColor: AppColors.surfaceDark,
     showDragHandle: true,
+    isScrollControlled: mockVariant == 2,
     builder: (sheetContext) => SafeArea(
       // Scrollable so the sheet never overflows in landscape.
       child: SingleChildScrollView(
@@ -82,12 +84,77 @@ Future<void> showVoicePickerSheet(BuildContext context, WidgetRef ref) {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Voice',
+                    mockVariant == 2 ? 'Sound' : 'Voice',
                     style: AppTypography.sectionHeader.copyWith(
                       color: AppColors.textPrimaryDark,
                     ),
                   ),
                 ),
+                if (mockVariant == 2) ...[
+                  ValueListenableBuilder<bool>(
+                    valueListenable: mockBeepOn,
+                    builder: (context, on, _) => Container(
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.soft,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.notifications_active,
+                            color: AppColors.textPrimaryDark,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Mid-round beep',
+                                  style: AppTypography.bodyLarge.copyWith(
+                                    color: AppColors.textPrimaryDark,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Two quick pips halfway through each round',
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textSecondaryDark,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: on,
+                            activeThumbColor: Colors.black,
+                            activeTrackColor: AppColors.primary,
+                            onChanged: (v) => mockBeepOn.value = v,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'VOICE',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textSecondaryDark,
+                          fontSize: 13,
+                          letterSpacing: 13 * 0.14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 ...VoiceOption.values.map((voice) {
                   final pack = _previewPack(voice);
                   final isSelected = settings.voice == voice;

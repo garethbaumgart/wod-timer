@@ -9,6 +9,7 @@ import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
+import 'package:wod_timer/mock/mock.dart';
 
 /// Setup page for EMOM (Every Minute On the Minute) timer.
 ///
@@ -23,6 +24,7 @@ class EmomSetupPage extends ConsumerStatefulWidget {
 
 class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
   late EmomSetup _setup = ref.read(setupMemoryProvider).emom;
+  int? _mockBeep;
 
   Future<void> _onStart() async {
     await ref.read(setupMemoryProvider).saveEmom(_setup);
@@ -53,6 +55,10 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
       body: (context, {required landscape}) => WheelsSetupBody(
         landscape: landscape,
         shape: WorkoutShape.ofSetup(_setup),
+        accessory: mockVariant == 1
+            ? const MockBeepPill(label: 'MID-ROUND BEEP')
+            : null,
+        beepCaption: setupClock(_setup.intervalSeconds ~/ 2),
         wheels: (rowHeight) => [
           SetupWheel(
             label: 'Every',
@@ -74,6 +80,26 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
             rowHeight: rowHeight,
             onChanged: (v) => _update(_setup.copyWith(rounds: v)),
           ),
+          if (mockVariant == 4)
+            SetupWheel(
+              key: ValueKey('beep${_setup.intervalSeconds}'),
+              label: 'Beep',
+              labelColor: mockBeepLabel,
+              range: SetupRange(
+                min: 0,
+                max: _setup.intervalSeconds - 15,
+                step: 15,
+                fallback: 0,
+              ),
+              value: _mockBeep ?? _setup.intervalSeconds ~/ 2,
+              format: (v) => v == 0 ? 'OFF' : setupClock(v),
+              spoken: (v) => v == 0 ? 'off' : setupSpokenDuration(v),
+              rowHeight: rowHeight,
+              onChanged: (v) {
+                setState(() => _mockBeep = v);
+                mockBeepOn.value = v != 0;
+              },
+            ),
         ],
       ),
     );

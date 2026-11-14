@@ -25,7 +25,11 @@ class StopwatchBezel extends StatelessWidget {
     required this.onChanged,
     super.key,
     this.size = 270,
+    this.beepMinute,
   });
+
+  /// Mock: a white second knob where the beep sits.
+  final int? beepMinute;
 
   /// 1..60.
   final int minutes;
@@ -96,7 +100,11 @@ class StopwatchBezel extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               CustomPaint(
-                painter: BezelPainter(minutes: minutes, accent: accent),
+                painter: BezelPainter(
+                  minutes: minutes,
+                  accent: accent,
+                  beepMinute: beepMinute,
+                ),
               ),
               Center(
                 child: Column(
@@ -118,6 +126,26 @@ class StopwatchBezel extends StatelessWidget {
                         letterSpacing: -66 * s * 0.02,
                       ),
                     ),
+                    if (beepMinute != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.notifications_active,
+                            size: 15 * s,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 5 * s),
+                          Text(
+                            'BEEP $beepMinute:00',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Colors.white,
+                              fontSize: 13 * s,
+                              letterSpacing: 13 * s * 0.12,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -131,10 +159,15 @@ class StopwatchBezel extends StatelessWidget {
 
 /// Paints the ring, arc, ticks and knob of a [StopwatchBezel].
 class BezelPainter extends CustomPainter {
-  const BezelPainter({required this.minutes, required this.accent});
+  const BezelPainter({
+    required this.minutes,
+    required this.accent,
+    this.beepMinute,
+  });
 
   final int minutes;
   final Color accent;
+  final int? beepMinute;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -195,9 +228,27 @@ class BezelPainter extends CustomPainter {
           ..strokeWidth = 3 * s
           ..color = AppColors.backgroundDark,
       );
+
+    final beep = beepMinute;
+    if (beep != null) {
+      final a = beep / 60 * 2 * math.pi;
+      final p = centre + Offset(radius * math.sin(a), -radius * math.cos(a));
+      canvas
+        ..drawCircle(p, 12 * s, Paint()..color = Colors.white)
+        ..drawCircle(
+          p,
+          12 * s,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3 * s
+            ..color = AppColors.backgroundDark,
+        );
+    }
   }
 
   @override
   bool shouldRepaint(BezelPainter old) =>
-      old.minutes != minutes || old.accent != accent;
+      old.minutes != minutes ||
+      old.accent != accent ||
+      old.beepMinute != beepMinute;
 }

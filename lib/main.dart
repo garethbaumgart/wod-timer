@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:wod_timer/mock/mock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
@@ -153,8 +154,18 @@ class WodTimerApp extends ConsumerWidget {
       themeMode: ThemeMode.dark,
       routerConfig: router,
       // iPad and Android tablets: the phone layout, scaled to the screen.
-      builder: (context, child) =>
-          TabletScale(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) {
+        final scaled = TabletScale(child: child ?? const SizedBox.shrink());
+        if (!mockPhoneInsets) return scaled;
+        // Mock renders: the iPhone's status bar and home indicator insets.
+        const insets = EdgeInsets.only(top: 59, bottom: 34);
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(padding: insets, viewPadding: insets),
+          child: scaled,
+        );
+      },
     );
   }
 }
