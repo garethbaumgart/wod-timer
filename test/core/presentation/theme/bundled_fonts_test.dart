@@ -60,7 +60,7 @@ void main() {
   testWidgets(
     'every text style the app can request loads from bundled fonts with '
     'fetching disabled',
-    (_) async {
+    (tester) async {
       configureBundledFonts();
 
       // Touching a style schedules its font load. Cover both real themes plus
@@ -85,6 +85,15 @@ void main() {
       // bundle — with fetching disabled, a single miss rejects this future
       // with the same exception class that crashed offline sessions.
       await GoogleFonts.pendingFonts();
+
+      // Flutter 3.50 delivers each loaded font's fontsChange message only
+      // once real time passes. Let them land and run their relayout frame
+      // inside the test, or teardown fails with "An animation is still
+      // running even after the widget tree was disposed".
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
     },
   );
 }

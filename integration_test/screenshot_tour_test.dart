@@ -8,9 +8,9 @@
 // phase-coloured actives, tap-to-count AMRAP rounds.
 // ignore_for_file: avoid_print
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wod_timer/main.dart' as app;
 
 Future<void> pumpSeconds(WidgetTester tester, double seconds) async {

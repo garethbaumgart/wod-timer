@@ -2,9 +2,9 @@
 // early rewinds and hints, a cancelled pointer rewinds quietly, a disabled
 // cell ignores the finger, and a screen reader confirms with long press.
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/hold_to_stop_cell.dart';
 

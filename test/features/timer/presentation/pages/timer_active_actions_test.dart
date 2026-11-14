@@ -2,9 +2,9 @@
 // FINISH, RESUME, hold-to-stop in the countdown, AGAIN, every Android
 // back case, the live-region label, a long Tabata rest on the clock, and
 // large text (1.6x) across every state in both orientations.
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/widgets/bottom_slab.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
