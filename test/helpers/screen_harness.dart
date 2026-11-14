@@ -271,6 +271,7 @@ class LiveHarness {
     }
     when(() => audio.playLowBeep(any())).thenAnswer((_) async => right(unit));
     when(audio.playHighBeep).thenAnswer((_) async => right(unit));
+    when(audio.playMidBeep).thenAnswer((_) async => right(unit));
     when(() => haptic.heavyImpact()).thenAnswer((_) async => right(unit));
     when(() => haptic.mediumImpact()).thenAnswer((_) async => right(unit));
     when(() => haptic.success()).thenAnswer((_) async => right(unit));

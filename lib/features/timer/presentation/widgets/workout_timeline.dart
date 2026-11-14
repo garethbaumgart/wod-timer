@@ -123,12 +123,17 @@ class WorkoutTimeline extends StatelessWidget {
     this.height = 12,
     this.elapsedSeconds,
     this.gap = 3,
+    this.midTicks = false,
   });
 
   final WorkoutShape shape;
   final double height;
   final double? elapsedSeconds;
   final double gap;
+
+  /// A white tick at the middle of every work part long enough for the
+  /// mid-round pips (2.5.0): where they will sound. Setup only.
+  final bool midTicks;
 
   /// Corner radius: 3 on a Home card, 4 on the live screen's 14pt bar.
   static double radiusFor(double height) => height >= 14 ? 4 : 3;
@@ -145,6 +150,7 @@ class WorkoutTimeline extends StatelessWidget {
             elapsedSeconds: elapsedSeconds,
             gap: gap,
             radius: radiusFor(height),
+            midTicks: midTicks,
           ),
         ),
       ),
@@ -159,7 +165,18 @@ class TimelinePainter extends CustomPainter {
     required this.gap,
     required this.radius,
     this.elapsedSeconds,
+    this.midTicks = false,
   });
+
+  /// See [WorkoutTimeline.midTicks].
+  final bool midTicks;
+
+  /// The shortest part that gets a tick: the same floor as the pips.
+  static const int midTickMinSeconds = 10;
+
+  /// Tick width, and how far it reaches past the bar above and below.
+  static const double midTickWidth = 3;
+  static const double midTickOverhang = 3;
 
   final WorkoutShape shape;
   final double gap;
@@ -202,6 +219,19 @@ class TimelinePainter extends CustomPainter {
             ..restore();
         }
       }
+      if (midTicks && !part.rest && part.seconds >= midTickMinSeconds) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: Offset(x + width / 2, size.height / 2),
+              width: midTickWidth,
+              height: size.height + midTickOverhang * 2,
+            ),
+            const Radius.circular(midTickWidth / 2),
+          ),
+          paint..color = AppColors.textPrimaryDark,
+        );
+      }
       x += width + gap;
       start += part.seconds;
     }
@@ -212,5 +242,6 @@ class TimelinePainter extends CustomPainter {
       old.shape != shape ||
       old.elapsedSeconds != elapsedSeconds ||
       old.gap != gap ||
-      old.radius != radius;
+      old.radius != radius ||
+      old.midTicks != midTicks;
 }

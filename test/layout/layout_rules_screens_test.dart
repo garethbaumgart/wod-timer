@@ -44,9 +44,22 @@ void main() {
     final slab = tester.getRect(find.byType(BottomSlab));
     final shot = await paintedScreen(tester);
     final dpr = tester.view.devicePixelRatio;
+    // The setup timeline's mid-round ticks (2.5.0) reach the same few
+    // points past the bar above and below, so the bar stays centred; they
+    // are the timeline's own ink, not content above it. On a tablet the
+    // layout is scaled up, so the overhang is too.
+    final bar = tester.widget<WorkoutTimeline>(find.byType(WorkoutTimeline));
+    final overhang = bar.midTicks
+        ? TimelinePainter.midTickOverhang * timeline.height / bar.height
+        : 0.0;
     final inkBottom = lowestInkIn(
       shot,
-      Rect.fromLTRB(timeline.left, aboveTop, timeline.right, timeline.top - 1),
+      Rect.fromLTRB(
+        timeline.left,
+        aboveTop,
+        timeline.right,
+        timeline.top - overhang - 1,
+      ),
       dpr,
     );
     expect(inkBottom, isNotNull, reason: 'no content above the timeline');

@@ -253,10 +253,10 @@ void main() {
       // The selected rows are the big white ones.
       final every = tester.widget<Text>(find.text('1:00'));
       expect(every.style!.color, AppColors.textPrimaryDark);
-      expect(every.style!.fontSize, 42);
+      expect(every.style!.fontSize, 72);
       final neighbour = tester.widget<Text>(find.text('0:45'));
       expect(neighbour.style!.color, AppColors.textDisabledDark);
-      expect(neighbour.style!.fontSize, 28);
+      expect(neighbour.style!.fontSize, 48);
       expect(find.text('10'), findsOneWidget);
 
       // Wheels side by side, under the header, over the timeline.
@@ -335,9 +335,9 @@ void main() {
       );
 
       final every = tester.widget<Text>(find.text('1:30'));
-      expect(every.style!.fontSize, 42);
+      expect(every.style!.fontSize, 72);
       final rounds = tester.widget<Text>(find.text('12'));
-      expect(rounds.style!.fontSize, 42);
+      expect(rounds.style!.fontSize, 72);
       expect(find.text('18:00 total'), findsOneWidget);
     });
 
@@ -485,12 +485,12 @@ void main() {
       await tester.tap(find.text('RESET TO CLASSIC'));
       await tester.pumpAndSettle();
       expect(find.text('4:00 total'), findsOneWidget);
-      expect(tester.widget<Text>(find.text('8')).style!.fontSize, 42);
+      expect(tester.widget<Text>(find.text('8')).style!.fontSize, 72);
       expect(find.text('RESET TO CLASSIC'), findsNothing);
 
       await spin(tester, 'ROUNDS', 1);
       expect(find.text('4:30 total'), findsOneWidget);
-      expect(tester.widget<Text>(find.text('9')).style!.fontSize, 42);
+      expect(tester.widget<Text>(find.text('9')).style!.fontSize, 72);
     });
 
     testWidgets('the classic chip is blank until a value drifts', (
@@ -526,9 +526,9 @@ void main() {
         stored: {SetupMemory.tabataWorkKey: 65},
       );
 
-      expect(tester.widget<Text>(find.text('1:05')).style!.fontSize, 42);
+      expect(tester.widget<Text>(find.text('1:05')).style!.fontSize, 72);
       expect(find.text('65s'), findsNothing);
-      expect(tester.widget<Text>(find.text('10s')).style!.fontSize, 42);
+      expect(tester.widget<Text>(find.text('10s')).style!.fontSize, 72);
       final handle = tester.ensureSemantics();
       await tester.pump();
       expect(
@@ -549,7 +549,7 @@ void main() {
       expect(tester.takeException(), isNull);
       final rounds = tester.getRect(wheelOf('ROUNDS'));
       expect(rounds.bottom, lessThan(slabRect(tester).top));
-      expect(rounds.right, lessThanOrEqualTo(390 - 16 + 0.5));
+      expect(rounds.right, lessThanOrEqualTo(390 - BezelSetupBody.edge + 0.5));
     });
 
     testWidgets('the timeline redraws as the wheels move', (tester) async {
@@ -581,7 +581,8 @@ void main() {
       expect(find.text('10:00'), findsOneWidget);
       expect(find.text('DURATION'), findsOneWidget);
       expect(find.byType(StopwatchBezel), findsOneWidget);
-      expect(tester.getSize(find.byType(StopwatchBezel)), const Size(270, 270));
+      // 2.5.0: the bezel fills the width inside its 8pt edges.
+      expect(tester.getSize(find.byType(StopwatchBezel)), const Size(374, 374));
       expect(
         tester.widget<StopwatchBezel>(find.byType(StopwatchBezel)).accent,
         AppColors.amrapAccent,
@@ -816,6 +817,73 @@ void main() {
 
   // Older users run a large system text size; every setup screen must
   // still lay out on a 375pt-wide phone, and in landscape.
+  group('Option C layout (2.5.0)', () {
+    /// The empty space between the body's top (under the header) and
+    /// [content], and between [content] and the body's bottom (START).
+    (double, double) spaces(WidgetTester tester, Finder body, Rect content) {
+      final zone = tester.getRect(body);
+      return (content.top - zone.top, zone.bottom - content.bottom);
+    }
+
+    testWidgets('EMOM wheels sit above the middle: a third of the free '
+        'space above them, two thirds below', (tester) async {
+      await pumpSetup(tester, const EmomSetupPage());
+      final top = tester.getRect(find.text('EVERY')).top;
+      final bottom = tester.getRect(wheelOf('EVERY')).bottom;
+      final (above, below) = spaces(
+        tester,
+        find.byType(WheelsSetupBody),
+        Rect.fromLTRB(0, top, 390, bottom),
+      );
+      expect(above / (above + below), closeTo(1 / 3, 0.02));
+      expect(tester.widget<SetupWheel>(wheelOf('EVERY')).rowHeight, 96);
+      expect(tester.getSize(wheelOf('EVERY')).width, SetupWheel.portraitWidth);
+    });
+
+    testWidgets('the bezel sits above the middle the same way', (tester) async {
+      await pumpSetup(tester, const AmrapSetupPage());
+      final bezel = tester.getRect(find.byType(StopwatchBezel));
+      final hint = tester.getRect(find.textContaining('Turn the bezel'));
+      final (above, below) = spaces(
+        tester,
+        find.byType(BezelSetupBody),
+        Rect.fromLTRB(0, bezel.top, 390, hint.bottom),
+      );
+      expect(above / (above + below), closeTo(1 / 3, 0.02));
+    });
+
+    testWidgets('the setup timeline ticks every round where it pips', (
+      tester,
+    ) async {
+      await pumpSetup(tester, const EmomSetupPage());
+      final timeline = tester.widget<WorkoutTimeline>(
+        find.byType(WorkoutTimeline),
+      );
+      expect(timeline.midTicks, isTrue);
+    });
+
+    const se = Size(375, 667);
+    const pages = <String, Widget>{
+      'AMRAP': AmrapSetupPage(),
+      'For Time': ForTimeSetupPage(),
+      'EMOM': EmomSetupPage(),
+      'Tabata': TabataSetupPage(),
+    };
+    for (final entry in pages.entries) {
+      testWidgets('${entry.key} fits an iPhone SE upright', (tester) async {
+        await pumpSetup(
+          tester,
+          entry.value,
+          size: se,
+          // A drifted Tabata shows its Reset to classic chip as well.
+          stored: {SetupMemory.tabataWorkKey: 65},
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('START'), findsOneWidget);
+      });
+    }
+  });
+
   group('Large text (1.6x)', () {
     const pages = <String, Widget>{
       'AMRAP': AmrapSetupPage(),

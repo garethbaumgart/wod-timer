@@ -241,10 +241,11 @@ class _VoiceChip extends ConsumerWidget {
   }
 }
 
-/// AMRAP and For Time: the stopwatch bezel centred in the space with one
-/// line under it (the direction switch, or a hint). The bezel is 270pt
-/// where it fits and shrinks where it doesn't (a phone held sideways,
-/// where the line moves beside it).
+/// AMRAP and For Time: the stopwatch bezel with one line under it (the
+/// direction switch, or a hint). Upright (2.5.0) the bezel fills the width
+/// inside [edge] margins and sits above the middle: the space above it is
+/// half the space below ([liftAbove] : [liftBelow]). Held sideways it is at
+/// most 270pt and the line moves beside it.
 class BezelSetupBody extends StatelessWidget {
   const BezelSetupBody({
     required this.landscape,
@@ -260,8 +261,17 @@ class BezelSetupBody extends StatelessWidget {
 
   final Widget below;
 
+  /// The most the bezel takes held sideways.
   static const double fullSize = 270;
   static const double gap = 14;
+
+  /// Side margin for the bezel and the wheels held upright (2.5.0).
+  static const double edge = 8;
+
+  /// Upright, the free space above the controls against the space below
+  /// (2.5.0: "slightly up"). Shared with [WheelsSetupBody].
+  static const int liftAbove = 1;
+  static const int liftBelow = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -281,33 +291,29 @@ class BezelSetupBody extends StatelessWidget {
         }
         // Leave room for the line under the bezel and a breath above and
         // below (large text makes that line taller).
+        final widest = constraints.maxWidth - 2 * edge;
         final size = math
-            .min(
-              fullSize,
-              math.min(
-                constraints.maxHeight - gap - 96,
-                constraints.maxWidth - 32,
-              ),
-            )
-            .clamp(140.0, fullSize);
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              bezel(size),
-              const SizedBox(height: gap),
-              below,
-            ],
-          ),
+            .min(widest, constraints.maxHeight - gap - 96)
+            .clamp(140.0, math.max(140.0, widest))
+            .toDouble();
+        return Column(
+          children: [
+            const Spacer(flex: liftAbove),
+            bezel(size),
+            const SizedBox(height: gap),
+            below,
+            const Spacer(flex: liftBelow),
+          ],
         );
       },
     );
   }
 }
 
-/// EMOM and Tabata: the wheels side by side, centred between the header
-/// and the timeline zone, with the Home timeline under them placed by the
-/// centring rule (layout rule 2) and redrawn live.
+/// EMOM and Tabata: the wheels side by side above the middle (2.5.0: the
+/// space above them is half the space below), with the Home timeline under
+/// them placed by the centring rule (layout rule 2), redrawn live, and
+/// ticked where the mid-round pips will sound.
 class WheelsSetupBody extends StatelessWidget {
   const WheelsSetupBody({
     required this.landscape,
@@ -329,7 +335,15 @@ class WheelsSetupBody extends StatelessWidget {
 
   static const double timelineHeight = 12;
 
-  double get rowHeight => landscape ? 44 : 56;
+  /// 96 upright since 2.5.0 (72pt digits), 44 held sideways.
+  double get rowHeight => landscape ? 44 : 96;
+
+  double get columnWidth =>
+      landscape ? SetupWheel.compactWidth : SetupWheel.portraitWidth;
+
+  double get edge => landscape ? 16 : BezelSetupBody.edge;
+
+  double get spacing => landscape ? 10 : 6;
 
   @override
   Widget build(BuildContext context) {
@@ -337,29 +351,32 @@ class WheelsSetupBody extends StatelessWidget {
     return Column(
       children: [
         Expanded(
+          flex: landscape ? 1 : BezelSetupBody.liftAbove,
           child: Align(
             alignment: Alignment.bottomCenter,
             child: accessory == null
                 ? const SizedBox.shrink()
-                : Padding(
-                    padding: EdgeInsets.only(bottom: landscape ? 0 : 12),
-                    child: accessory,
+                // Scales down rather than overflowing a short phone.
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: landscape ? 0 : 12),
+                      child: accessory,
+                    ),
                   ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: edge),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 10,
+            spacing: spacing,
             children: [
               for (final wheel in wheels(rowHeight))
                 Flexible(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: SetupWheel.width,
-                    ),
+                    constraints: BoxConstraints(maxWidth: columnWidth),
                     child: wheel,
                   ),
                 ),
@@ -367,12 +384,17 @@ class WheelsSetupBody extends StatelessWidget {
           ),
         ),
         Expanded(
+          flex: landscape ? 1 : BezelSetupBody.liftBelow,
           child: CentredTimeline(
             aboveInkInset: SetupWheel.inkInset(context, rowHeight),
             height: timelineHeight,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: WorkoutTimeline(shape: shape, height: timelineHeight),
+              child: WorkoutTimeline(
+                shape: shape,
+                height: timelineHeight,
+                midTicks: true,
+              ),
             ),
           ),
         ),

@@ -47,6 +47,7 @@ final class TimerViewModel {
     private var lastTickElapsed: TimeInterval = 0
     private var lastTickMillis = 0
     private var lastLowBeep: String?
+    private var lastMidBeep: String?
     private var lastVoiceAt: TimeInterval?
     private var playedGo = false
     private var lastRound: Int = 0
@@ -445,7 +446,8 @@ final class TimerViewModel {
     /// countdown and of a line still being spoken; the encouragement lines
     /// and the coin flips on GO and the end went on 8 Nov 2026. The wrist
     /// gets one pattern per change (2.2.0, see WatchHapticService) and the
-    /// Health session hears GO.
+    /// Health session hears GO. The mid-round pips (2.5.0) are mandatory:
+    /// they sit outside the optional voice cues and never block one.
     private func handleCues(old: TimerSession, new: TimerSession) {
         var voiceCuePlayed = false
         // One high beep per change, even when two things change on one tick.
@@ -466,9 +468,12 @@ final class TimerViewModel {
         // Low beeps in the last three seconds of the phase (prep included).
         playPhaseCountdown(new)
 
+        // Two quick pips halfway through the phase.
+        let midPipped = playMidRoundPips(new)
+
         // One wrist cue per tick, the one that matters most when two
         // changes land together (a Tabata round starts as its rest ends):
-        // GO, then last round, round, rest, work.
+        // GO, then last round, round, rest, work, then the mid-round pips.
         var wristCue: WatchHapticService.Cue?
 
         // High beep + "Go!" when prep ends and the work starts
@@ -518,16 +523,20 @@ final class TimerViewModel {
             lastRound = new.currentRound
         }
 
+        if midPipped { wristCue = wristCue ?? .halfway }
+
         if let wristCue { haptics.play(wristCue) }
 
         // The optional cues below wait for a clear moment.
         guard !voiceCuePlayed, clearToSpeak(new) else { return }
 
-        // Halfway point
+        // Halfway point. It can land on mid-round pips (an AMRAP's or For
+        // Time's always does), which already reached the wrist: one cue a
+        // tick, so the line goes on without a second tap.
         if new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway {
             playedHalfway = true
             say(audio.playHalfway)
-            haptics.play(.halfway)
+            if wristCue == nil { haptics.play(.halfway) }
             return
         }
 
@@ -575,6 +584,31 @@ final class TimerViewModel {
         haptics.play(.countIn)
     }
 
+    /// The shortest phase that gets mid-round pips: they land at least five
+    /// seconds before the 3, 2, 1.
+    static let midRoundMinPhaseSeconds = 10
+
+    /// The mid-round pips (2.5.0, no setting): halfway through every EMOM
+    /// interval and Tabata work block, and halfway through an AMRAP or For
+    /// Time clock; never in get ready or a rest. Once per phase, on the
+    /// seconds left the 3-2-1 reads: a tick one second past the midpoint (a
+    /// skipped tick) still pips, one further past (the watch was asleep)
+    /// stays quiet rather than pip late. Returns whether it pipped.
+    private func playMidRoundPips(_ session: TimerSession) -> Bool {
+        guard session.state == .running else { return false }
+        let phase = phaseSeconds(session)
+        guard phase >= Self.midRoundMinPhaseSeconds else { return false }
+        let half = phase / 2
+        let left = session.timeRemaining.seconds
+        guard left == half || left == half - 1 else { return false }
+        // An AMRAP's round number is the athlete's own tally: key on the clock.
+        let key = session.isIntervalBased ? "\(session.state):\(session.currentRound)" : "clock"
+        guard key != lastMidBeep else { return false }
+        lastMidBeep = key
+        audio.playMidBeep()
+        return true
+    }
+
     /// The length of the phase the session is in.
     private func phaseSeconds(_ session: TimerSession) -> Int {
         if session.state == .preparing { return session.workout.prepCountdown.seconds }
@@ -595,6 +629,7 @@ final class TimerViewModel {
 
     private func resetCueState() {
         lastLowBeep = nil
+        lastMidBeep = nil
         lastVoiceAt = nil
         playedGo = false
         lastRound = 0
