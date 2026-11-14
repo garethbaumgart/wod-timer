@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
@@ -71,7 +73,7 @@ class SetupWheel extends StatefulWidget {
   static TextStyle neighbourStyle(double rowHeight) =>
       AppTypography.timerDisplayMedium.copyWith(
         color: AppColors.textDisabledDark,
-        fontSize: 28 * rowHeight / 56,
+        fontSize: (mockPeek ? 24 : 28) * rowHeight / 56,
         letterSpacing: 0,
         fontWeight: FontWeight.w800,
       );
@@ -86,7 +88,9 @@ class SetupWheel extends StatefulWidget {
     final glyph = GlyphInk.glyphBottom('0', style, textScaler: textScaler);
     // The lower row's centre is half a row above the bottom; its text box
     // is centred on that, so the glyph bottom is box/2 - glyph above it.
-    return rowHeight / 2 - (glyph - box / 2);
+    // Peek: the lower neighbour's centre sits a quarter row above the edge.
+    final centreAbove = mockPeek ? rowHeight * 0.25 : rowHeight / 2;
+    return math.max(0, centreAbove - (glyph - box / 2));
   }
 
   List<int> get values => [
@@ -96,6 +100,24 @@ class SetupWheel extends StatefulWidget {
   @override
   State<SetupWheel> createState() => _SetupWheelState();
 }
+
+Widget _mockFade(Widget child) => !mockPeek
+    ? child
+    : ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black,
+            Colors.black,
+            Colors.transparent,
+          ],
+          stops: [0, 0.24, 0.76, 1],
+        ).createShader(bounds),
+        blendMode: BlendMode.dstIn,
+        child: child,
+      );
 
 class _SetupWheelState extends State<SetupWheel> {
   late final List<int> _values = widget.values;
@@ -189,9 +211,9 @@ class _SetupWheelState extends State<SetupWheel> {
               widget.label.toUpperCase(),
               style: SetupWheel.labelStyle(widget.labelColor),
             ),
-            const SizedBox(height: SetupWheel.labelGap),
+            SizedBox(height: mockPeek ? 12 : SetupWheel.labelGap),
             SizedBox(
-              height: 3 * row,
+              height: (mockPeek ? 2.5 : 3) * row,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -205,7 +227,7 @@ class _SetupWheelState extends State<SetupWheel> {
                       ),
                     ),
                   ),
-                  ListWheelScrollView.useDelegate(
+                  _mockFade(ListWheelScrollView.useDelegate(
                     controller: _controller,
                     itemExtent: row,
                     // Near flat: the rows read as a list that snaps.
@@ -235,7 +257,7 @@ class _SetupWheelState extends State<SetupWheel> {
                           ),
                       ],
                     ),
-                  ),
+                  )),
                 ],
               ),
             ),

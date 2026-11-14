@@ -12,8 +12,9 @@ final Map<String, String> _q = kIsWeb
     ? Uri.base.queryParameters
     : const <String, String>{};
 
-/// 0 = today's app. 1 Pill, 2 Sound sheet, 3 Timeline tick, 4 Beep wheel,
-/// 5 Ruler dials.
+/// 0 = today's app. Round 1: 1 Pill, 2 Sound sheet, 3 Timeline tick,
+/// 4 Beep wheel, 5 Ruler dials. Round 2 (beep always on, no setting):
+/// 6 Nudge, 7 Lift, 8 Big, 9 Peek.
 final int mockVariant = int.tryParse(_q['mock'] ?? '') ?? 0;
 
 /// Open the sound sheet on the first setup frame (direction 2).
@@ -33,6 +34,10 @@ bool get mockOn => mockVariant != 0;
 
 /// Wheel row height (selected digits are 42 * row / 56).
 double get mockRowHeight => switch (mockVariant) {
+  6 => 80,
+  7 => 88,
+  8 => 96,
+  9 => 104,
   1 => 72,
   2 => 96,
   3 => 84,
@@ -42,6 +47,9 @@ double get mockRowHeight => switch (mockVariant) {
 
 /// Width of one wheel column.
 double get mockWheelWidth => switch (mockVariant) {
+  6 => 175,
+  7 => 178,
+  8 || 9 => 184,
   1 => 160,
   2 => 180,
   3 => 172,
@@ -66,10 +74,35 @@ double? mockBeepFraction() {
       return mockBeepOn.value ? 0.5 : null;
     case 5:
       return mockBeepSplit.value == 0 ? null : 0.5;
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+      return 0.5;
     default:
       return null;
   }
 }
+
+/// Round 2: the space above the controls against the space below them
+/// (1:1 centres them, as today).
+(int, int) get mockLift => switch (mockVariant) {
+  6 => (4, 5),
+  7 => (2, 3),
+  8 || 9 => (1, 2),
+  _ => (1, 1),
+};
+
+/// Round 2: side gutter for the wheels and the bezel.
+double get mockGutter => mockVariant == 8 || mockVariant == 9 ? 8 : 16;
+
+/// Round 2: gap between wheel columns.
+double get mockWheelSpacing =>
+    mockVariant == 8 || mockVariant == 9 ? 6 : 10;
+
+/// Round 2 option D: the wheel shows the value with its neighbours
+/// peeking half a row above and below.
+bool get mockPeek => mockVariant == 9;
 
 /// Direction 5 quarters: extra ticks at 1/4 and 3/4.
 bool get mockQuarters => mockVariant == 5 && mockBeepSplit.value == 2;

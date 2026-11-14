@@ -312,10 +312,22 @@ class BezelSetupBody extends StatelessWidget {
               mockOn ? mockBezelSize : fullSize,
               math.min(
                 constraints.maxHeight - gap - 96,
-                constraints.maxWidth - 32,
+                constraints.maxWidth - 2 * mockGutter,
               ),
             )
             .clamp(140.0, mockOn ? mockBezelSize : fullSize);
+        final (top, bottom) = mockLift;
+        if (top != bottom) {
+          return Column(
+            children: [
+              Spacer(flex: top),
+              bezel(size),
+              const SizedBox(height: gap),
+              below,
+              Spacer(flex: bottom),
+            ],
+          );
+        }
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -364,9 +376,11 @@ class WheelsSetupBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessory = this.accessory;
+    final (liftTop, liftBottom) = mockLift;
     return Column(
       children: [
         Expanded(
+          flex: liftTop,
           child: Align(
             alignment: Alignment.bottomCenter,
             child: accessory == null
@@ -378,10 +392,11 @@ class WheelsSetupBody extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: mockGutter),
           child: _mockWheelBlock(wheels(rowHeight)),
         ),
         Expanded(
+          flex: liftBottom,
           child: ListenableBuilder(
             listenable: Listenable.merge([mockBeepOn, mockBeepSplit]),
             builder: (context, _) {
@@ -461,7 +476,7 @@ extension on WheelsSetupBody {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 10,
+      spacing: mockWheelSpacing,
       children: [for (final w in built) sized(w)],
     );
   }
