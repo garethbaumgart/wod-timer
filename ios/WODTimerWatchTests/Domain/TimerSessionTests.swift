@@ -1346,8 +1346,9 @@ final class GymBeepScheduleTests: XCTestCase {
     private let countIn = ["beep:low_3", "beep:low_2", "beep:low_1", "beep:high"]
 
     func testAmrapCountsInToTheEndAndKeepsTheOptionalLinesClear() {
+        // 2.5.0: the mid-round pips land on the halfway, ahead of its line.
         XCTAssertEqual(heard(.amrap(duration: TimerDuration(seconds: 60))),
-                       ["beep:high", "voice:countdown_go", "voice:halfway", "voice:ten_seconds"]
+                       ["beep:high", "voice:countdown_go", "beep:mid", "voice:halfway", "voice:ten_seconds"]
                            + countIn + ["voice:good_job"])
     }
 
@@ -1369,11 +1370,13 @@ final class GymBeepScheduleTests: XCTestCase {
     }
 
     func testEmomCountsInToEveryMinute() {
-        var expected: [String] = ["beep:high", "voice:countdown_go"]
+        // Each minute pips at 30 left (2.5.0); round 2's pips are also the
+        // workout's halfway.
+        var expected: [String] = ["beep:high", "voice:countdown_go", "beep:mid"]
         expected += countIn
-        expected += ["voice:next_round", "voice:halfway"]
+        expected += ["voice:next_round", "beep:mid", "voice:halfway"]
         expected += countIn
-        expected += ["voice:last_round", "voice:ten_seconds"]
+        expected += ["voice:last_round", "beep:mid", "voice:ten_seconds"]
         expected += countIn
         expected += ["voice:good_job"]
         let emom = TimerType.emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 3))
@@ -1383,6 +1386,9 @@ final class GymBeepScheduleTests: XCTestCase {
     func testTabataCountsInToEveryWorkAndRest() {
         var expected: [String] = ["beep:high", "voice:countdown_go"]
         for line in ["voice:rest", "voice:last_round", "voice:rest", "voice:good_job"] {
+            // A work block (the phase that ends in Rest) pips at 10 left
+            // (2.5.0); a rest never does.
+            if line == "voice:rest" { expected.append("beep:mid") }
             expected += countIn
             expected.append(line)
         }
@@ -1399,8 +1405,10 @@ final class GymBeepScheduleTests: XCTestCase {
     func testBeepsOnlyKeepsEveryBeepAndDropsEveryLine() {
         let tabata = TimerType.tabata(workDuration: TimerDuration(seconds: 20), restDuration: TimerDuration(seconds: 10),
                                       rounds: RoundCount(value: 2))
-        XCTAssertEqual(heard(tabata, prep: 10, beepsOnly: true),
-                       countIn + countIn + countIn + countIn + countIn)
+        // Get ready, then work (its pips, 2.5.0), rest, work, rest.
+        let work: [String] = ["beep:mid"] + countIn
+        let expected: [String] = countIn + work + countIn + work + countIn
+        XCTAssertEqual(heard(tabata, prep: 10, beepsOnly: true), expected)
     }
 
     func testShortPhasesSkipTheBeepsTheyStartOn() {

@@ -132,6 +132,103 @@ void main() {
 }
 
 void _timelinePartsAndShapes() {
+  group('mid-round ticks (2.5.0)', () {
+    Future<RenderObject> pumpTimeline(
+      WidgetTester tester,
+      WorkoutShape shape, {
+      required bool midTicks,
+    }) async {
+      await tester.pumpWidget(
+        Center(
+          child: SizedBox(
+            width: 300,
+            child: WorkoutTimeline(shape: shape, midTicks: midTicks),
+          ),
+        ),
+      );
+      return tester.renderObject(
+        find.descendant(
+          of: find.byType(WorkoutTimeline),
+          matching: find.byType(CustomPaint),
+        ),
+      );
+    }
+
+    /// The white tick rects a paint drew, by centre x.
+    Rect tickAt(double x, double barHeight) => Rect.fromCenter(
+      center: Offset(x, barHeight / 2),
+      width: TimelinePainter.midTickWidth,
+      height: barHeight + TimelinePainter.midTickOverhang * 2,
+    );
+
+    testWidgets('an EMOM gets a white tick in the middle of every round', (
+      tester,
+    ) async {
+      final shape = WorkoutShape.ofSetup(const EmomSetup(rounds: 2));
+      final box = await pumpTimeline(tester, shape, midTicks: true);
+      // Two 148.5pt blocks with a 3pt gap: middles at 74.25 and 225.75.
+      expect(
+        box,
+        paints
+          ..rrect(color: AppColors.emomAccent)
+          ..rrect(
+            rrect: RRect.fromRectAndRadius(
+              tickAt(74.25, 12),
+              const Radius.circular(1.5),
+            ),
+            color: AppColors.textPrimaryDark,
+          )
+          ..rrect(color: AppColors.emomAccent)
+          ..rrect(
+            rrect: RRect.fromRectAndRadius(
+              tickAt(225.75, 12),
+              const Radius.circular(1.5),
+            ),
+            color: AppColors.textPrimaryDark,
+          ),
+      );
+    });
+
+    testWidgets('Tabata ticks its work blocks, never its rests', (
+      tester,
+    ) async {
+      final shape = WorkoutShape.ofSetup(const TabataSetup(rounds: 1));
+      final box = await pumpTimeline(tester, shape, midTicks: true);
+      expect(
+        box,
+        paints
+          ..rrect(color: AppColors.work)
+          ..rrect(color: AppColors.textPrimaryDark)
+          ..rrect(color: AppColors.rest),
+      );
+      expect(
+        box,
+        isNot(
+          paints
+            ..rrect(color: AppColors.rest)
+            ..rrect(color: AppColors.textPrimaryDark),
+        ),
+      );
+    });
+
+    testWidgets('parts under 10s and timelines without midTicks get none', (
+      tester,
+    ) async {
+      final short = WorkoutShape.ofSetup(
+        const TabataSetup(workSeconds: 5, restSeconds: 5, rounds: 1),
+      );
+      expect(
+        await pumpTimeline(tester, short, midTicks: true),
+        isNot(paints..rrect(color: AppColors.textPrimaryDark)),
+      );
+      final emom = WorkoutShape.ofSetup(const EmomSetup());
+      expect(
+        await pumpTimeline(tester, emom, midTicks: false),
+        isNot(paints..rrect(color: AppColors.textPrimaryDark)),
+      );
+    });
+  });
+
   group('TimelinePart and WorkoutShape value semantics', () {
     test('parts compare by seconds and rest', () {
       expect(const TimelinePart(20), const TimelinePart(20));

@@ -45,11 +45,16 @@ class SetupWheel extends StatefulWidget {
 
   final ValueChanged<int> onChanged;
 
-  /// One row; the wheel shows three. 56 on a phone, 44 held sideways.
+  /// One row; the wheel shows three. 96 on a phone since 2.5.0 (72pt
+  /// digits, asked for 14 Nov 2026), 44 held sideways.
   final double rowHeight;
 
-  /// Width of one wheel column.
-  static const double width = 130;
+  /// The wheel fills the column [WheelsSetupBody] gives it, at most:
+  /// held sideways (and the 1.3.1 phone width),
+  static const double compactWidth = 130;
+
+  /// and on a phone held upright (2.5.0).
+  static const double portraitWidth = 184;
 
   static const double labelGap = 8;
 
@@ -170,7 +175,7 @@ class _SetupWheelState extends State<SetupWheel> {
           : null,
       excludeSemantics: true,
       child: SizedBox(
-        width: SetupWheel.width,
+        width: double.infinity,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

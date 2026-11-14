@@ -176,6 +176,7 @@ class AudioService implements IAudioService {
 
   /// The gym-timer beeps, shared by every voice pack.
   static const _highBeep = 'audio/beeps/high.wav';
+  static const _midBeep = 'audio/beeps/mid.wav';
   static String _lowBeep(int secondsLeft) =>
       'audio/beeps/low_${secondsLeft.clamp(1, 3)}.wav';
 
@@ -201,6 +202,10 @@ class AudioService implements IAudioService {
   @override
   Future<Either<AudioFailure, Unit>> playHighBeep() =>
       _play(_highBeep, channel: 'beep');
+
+  @override
+  Future<Either<AudioFailure, Unit>> playMidBeep() =>
+      _play(_midBeep, channel: 'beep');
 
   @override
   Future<Either<AudioFailure, Unit>> playGo() async {

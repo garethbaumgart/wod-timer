@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
@@ -155,6 +156,16 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('ux review tour', (tester) async {
+    // Store captures show a named voice on the chip (the D6 voices frame):
+    // --dart-define=TOUR_VOICE=major stores it before the app starts.
+    const tourVoice = String.fromEnvironment('TOUR_VOICE');
+    if (tourVoice.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(
+        'app_voice',
+        VoiceOption.values.byName(tourVoice).index,
+      );
+    }
     app.main();
     await tester.pumpAndSettle();
 

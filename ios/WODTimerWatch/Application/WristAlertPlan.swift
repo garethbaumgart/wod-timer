@@ -67,6 +67,7 @@ enum WristAlertPlan {
     /// and the end. GO itself is not an alert: the athlete is looking at the
     /// countdown. The 3-2-1 beeps have no alert either; a notification is
     /// one tap per change.
+    // Mid-round pips are deliberately not alerts: 64 pending at most, and a 30-round EMOM would blow it.
     static func changes(for type: TimerType) -> [WristAlert] {
         let body = LiveRules.configLine(type)
         func alert(_ kind: WristAlert.Kind, at: Int) -> WristAlert { WristAlert(kind: kind, at: at, body: body) }

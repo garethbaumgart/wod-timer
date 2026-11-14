@@ -2,6 +2,25 @@
 
 Notes from Gareth to pick up in the next set of changes. Add new items here as they come in; move each into the release's plan or spec when the build starts.
 
+## Shipped as 2.5.0 (14 Nov 2026): mid-round pips, bigger setup dials
+
+- **Mid-round pips, no setting** (asked 14 Nov 2026, option 1 of the round 1
+  mocks with the pill removed): `assets/audio/beeps/mid.wav`, two 0.1 s clips
+  of the high beep 160 ms apart at x0.75 (peak 2.5 dB under the high beep),
+  halfway through every EMOM interval and Tabata work block, and halfway
+  through an AMRAP or For Time clock. Phases under 10 s get none; once per
+  phase; a tick more than a second past the midpoint stays quiet (no late pip
+  after a suspension). Plays with Beeps only and every voice; Silent mutes it.
+  Phone, Apple Watch and Wear OS (the Wear build waits for Google's first Wear
+  review). Not added to the watch's wrist alerts (iOS caps pending
+  notifications at 64). Mocks: https://claude.ai/artifact/Knm6pYiiBNaap8wYvziKQE
+- **Bigger, higher setup dials** (option C of
+  https://claude.ai/artifact/2faSDCrAcHSFfXDUoLzfYC): wheels 96pt rows (72pt
+  digits, was 42) in 184pt columns with 8pt edges, the bezel full width inside
+  8pt edges (ring 241 to 337pt on a 393pt phone), both lifted so the space
+  above is half the space below. White ticks on the setup timeline mark where
+  the pips land. Landscape unchanged.
+
 ## Built on feat/gym-beeps (4 Oct 2026), waiting on Gareth's listen
 
 - **Gym-timer beeps in every workout.** Three low beeps (about 435.5 Hz) with 3, 2, 1 seconds left in every phase, then the high beep (about 1031 Hz) on the change with the voice line on it, matched to the SmartWOD recording Gareth chose. Spoken 3-2-1 and 5-4-3-2-1 replaced by the beeps; optional lines never talk over the count-in or another line; Beeps only = beeps without voice. Phone and watch. Assets: `assets/audio/beeps/`, voices levelled by `tool/audio/level_voices.py` (see `tool/audio/README.md`). Major mocks of all four workouts, rendered from the app's own cue log (`test/tool/cue_timeline_test.dart`): https://claude.ai/artifact/AoN3cUXdV73Q4ozoVAFRFC
