@@ -2,6 +2,20 @@
 
 Notes from Gareth to pick up in the next set of changes. Add new items here as they come in; move each into the release's plan or spec when the build starts.
 
+## Shipped as 2.5.1 (15 Nov 2026): end screens lifted, with fact tiles
+
+- **Option 1 of the end-screen mocks** (https://claude.ai/artifact/BrKtJQCp2aKoXZ91xPAEzP,
+  asked 15 Nov 2026): upright, the result sits under the header (header 28pt
+  down, 36pt to the hero) and three fact tiles sit under it, all from the
+  session: AMRAP time, per round (time / rounds; STARTED when no round was
+  counted), finished; For Time cap, time under the cap (only a FINISH; a stop
+  or the cap shows STARTED), finished; EMOM time, interval, finished; Tabata
+  time, work done, finished. The last tile says STOPPED or ENDED (time cap)
+  when that is what happened, and follows the phone's 12 or 24-hour clock.
+  The AMRAP wheel is capped at 100pt so the tiles fit; the EMOM and Tabata
+  "total" line moved into the TIME tile. Landscape unchanged. First Wharf
+  release on Flutter 3.50.0.
+
 ## Shipped as 2.5.0 (14 Nov 2026): mid-round pips, bigger setup dials
 
 - **Mid-round pips, no setting** (asked 14 Nov 2026, option 1 of the round 1

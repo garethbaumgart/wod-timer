@@ -294,7 +294,8 @@ void main() {
         stopped.first,
         'Stopped, 0 minutes 55 seconds remaining, Round 3 of 10',
       );
-      expect(stopped, containsAll(['Stopped', '3/10', 'ROUNDS', '2:05 total']));
+      // 2.5.1: the time is a fact tile, read as one line.
+      expect(stopped, containsAll(['Stopped', '3/10', 'ROUNDS', 'time 2:05']));
       expect(
         find.bySemanticsLabel('Run the same workout again'),
         findsOneWidget,
