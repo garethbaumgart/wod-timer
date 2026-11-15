@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
+import 'package:wod_timer/mock/mock_end.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
@@ -43,7 +45,11 @@ Future<void> main() async {
   // workout run in each mode, with no flash of defaults.
   final prefs = await SharedPreferences.getInstance();
   final rootScope = ProviderScope(
-    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      if (mockEndMode != null)
+        timerNotifierProvider.overrideWith(MockEndNotifier.new),
+    ],
     child: const WodTimerApp(),
   );
 
@@ -153,8 +159,18 @@ class WodTimerApp extends ConsumerWidget {
       themeMode: ThemeMode.dark,
       routerConfig: router,
       // iPad and Android tablets: the phone layout, scaled to the screen.
-      builder: (context, child) =>
-          TabletScale(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) {
+        final scaled = TabletScale(child: child ?? const SizedBox.shrink());
+        if (!mockPhoneInsets) return scaled;
+        // Mock renders: the iPhone's status bar and home indicator insets.
+        const insets = EdgeInsets.only(top: 59, bottom: 34);
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(padding: insets, viewPadding: insets),
+          child: scaled,
+        );
+      },
     );
   }
 }

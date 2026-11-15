@@ -20,6 +20,7 @@ import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
     as domain;
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
+import 'package:wod_timer/mock/mock_end.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/hold_to_stop_cell.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
@@ -893,6 +894,41 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         ? 'Stopped'
         : 'Finished';
     final configText = _configLine(session);
+
+    if (mockEndVariant != 0 && !landscape) {
+      return MockEndBody(
+        variant: mockEndVariant,
+        mode: widget.timerType,
+        session: session,
+        word: word,
+        configText: configText,
+        modeColor: _modeColor,
+        heroStyle: _heroStyle,
+        unitStyle: _unitStyle,
+        elapsedSeconds: _elapsedSeconds(session),
+        onRoundsChanged: (_) {},
+        slab: _absorbCanvasTaps(
+          BottomSlab(
+            cells: [
+              SlabCell(
+                label: 'AGAIN',
+                background: _modeColor,
+                foreground: Colors.black,
+                onTap: _onAgain,
+                semanticsLabel: 'Run the same workout again',
+              ),
+              SlabCell(
+                label: 'DONE',
+                background: AppColors.soft,
+                foreground: Colors.white,
+                onTap: _onDone,
+                semanticsLabel: 'Done, back to setup',
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
