@@ -236,6 +236,37 @@ void main() {
     });
   });
 
+  group('text', () {
+    // 2.5.1 regression: styles resolved above the Scaffold carried the
+    // no-Material warning style (a yellow double underline).
+    testWidgets('no end-screen text is underlined', (tester) async {
+      for (final (type, workout) in [
+        (TimerTypes.amrap, amrapWorkout(seconds: 60)),
+        (TimerTypes.forTime, forTimeWorkout(countUp: true)),
+        (TimerTypes.emom, emomWorkout()),
+        (TimerTypes.tabata, tabataWorkout(rounds: 2)),
+      ]) {
+        await live.pump(
+          tester,
+          workout: workout,
+          type: type,
+          device: Device.phone,
+          elapsed: const Duration(seconds: 5),
+        );
+        live.notifier.stop();
+        await tester.pump();
+        for (final text in tester.widgetList<RichText>(find.byType(RichText))) {
+          final style = text.text.style;
+          expect(
+            style?.decoration ?? TextDecoration.none,
+            TextDecoration.none,
+            reason: '$type: "${text.text.toPlainText()}"',
+          );
+        }
+      }
+    });
+  });
+
   group('fits', () {
     for (final (type, name) in [
       (TimerTypes.amrap, 'AMRAP'),

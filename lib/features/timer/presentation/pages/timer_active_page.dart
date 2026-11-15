@@ -908,6 +908,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
         );
         if (!landscape) {
           return _buildEndPortrait(
+            context,
             state,
             constraints: constraints,
             word: word,
@@ -1007,7 +1008,11 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// result lifted under the header, three fact tiles under it (the time,
   /// one fact for the mode, when it finished), the timeline centred in
   /// what is left above the slab.
+  ///
+  /// [context] is the layout's, under the Scaffold: styles resolved from
+  /// the page's own context pick up the no-Material warning underline.
   Widget _buildEndPortrait(
+    BuildContext context,
     TimerCompleted state, {
     required BoxConstraints constraints,
     required String word,
@@ -1019,7 +1024,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     const topPad = 28.0;
     const heroGap = 36.0;
     const tilesGap = 28.0;
-    final facts = _endFacts(state);
+    final facts = _endFacts(context, state);
     final tilesHeight = EndFactTiles.heightOf(context);
     // What the hero may take: everything but the header, the gaps, the
     // tiles, the timeline zone (the bar and a breath either side) and the
@@ -1111,7 +1116,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
   /// The three fact tiles for an end screen: the time, one fact for the
   /// mode, and when it ended. Everything comes from the session.
-  List<EndFact> _endFacts(TimerCompleted state) {
+  List<EndFact> _endFacts(BuildContext context, TimerCompleted state) {
     final session = state.session;
     final elapsed = session.elapsed.seconds;
     final time = _clock(elapsed);
