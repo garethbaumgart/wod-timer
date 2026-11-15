@@ -20,6 +20,7 @@ import 'package:wod_timer/features/timer/domain/entities/timer_session.dart';
 import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
     as domain;
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/end_fact_tiles.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/hold_to_stop_cell.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
@@ -905,7 +906,18 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
             letterSpacing: -0.3,
           ),
         );
-        final topPad = landscape ? 16.0 : 40.0;
+        if (!landscape) {
+          return _buildEndPortrait(
+            context,
+            state,
+            constraints: constraints,
+            word: word,
+            wordStyle: wordStyle,
+            configText: configText,
+            configStyle: configStyle,
+          );
+        }
+        const topPad = 16.0;
         // What the hero block may take without squeezing the timeline zone
         // (the bar plus a breath either side; the spacer above the block
         // takes an equal share of what is left) or the slab.
@@ -992,6 +1004,181 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     );
   }
 
+  /// Upright end screen (2.5.1, option 1 of the 15 Nov 2026 mocks): the
+  /// result lifted under the header, three fact tiles under it (the time,
+  /// one fact for the mode, when it finished), the timeline centred in
+  /// what is left above the slab.
+  ///
+  /// [context] is the layout's, under the Scaffold: styles resolved from
+  /// the page's own context pick up the no-Material warning underline.
+  Widget _buildEndPortrait(
+    BuildContext context,
+    TimerCompleted state, {
+    required BoxConstraints constraints,
+    required String word,
+    required TextStyle wordStyle,
+    required String configText,
+    required TextStyle configStyle,
+  }) {
+    final textScaler = MediaQuery.textScalerOf(context);
+    const topPad = 28.0;
+    const heroGap = 36.0;
+    const tilesGap = 28.0;
+    final facts = _endFacts(context, state);
+    final tilesHeight = EndFactTiles.heightOf(context);
+    // What the hero may take: everything but the header, the gaps, the
+    // tiles, the timeline zone (the bar and a breath either side) and the
+    // slab.
+    final blockHeight =
+        constraints.maxHeight -
+        topPad -
+        GlyphInk.boxHeight(word, wordStyle, textScaler: textScaler) -
+        4 -
+        GlyphInk.boxHeight(configText, configStyle, textScaler: textScaler) -
+        heroGap -
+        tilesGap -
+        tilesHeight -
+        BottomSlab.heightOf(context) -
+        2 * (_timelineHeight + 24);
+    final hero = state.endedAtTimeCap
+        ? null
+        : _endHero(
+            context,
+            state,
+            maxWidth: (constraints.maxWidth - 32) * 0.86,
+            maxHeight: math.min(
+              constraints.maxHeight * 0.22,
+              math.max(48, blockHeight - 40),
+            ),
+            maxBlockHeight: blockHeight,
+            showTotal: false,
+            wheelCap: EndFactTiles.amrapWheelCap,
+          );
+    final session = state.session;
+    return Column(
+      children: [
+        const SizedBox(height: topPad),
+        Text(word, style: wordStyle),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            configText,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: configStyle,
+          ),
+        ),
+        const SizedBox(height: heroGap),
+        if (hero != null) ...[hero.widget, const SizedBox(height: tilesGap)],
+        EndFactTiles(facts: facts),
+        Expanded(
+          child: CentredTimeline(
+            // The tiles' filled boxes are their lowest ink.
+            aboveInkInset: 0,
+            height: _timelineHeight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: WorkoutTimeline(
+                shape: WorkoutShape.ofTimerType(session.workout.timerType),
+                height: _timelineHeight,
+                elapsedSeconds: _elapsedSeconds(session),
+              ),
+            ),
+          ),
+        ),
+        _endSlab(),
+      ],
+    );
+  }
+
+  /// AGAIN | DONE.
+  Widget _endSlab() => _absorbCanvasTaps(
+    BottomSlab(
+      cells: [
+        SlabCell(
+          label: 'AGAIN',
+          background: _modeColor,
+          foreground: Colors.black,
+          onTap: _onAgain,
+          semanticsLabel: 'Run the same workout again',
+        ),
+        SlabCell(
+          label: 'DONE',
+          background: AppColors.soft,
+          foreground: Colors.white,
+          onTap: _onDone,
+          semanticsLabel: 'Done, back to setup',
+        ),
+      ],
+    ),
+  );
+
+  /// The three fact tiles for an end screen: the time, one fact for the
+  /// mode, and when it ended. Everything comes from the session.
+  List<EndFact> _endFacts(BuildContext context, TimerCompleted state) {
+    final session = state.session;
+    final elapsed = session.elapsed.seconds;
+    final time = _clock(elapsed);
+    final ended =
+        session.completedAt ??
+        session.startedAt?.add(Duration(seconds: elapsed)) ??
+        DateTime.now();
+    final use24h = MediaQuery.alwaysUse24HourFormatOf(context);
+    final endedAt = EndFact.clockTime(ended, use24h: use24h);
+    final startedAt = EndFact.clockTime(
+      session.startedAt ?? ended.subtract(Duration(seconds: elapsed)),
+      use24h: use24h,
+    );
+    final endLabel = state.endedAtTimeCap
+        ? 'ENDED'
+        : state.endedEarly
+        ? 'STOPPED'
+        : 'FINISHED';
+    final end = EndFact(endLabel, endedAt);
+    return session.workout.timerType.when(
+      amrap: (_) {
+        final rounds = session.currentRound - 1;
+        return [
+          EndFact('TIME', time),
+          if (rounds > 0)
+            EndFact('PER ROUND', _clock((elapsed / rounds).round()))
+          else
+            EndFact('STARTED', startedAt),
+          end,
+        ];
+      },
+      forTime: (t) => [
+        EndFact('CAP', _clock(t.timeCap.seconds)),
+        // Only a FINISH beats the cap; a stop or the cap itself does not.
+        if (!state.endedEarly && !state.endedAtTimeCap)
+          EndFact('UNDER CAP', _clock(math.max(0, t.timeCap.seconds - elapsed)))
+        else
+          EndFact('STARTED', startedAt),
+        end,
+      ],
+      emom: (t) => [
+        EndFact('TIME', time),
+        EndFact('EVERY', _clock(t.intervalDuration.seconds)),
+        end,
+      ],
+      tabata: (t) => [
+        EndFact('TIME', time),
+        EndFact(
+          'WORK',
+          _clock(
+            EndFact.tabataWorkSeconds(
+              elapsed,
+              work: t.workDuration.seconds,
+              rest: t.restDuration.seconds,
+            ),
+          ),
+        ),
+        end,
+      ],
+    );
+  }
+
   /// The hero block: the number (or AMRAP's wheel) in the workout colour,
   /// its label, and the total where there is one. The record's last text
   /// and style are the block's lowest glyphs, for the centring rule.
@@ -1001,6 +1188,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     required double maxWidth,
     required double maxHeight,
     required double maxBlockHeight,
+    bool showTotal = true,
+    double wheelCap = double.infinity,
   }) {
     final session = state.session;
     final textScaler = MediaQuery.textScalerOf(context);
@@ -1043,7 +1232,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           GlyphInk.boxHeight(hintText, hintStyle, textScaler: textScaler) +
           12;
       final fits = (maxBlockHeight - labels) / RoundsWheel.heightFor(1);
-      final size = math.max(24.0, math.min(heroSize, fits));
+      final size = math.max(24.0, math.min(wheelCap, math.min(heroSize, fits)));
       final rounds = session.currentRound - 1;
       return (
         widget: Column(
@@ -1075,7 +1264,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     } else {
       value = '${session.currentRound}/${session.totalRounds}';
       label = 'ROUNDS';
-      detail = '$elapsed total';
+      // Upright the time is a fact tile under the hero (2.5.1).
+      if (showTotal) detail = '$elapsed total';
     }
     final style = GlyphInk.resolve(
       context,
