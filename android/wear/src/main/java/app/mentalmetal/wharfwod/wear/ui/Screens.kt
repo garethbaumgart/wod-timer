@@ -35,9 +35,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.em
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.ScalingLazyListScope
@@ -58,25 +70,18 @@ import app.mentalmetal.wharfwod.wear.services.WearAudioService
 
 // MARK: Home
 
-/** Home: the stacked wordmark, the four timers in the phone's order with the remembered workout drawn as a timeline, then Voice and Health. */
+/**
+ * Home. The first page is the mark and all four timers at once, two by two
+ * in the phone's order, each with its remembered workout and its timeline
+ * (19 Nov 2026: Gareth wanted every option on the first screen; as a list a
+ * round watch showed one and a half). Voice and Health are one scroll down.
+ */
 @Composable
 fun HomeScreen(app: WodApp, onMode: (String) -> Unit, onVoice: () -> Unit, onHealth: () -> Unit) {
     val state = rememberScalingLazyListState(initialCenterItemIndex = 0)
     val memory = app.setupMemory
     ScrollingList(state, centreFirst = true) {
-        // The wordmark rides on the first timer, and the list opens with
-        // that pair centred: as an item of its own above a centred first
-        // row it sat against the top edge, where a 192dp circle is too
-        // narrow for it.
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Wordmark()
-                Palette.modeOrder.first().let { code -> ModeRow(code, memory.summary(code), memory.shape(code)) { onMode(code) } }
-            }
-        }
-        for (code in Palette.modeOrder.drop(1)) {
-            item { ModeRow(code, memory.summary(code), memory.shape(code)) { onMode(code) } }
-        }
+        item { ModeGrid(memory, onMode, Modifier.fillParentMaxHeight()) }
         item { SettingsRow("Voice", app.audio.settings.label, onVoice) }
         item { SettingsRow("Health", healthLabel(app.tracker), onHealth) }
     }
@@ -109,45 +114,114 @@ fun healthLabel(tracker: ExerciseTracker): String = when {
     else -> "Timer only"
 }
 
+/**
+ * The page is as high as the screen and sits on a [RoundColumn], so the
+ * mark, both rows of tiles and the hint under them are each as wide as the
+ * circle is at their height: on a 192dp watch and a 227dp one alike the
+ * four tiles are whole.
+ */
+@Composable
+private fun ModeGrid(memory: SetupMemory, onMode: (String) -> Unit, modifier: Modifier = Modifier) {
+    val g = geometry()
+    val rows = Palette.modeOrder.chunked(2)
+    val names = Palette.modeOrder.map { Palette.title(it) }
+    val summaries = Palette.modeOrder.map { memory.summary(it) }
+    RoundColumn(top = g.topMargin, bottom = g.topMargin, modifier = modifier.fillMaxWidth()) {
+        Slot(20.dp) { Wordmark() }
+        Spacer(Modifier.height(GRID_GAP))
+        rows.forEachIndexed { i, row ->
+            if (i > 0) Spacer(Modifier.height(GRID_GAP))
+            Row(Modifier.fill().fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GRID_GAP)) {
+                for (code in row) {
+                    ModeTile(code, memory.summary(code), memory.shape(code), names, summaries, Modifier.weight(1f).fillMaxHeight()) { onMode(code) }
+                }
+            }
+        }
+        Spacer(Modifier.height(GRID_GAP))
+        Slot(20.dp) { MoreBelow() }
+    }
+}
+
+private val GRID_GAP = 5.dp
+
+/** One line, coloured as the phone's mark. Artwork, so sized in dp (it does not follow the system font size), and fitted to the narrow top of the circle. */
 @Composable
 private fun Wordmark() {
-    // The mark is artwork, not reading text: it is sized in dp, so the
-    // system font size does not push it into the top of the circle.
-    val size = with(LocalDensity.current) { 22.dp.toSp() }
-    val spacing = with(LocalDensity.current) { 1.dp.toSp() }
-    val style = TextStyle(fontSize = size, lineHeight = size * 1.2f, fontWeight = Heavy, platformStyle = PlatformTextStyle(includeFontPadding = false))
-    Column(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("WHARF", color = Color.White, style = style, letterSpacing = spacing)
-        Row {
-            Text("WOD", color = Palette.work, style = style, letterSpacing = spacing)
-            Text(".", color = Palette.rest, style = style)
+    val size = with(LocalDensity.current) { 15.dp.toSp() }
+    val mark = buildAnnotatedString {
+        withStyle(SpanStyle(color = Color.White)) { append("WHARF ") }
+        withStyle(SpanStyle(color = Palette.work)) { append("WOD") }
+        withStyle(SpanStyle(color = Palette.rest)) { append(".") }
+    }
+    BasicText(
+        text = mark,
+        style = TextStyle(fontSize = size, fontWeight = Heavy, letterSpacing = 0.06.em, platformStyle = PlatformTextStyle(includeFontPadding = false)),
+        maxLines = 1, softWrap = false,
+        autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = size, stepSize = 0.25.sp),
+        modifier = Modifier.semantics { contentDescription = "Wharf WOD" },
+    )
+}
+
+/** A quiet chevron: Voice and Health are below. */
+@Composable
+private fun MoreBelow() {
+    Canvas(Modifier.size(width = 14.dp, height = 6.dp)) {
+        val stroke = 1.6.dp.toPx()
+        drawLine(Palette.dim, Offset(0f, 0f), Offset(size.width / 2, size.height), stroke, StrokeCap.Round)
+        drawLine(Palette.dim, Offset(size.width / 2, size.height), Offset(size.width, 0f), stroke, StrokeCap.Round)
+    }
+}
+
+/**
+ * A timer: its name in its colour, the remembered workout, the timeline.
+ * The four names share one size and so do the four summaries: the largest
+ * at which the longest of them fits a tile, so no tile reads bigger than
+ * its neighbour and no word is cut at any font size.
+ */
+@Composable
+private fun ModeTile(
+    code: String,
+    summary: String,
+    shape: List<app.mentalmetal.wharfwod.wear.domain.TimelinePart>,
+    names: List<String>,
+    summaries: List<String>,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val accent = Palette.mode(code)
+    BoxWithConstraints(
+        modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Palette.soft)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "${Palette.title(code)}, $summary" },
+    ) {
+        val inner = maxWidth - 14.dp
+        val nameSize = sharedSize(names, 13.sp, Heavy, inner)
+        val summarySize = sharedSize(summaries, 10.sp, FontWeight.SemiBold, inner)
+        Column(Modifier.fillMaxSize().padding(horizontal = 7.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.weight(1.25f), contentAlignment = Alignment.Center) {
+                FitText(Palette.title(code), color = accent, size = nameSize)
+            }
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                FitText(summary, color = Color.White.copy(alpha = 0.78f), size = summarySize, weight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.height(3.dp))
+            TimelineBar(shape, accent, height = 3.dp)
         }
     }
 }
 
+/** The largest size up to [nominal] at which every one of [texts] fits [width] on one line. */
 @Composable
-private fun ModeRow(code: String, summary: String, shape: List<app.mentalmetal.wharfwod.wear.domain.TimelinePart>, onClick: () -> Unit) {
-    val accent = Palette.mode(code)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Palette.soft)
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = Palette.title(code) }
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.width(3.5.dp).height(30.dp).clip(RoundedCornerShape(2.dp)).background(accent))
-            Spacer(Modifier.width(9.dp))
-            Column {
-                // No line limits in a list: at a large font size a row grows, it never cuts its words.
-                Text(Palette.title(code), color = Color.White, fontSize = 17.sp, fontWeight = Heavy)
-                Text(summary, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        TimelineBar(shape, accent, height = 5.dp)
+private fun sharedSize(texts: List<String>, nominal: androidx.compose.ui.unit.TextUnit, weight: FontWeight, width: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.TextUnit {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(texts, nominal, width, density) {
+        val style = TextStyle(fontSize = nominal, fontWeight = weight, platformStyle = PlatformTextStyle(includeFontPadding = false))
+        val widest = texts.maxOf { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width }
+        val room = with(density) { width.toPx() }
+        if (widest <= room) nominal else nominal * (room / widest * 0.97f)
     }
 }
 

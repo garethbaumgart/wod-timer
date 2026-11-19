@@ -152,7 +152,7 @@ private object RoundColumnScopeInstance : RoundColumnScope {
 }
 
 /**
- * A full-screen column for a round display: children run top to bottom,
+ * A screen-high column for a round display: children run top to bottom,
  * centred, and each one is given no more width than the circle has at the
  * child's own height (see [Geometry.rectWidth], [Geometry.capsuleWidth]).
  * A child that fills its width therefore ends exactly where the screen
@@ -161,11 +161,12 @@ private object RoundColumnScopeInstance : RoundColumnScope {
  */
 @Composable
 fun RoundColumn(top: Dp, bottom: Dp, modifier: Modifier = Modifier, content: @Composable RoundColumnScope.() -> Unit) {
-    val round = LocalConfiguration.current.isScreenRound
+    // The circle is the screen's, not the column's: a column inside a
+    // padded list is narrower than the display it is centred on.
+    val g = geometry()
     Layout(content = { RoundColumnScopeInstance.content() }, modifier = modifier) { measurables, constraints ->
         val w = constraints.maxWidth
         val h = constraints.maxHeight
-        val g = Geometry(w.toDp().value, round, fontScale)
         val data = measurables.map { it.parentData as? RoundData }
         val fixed = measurables.mapIndexed { i, m -> if ((data[i]?.weight ?: 0f) > 0f) 0 else m.minIntrinsicHeight(w) }
         val weights = data.sumOf { (it?.weight ?: 0f).toDouble() }.toFloat()
