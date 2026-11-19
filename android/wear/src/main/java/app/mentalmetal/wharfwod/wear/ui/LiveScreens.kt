@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.em
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,6 +92,13 @@ private fun LiveLayout(
     val color = if (ambient) Palette.paused else Palette.live(session)
     val type = session.workout.timerType
     val g = geometry()
+    // The phase line and the score grow with the system font size while
+    // the clock keeps at least a fifth of the screen's height.
+    val k = g.labelScale(
+        chrome = g.topMargin.value + g.bottomMargin.value + g.capsuleHeight.value + BARS,
+        labels = PHASE_LINE + SCORE_LINE,
+        heroMin = g.widthDp * 0.2f,
+    )
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (!ambient) {
             Box(
@@ -98,52 +107,57 @@ private fun LiveLayout(
                 ),
             )
         }
-        Column(
+        // The tap target: everything above the capsules.
+        Box(
             Modifier
-                .fillMaxSize()
-                .padding(horizontal = g.sideMargin)
-                .padding(top = 10.dp, bottom = g.bottomMargin),
-        ) {
-            Column(Modifier.weight(1f).fillMaxWidth().clickable(onClick = onCanvasTap), horizontalAlignment = Alignment.CenterHorizontally) {
-                PhaseLine(session)
-                BigClock(
-                    text = LiveRules.clockText(session), reference = LiveRules.referenceClock(type), color = color.copy(alpha = if (paused) 0.45f else 1f),
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                )
-                ScoreSlot(session, counted)
-                Spacer(Modifier.height(8.dp))
-                TimelineBar(type.timelineParts, Palette.mode(type), height = 5.dp, elapsed = LiveRules.elapsedSeconds(session))
-                Spacer(Modifier.height(8.dp))
-            }
-            Box(Modifier.height(g.capsuleHeight)) { buttons() }
+                .fillMaxWidth()
+                .height((g.widthDp - g.bottomMargin.value - g.capsuleHeight.value - 4f).dp)
+                .clickable(onClick = onCanvasTap),
+        )
+        RoundColumn(top = g.topMargin, bottom = g.bottomMargin, modifier = Modifier.fillMaxSize()) {
+            PhaseLine(session, (PHASE_LINE * k).dp)
+            BigClock(
+                text = LiveRules.clockText(session), reference = LiveRules.referenceClock(type), color = color.copy(alpha = if (paused) 0.45f else 1f),
+                modifier = Modifier.fill().fillMaxWidth(),
+            )
+            ScoreSlot(session, counted, (SCORE_LINE * k).dp)
+            Spacer(Modifier.height(6.dp))
+            TimelineBar(type.timelineParts, Palette.mode(type), height = 5.dp, elapsed = LiveRules.elapsedSeconds(session), modifier = Modifier.width(g.bottomRowWidth.dp))
+            Spacer(Modifier.height(6.dp))
+            Box(Modifier.capsule().height(g.capsuleHeight).fillMaxWidth()) { buttons() }
         }
     }
 }
 
-/** The fixed-height phase line over the clock, blank when there is no phase to name, so the digits never jump. */
+/** Heights at the default font size, in dp: the phase line, the score line, and the two gaps with the timeline between them. */
+private const val PHASE_LINE = 18f
+private const val SCORE_LINE = 28f
+private const val BARS = 17f
+
+/** The phase line over the clock, blank when there is no phase to name, so the digits never jump. Near the top of a round screen it is only as wide as the circle is there; a long word shrinks to fit. */
 @Composable
-private fun PhaseLine(session: TimerSession) {
-    Box(Modifier.height(18.dp), contentAlignment = Alignment.Center) {
+private fun PhaseLine(session: TimerSession, height: androidx.compose.ui.unit.Dp) {
+    Slot(height) {
         LiveRules.phaseWord(session)?.let { word ->
-            Text(word.text, color = Palette.tone(word.tone, session), fontSize = 13.sp, fontWeight = Heavy, letterSpacing = 1.5.sp, maxLines = 1)
+            FitText(word.text, color = Palette.tone(word.tone, session), size = 13.sp, letterSpacing = 0.115.em)
         }
     }
 }
 
-/** The second line under the clock: the round, the AMRAP score, the cap, or a hint, in one fixed slot. */
+/** The second line under the clock: the round, the AMRAP score, the cap, or a hint, in one slot. */
 @Composable
-private fun ScoreSlot(session: TimerSession, counted: Boolean) {
-    Box(Modifier.height(28.dp), contentAlignment = Alignment.Center) {
+private fun ScoreSlot(session: TimerSession, counted: Boolean, height: androidx.compose.ui.unit.Dp) {
+    Slot(height) {
         val type = session.workout.timerType
         val total = session.totalRounds
         when {
             session.state == TimerState.PREPARING -> Caption("TAP TO SKIP", size = 12.sp)
-            total != null -> Text("${session.currentRound}/$total", color = Color.White, fontSize = 24.sp, fontWeight = Heavy)
+            total != null -> FitText("${session.currentRound}/$total", color = Color.White, size = 24.sp)
             type is TimerType.Amrap -> if (session.countedRounds == 0 && !counted && session.state == TimerState.RUNNING) {
                 Caption("TAP TO COUNT", size = 12.sp)
             } else {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("${session.countedRounds}", color = Color.White, fontSize = 24.sp, fontWeight = Heavy)
+                    FitText("${session.countedRounds}", color = Color.White, size = 24.sp)
                     Spacer(Modifier.padding(horizontal = 2.dp))
                     Caption("ROUNDS", size = 10.sp, modifier = Modifier.padding(bottom = 4.dp))
                 }
@@ -169,9 +183,15 @@ private fun CompletedScreen(vm: TimerViewModel, session: TimerSession) {
     val focusRequester = remember { FocusRequester() }
     val adjustable = type is TimerType.Amrap
     val g = geometry()
+    val k = g.labelScale(
+        chrome = g.topMargin.value + g.bottomMargin.value + g.capsuleHeight.value + BARS,
+        labels = END_WORD + 2 * END_CAPTION,
+        heroMin = g.widthDp * 0.2f,
+    )
     LaunchedEffect(adjustable) { if (adjustable) focusRequester.requestFocus() }
-    Column(
-        Modifier
+    RoundColumn(
+        top = g.topMargin, bottom = g.bottomMargin,
+        modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .then(
@@ -181,26 +201,25 @@ private fun CompletedScreen(vm: TimerViewModel, session: TimerSession) {
                     while (accumulated <= -40f) { vm.adjustRounds(-1); accumulated += 40f }
                     true
                 }.focusRequester(focusRequester).focusable() else Modifier,
-            )
-            .padding(horizontal = g.sideMargin)
-            .padding(top = 14.dp, bottom = g.bottomMargin),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            ),
     ) {
-        Text(summary.word, color = Color.White, fontSize = 16.sp, fontWeight = Heavy, maxLines = 1)
-        Caption(LiveRules.configLine(type), size = 10.sp)
+        Slot((END_WORD * k).dp) { FitText(summary.word, color = Color.White, size = 16.sp) }
+        Slot((END_CAPTION * k).dp) { Caption(LiveRules.configLine(type), size = 10.sp) }
         if (summary.hero != null) {
-            BigClock(summary.hero, reference = "10:00", color = accent, modifier = Modifier.weight(1f).fillMaxWidth())
-            Caption(summary.label, size = 10.sp)
-            Spacer(Modifier.height(6.dp))
+            BigClock(summary.hero, reference = "10:00", color = accent, modifier = Modifier.fill().fillMaxWidth())
+            Slot((END_CAPTION * k).dp) { Caption(summary.label, size = 10.sp) }
+            Spacer(Modifier.height(4.dp))
         } else {
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.fill())
         }
-        TimelineBar(type.timelineParts, accent, height = 5.dp, elapsed = LiveRules.elapsedSeconds(session))
-        Spacer(Modifier.height(if (summary.hero != null) 8.dp else 0.dp))
-        if (summary.hero == null) Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(CapsuleGeometry.gap)) {
+        TimelineBar(type.timelineParts, accent, height = 5.dp, elapsed = LiveRules.elapsedSeconds(session), modifier = Modifier.width(g.bottomRowWidth.dp))
+        if (summary.hero != null) Spacer(Modifier.height(8.dp)) else Spacer(Modifier.fill())
+        Row(Modifier.capsule().fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CapsuleGeometry.gap)) {
             CapsuleButton("AGAIN", fill = accent, text = Color.Black, modifier = Modifier.weight(1f)) { vm.restart() }
             CapsuleButton("DONE", fill = Palette.soft, modifier = Modifier.weight(1f)) { vm.reset() }
         }
     }
 }
+
+private const val END_WORD = 20f
+private const val END_CAPTION = 14f

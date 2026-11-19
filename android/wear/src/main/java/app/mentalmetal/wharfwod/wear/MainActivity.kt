@@ -55,17 +55,30 @@ class MainActivity : ComponentActivity() {
         intent?.getStringExtra("scene")?.let { scene ->
             if (BuildConfig.DEBUG && app.timer.phase == TimerState.READY) {
                 SetupMemory.decode(scene)?.let { type -> app.timer.start(Workout.of(type, prepSeconds = 3)) }
+                // `--es then run|pause|finish|stop` walks on to that screen (shape and font-size captures).
+                // A beat later, so the workout service is up before a stop takes it down again.
+                val then = intent?.getStringExtra("then")
+                window.decorView.postDelayed({
+                    when (then) {
+                        "run" -> app.timer.skipPrep()
+                        "pause" -> { app.timer.skipPrep(); app.timer.pause() }
+                        "finish" -> { app.timer.skipPrep(); app.timer.finish() }
+                        "stop" -> { app.timer.skipPrep(); app.timer.stop() }
+                    }
+                }, 700)
             }
         }
+        // Debug capture hook: `--es route setup/tabata` (or voice, health) opens on that screen.
+        val debugRoute = if (BuildConfig.DEBUG) intent?.getStringExtra("route") else null
         setContent {
             MaterialTheme {
-                Root(app)
+                Root(app, debugRoute)
             }
         }
     }
 
     @Composable
-    private fun Root(app: WodApp) {
+    private fun Root(app: WodApp, debugRoute: String? = null) {
         val nav = rememberSwipeDismissableNavController()
         val workoutRunning = app.timer.phase != TimerState.READY
         val backStack by nav.currentBackStackEntryAsState()
@@ -79,6 +92,7 @@ class MainActivity : ComponentActivity() {
                 requestPermissions()
             }
         }
+        LaunchedEffect(debugRoute) { if (debugRoute != null && !workoutRunning) nav.navigate(debugRoute) }
         SwipeDismissableNavHost(
             navController = nav,
             startDestination = if (workoutRunning) "live" else "home",

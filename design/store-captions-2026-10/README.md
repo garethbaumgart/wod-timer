@@ -60,3 +60,16 @@ lines of about 20 characters (widest: 949 px of the 1320 px canvas). Proofs are 
 characters; the ones that Outfit Medium at 46 pt sets wider than about 1000 px are broken into two
 lines at a sentence boundary (frame 03's proof measures 1408 px on one line, wider than the canvas).
 Outputs are 8-bit sRGB with no alpha, checked with `magick identify`.
+
+## 2.5.2 (19 Nov 2026)
+
+- The live sets are the D6 Whiteboard frames (31 Oct), not the direction-A table above. Since 2.5.2 frame 01 is
+  the home screen with all four timers under "For Time. EMOM. AMRAP. Tabata." in the four mode colours (Gareth:
+  the first frame must show a screen with all four workout options). It took the closing brand frame's place, so
+  both stores stay at eight: opener, the four whiteboards, voices, wrist, finish. Generator: portfolio repo
+  `automation/store-assets/preview-concepts/wharfwod/produce.py`.
+- `wear/en-US/01.png` to `06.png`: the Wear OS listing set, 454x454 captures of the 2.5.2 watch app from the
+  large round emulator (home with the four timers, EMOM setup, EMOM live, Tabata rest, AMRAP with three rounds,
+  finished). They replaced the 2.2-era set, which showed the capsules cut by the round edge (Google's Wear
+  review, 19 Nov 2026). Upload: `play_screenshots.py batch --item en-US wearScreenshots <dir>`.
+- The Wear OS watch in the Play wrist frame (07) is the new EMOM live capture.
