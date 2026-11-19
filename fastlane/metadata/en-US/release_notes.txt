@@ -1,1 +1,1 @@
-A clearer finish: the result now sits higher on the end screen, with your time, the time per round (AMRAP) or how far under the cap you finished (For Time), and when you finished, right below it.
+Steadier cues. If a beep or a voice line can't load, it is skipped on the beat instead of landing late, and the next one plays as normal.
