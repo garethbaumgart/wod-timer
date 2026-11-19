@@ -72,5 +72,25 @@ for scale in "${SCALES[@]}"; do
   echo "font $scale: $(ls "$DIR" | wc -l | tr -d ' ') screens, sheet $OUT/sheet-$scale.png"
 done
 $ADB -s "$S" shell settings put system font_scale "$BEFORE"
+
+# Flows: after DONE the app must show a screen. On the release build of 2.5.2 it showed a black one
+# (the back stack had been emptied), which no single-screen capture can see.
+bright() { magick "$1" -alpha off -colorspace gray -threshold 12% -format "%[fx:round(100*mean)]" info:; }
+tapf() { $ADB -s "$S" shell input tap $((W*$1/1000)) $((W*$2/1000)); sleep "${3:-1.5}"; }
+DIR="$OUT/flows"; mkdir -p "$DIR"
+# 1. Opened straight onto a workout (nothing under it): stop, DONE, expect Home.
+shot done-direct-end 2.5 --es scene amrap:600 --es then stop
+tapf 640 760 2; $ADB -s "$S" exec-out screencap -p > "$DIR/done-direct-after.png"
+# 2. From Home: first tile, START, skip get ready, PAUSE, hold to stop, DONE, expect setup.
+shot from-home 3
+tapf 330 380 2; tapf 500 730 2.5; tapf 500 400 1.5; tapf 500 760 1.2
+$ADB -s "$S" shell input swipe $((W*360/1000)) $((W*760/1000)) $((W*361/1000)) $((W*761/1000)) 1500; sleep 1.8
+$ADB -s "$S" exec-out screencap -p > "$DIR/from-home-end.png"
+tapf 640 760 2; $ADB -s "$S" exec-out screencap -p > "$DIR/from-home-after.png"
+$ADB -s "$S" shell am force-stop $PKG
+for f in done-direct-after from-home-after; do
+  b=$(bright "$DIR/$f.png")
+  if [ "$b" -lt 2 ]; then echo "BLANK SCREEN after DONE: $f.png"; fail=1; else echo "after DONE ($f): a screen is showing ($b% lit)"; fi
+done
 [ $fail = 0 ] && echo "PASS: nothing in the edge ring on any fixed screen" || echo "FAIL"
 exit $fail
