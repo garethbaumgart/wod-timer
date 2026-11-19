@@ -41,6 +41,7 @@ class TimerNotifier extends _$TimerNotifier {
   StreamSubscription<Duration>? _tickSubscription;
   Duration _lastTickElapsed = Duration.zero;
   String? _lastLowBeep;
+  String? _lastMidBeep;
   Duration? _lastVoiceAt;
   bool _playedGo = false;
   int _lastRound = 0;
@@ -443,6 +444,10 @@ class TimerNotifier extends _$TimerNotifier {
     // Low beeps in the last three seconds of the phase (prep included).
     _playPhaseCountdown(newSession);
 
+    // The mid-round pips (2.5.0): mandatory, so they sit outside the
+    // optional voice cues below and never block one.
+    final midPipped = _playMidRoundPips(newSession);
+
     // High beep + "Go" when the prep countdown ends
     if (oldSession.state == domain.TimerState.preparing &&
         newSession.state == domain.TimerState.running &&
@@ -505,10 +510,11 @@ class TimerNotifier extends _$TimerNotifier {
     // The optional cues below wait for a clear moment.
     if (voiceCuePlayed || !_clearToSpeak(newSession)) return;
 
-    // Handle halfway point
+    // Handle halfway point. An AMRAP's or For Time's halfway is also its
+    // mid-round pips, which already tapped: one tap per moment.
     if (newSession.progress >= 0.5 && oldSession.progress < 0.5) {
       _say(_audioService.playHalfway);
-      _hapticService.mediumImpact();
+      if (!midPipped) _hapticService.mediumImpact();
       return;
     }
 
@@ -562,6 +568,34 @@ class TimerNotifier extends _$TimerNotifier {
       _hapticService.mediumImpact(); // Haptic for each countdown tick
     }
   }
+
+  /// The mid-round pips (asked for 14 Nov 2026, no setting): two quick
+  /// pips halfway through every EMOM interval and Tabata work block, and
+  /// halfway through an AMRAP or For Time clock. Only phases of 10s or
+  /// more, so the pips land at least five seconds before the 3, 2, 1. Once
+  /// per phase; a tick that lands more than a second past the midpoint
+  /// (the app was suspended) stays quiet rather than pipping late.
+  /// Returns whether it pipped on this tick.
+  bool _playMidRoundPips(TimerSession session) {
+    if (session.state != domain.TimerState.running) return false;
+    final phase = _phaseSeconds(session);
+    if (phase < midRoundMinPhaseSeconds) return false;
+    final half = phase ~/ 2;
+    final left = session.timeRemaining.seconds;
+    if (left > half || left < half - 1) return false;
+    // AMRAP's round number is the athlete's own tally: key on the clock.
+    final key = session.isIntervalBased
+        ? '${session.state.name}:${session.currentRound}'
+        : 'clock';
+    if (key == _lastMidBeep) return false;
+    _lastMidBeep = key;
+    _audioService.playMidBeep();
+    _hapticService.mediumImpact();
+    return true;
+  }
+
+  /// The shortest phase that gets mid-round pips.
+  static const midRoundMinPhaseSeconds = 10;
 
   /// The length of the phase the session is in.
   int _phaseSeconds(TimerSession session) {
@@ -632,6 +666,7 @@ class TimerNotifier extends _$TimerNotifier {
 
   void _resetAudioState() {
     _lastLowBeep = null;
+    _lastMidBeep = null;
     _lastVoiceAt = null;
     // A no-prep GO is spoken before the ticking (re)starts the clock.
     _lastTickElapsed = Duration.zero;

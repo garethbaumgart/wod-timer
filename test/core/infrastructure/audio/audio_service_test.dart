@@ -54,6 +54,7 @@ void main() {
 
   // The gym-timer beeps (2.1.0), shared by every pack.
   const beep = 'audio/beeps/high.wav';
+  const mid = 'audio/beeps/mid.wav';
   String low(int n) => 'audio/beeps/low_$n.wav';
 
   group('voice on', () {
@@ -69,10 +70,12 @@ void main() {
       await audio.playBeep();
       await audio.playHighBeep();
       await audio.playLowBeep(3);
+      await audio.playMidBeep();
       audio.setVoicePack('holly');
       await audio.playHighBeep();
       await audio.playLowBeep(3);
-      expect(played, [beep, beep, low(3), beep, low(3)]);
+      await audio.playMidBeep();
+      expect(played, [beep, beep, low(3), mid, beep, low(3), mid]);
     });
 
     test('each of 3, 2, 1 has its own low beep; out of range clamps', () async {
@@ -137,7 +140,8 @@ void main() {
       await audio.playLowBeep(2);
       await audio.playLowBeep(1);
       await audio.playHighBeep();
-      expect(played, [low(3), low(2), low(1), beep]);
+      await audio.playMidBeep();
+      expect(played, [low(3), low(2), low(1), beep, mid]);
     });
 
     test('turning the voice back on restores the clips', () async {
@@ -157,6 +161,7 @@ void main() {
       await audio.playBeep();
       await audio.playLowBeep(3);
       await audio.playHighBeep();
+      await audio.playMidBeep();
       expect(played, isEmpty);
 
       await audio.setMuted(muted: false);

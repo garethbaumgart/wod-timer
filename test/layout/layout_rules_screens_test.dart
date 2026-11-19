@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 // The 1.3.1 layout rules, checked on every screen that has a timeline, on
 // a phone in both orientations and on a 13in iPad under TabletScale, with
 // the real Outfit font:
@@ -6,20 +8,21 @@
 // 2. Centring: every timeline sits exactly midway between the visible
 //    bottom of the content above it (its painted glyphs, read back from
 //    the pixels) and the top of the bottom slab, within 1pt.
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_theme.dart';
 import 'package:wod_timer/core/presentation/widgets/bottom_slab.dart';
+import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/setup/live_hints.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
-import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/end_fact_tiles.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
@@ -44,13 +47,32 @@ void main() {
     final slab = tester.getRect(find.byType(BottomSlab));
     final shot = await paintedScreen(tester);
     final dpr = tester.view.devicePixelRatio;
+    // The setup timeline's mid-round ticks (2.5.0) reach the same few
+    // points past the bar above and below, so the bar stays centred; they
+    // are the timeline's own ink, not content above it. On a tablet the
+    // layout is scaled up, so the overhang is too.
+    final bar = tester.widget<WorkoutTimeline>(find.byType(WorkoutTimeline));
+    final overhang = bar.midTicks
+        ? TimelinePainter.midTickOverhang * timeline.height / bar.height
+        : 0.0;
     final inkBottom = lowestInkIn(
       shot,
-      Rect.fromLTRB(timeline.left, aboveTop, timeline.right, timeline.top - 1),
+      Rect.fromLTRB(
+        timeline.left,
+        aboveTop,
+        timeline.right,
+        timeline.top - overhang - 1,
+      ),
       dpr,
     );
     expect(inkBottom, isNotNull, reason: 'no content above the timeline');
-    final gapAbove = timeline.top - inkBottom!;
+    // The end screen's fact tiles (2.5.1) are filled panels: their boxes,
+    // not the darker text inside, are the content's visible edge.
+    final tiles = find.byType(EndFactTiles);
+    final contentBottom = tiles.evaluate().isEmpty
+        ? inkBottom!
+        : math.max(inkBottom!, tester.getRect(tiles).bottom);
+    final gapAbove = timeline.top - contentBottom;
     final gapBelow = slab.top - timeline.bottom;
     expect(gapAbove, greaterThan(4), reason: '$reason: ink touches timeline');
     // Within a point, plus the one device pixel a small glyph's painted
@@ -416,7 +438,14 @@ void main() {
         );
         live.notifier.stop();
         await tester.pump();
-        expect(find.text('2:05 total'), findsOneWidget);
+        // 2.5.1: upright, the time moved from under the hero into a fact
+        // tile; held sideways it stays under the hero.
+        if (device.size.height > device.size.width) {
+          expect(find.text('2:05'), findsOneWidget);
+          expect(find.text('2:05 total'), findsNothing);
+        } else {
+          expect(find.text('2:05 total'), findsOneWidget);
+        }
         await expectCentred(
           tester,
           aboveTop: underWord(tester, 'Stopped'),
@@ -467,7 +496,9 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
       });
 
-      // The selected count reads as big as an EMOM "2/10": same hero rule.
+      // The selected count reads as big as an EMOM "2/10" (same hero
+      // rule), except upright since 2.5.1, where the wheel is capped so the
+      // fact tiles fit under it.
       testWidgets('AMRAP hero is as big as the EMOM hero (${device.name})', (
         tester,
       ) async {
@@ -502,10 +533,12 @@ void main() {
         // there the wheel shrinks to fit and the layout checks still hold.
         if (device.size.height > device.size.width) {
           expect(
-            countGlyphs,
-            closeTo(emomGlyphs, emomGlyphs * 0.1),
+            count.fontSize,
+            lessThanOrEqualTo(EndFactTiles.amrapWheelCap),
             reason: 'AMRAP ${count.fontSize} vs EMOM ${emom.fontSize}',
           );
+          // Capped, the count never outgrows the EMOM hero.
+          expect(countGlyphs, lessThanOrEqualTo(emomGlyphs * 1.1));
         }
         expect(tester.takeException(), isNull);
         final wheel = tester.getRect(find.byType(RoundsWheel));

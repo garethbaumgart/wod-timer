@@ -173,6 +173,223 @@ final class WristCueTests: XCTestCase {
     }
 }
 
+// 2.5.0: the mid-round pips. Two quick pips halfway through every EMOM
+// interval, Tabata work block and AMRAP / For Time clock of 10s or more,
+// with no setting: Beeps only keeps them, only Silent stops them. Mirrors
+// the phone's timer_cues_test.
+final class MidRoundPipTests: XCTestCase {
+    private let keys = ["watch_voice_pack", "watch_voice_random", "watch_voice_muted", "watch_voice_beeps"]
+    private var saved: [String: Any?] = [:]
+
+    override func setUp() {
+        super.setUp()
+        for key in keys {
+            saved[key] = UserDefaults.standard.object(forKey: key)
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
+
+    override func tearDown() {
+        for key in keys {
+            if let value = saved[key] ?? nil {
+                UserDefaults.standard.set(value, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        super.tearDown()
+    }
+
+    /// A view model with the voice on (or Beeps only), never Silent.
+    private func pipViewModel(beepsOnly: Bool = false) -> (TimerViewModel, WatchHapticService) {
+        let (vm, _, haptics) = makeViewModel()
+        vm.audio.setMuted(false)
+        vm.audio.setBeepsOnly(beepsOnly)
+        return (vm, haptics)
+    }
+
+    private func pipCount(_ vm: TimerViewModel) -> Int {
+        vm.audio.cueLog.filter { $0 == "beep:mid" }.count
+    }
+
+    private func halfwayTaps(_ haptics: WatchHapticService) -> Int {
+        haptics.log.filter { $0 == "retry" }.count
+    }
+
+    /// Ticks in 100ms steps and notes each pip as "state:round:secondsLeft".
+    private func pipMoments(_ vm: TimerViewModel, from: Double, to: Double) -> [String] {
+        var moments: [String] = []
+        var step = Int((from * 10).rounded())
+        let last = Int((to * 10).rounded())
+        while step < last {
+            step += 1
+            let before = pipCount(vm)
+            vm.debugTick(elapsed: Double(step) / 10)
+            if pipCount(vm) > before, let session = vm.session {
+                moments.append("\(session.state):\(session.currentRound):\(session.timeRemaining.seconds)")
+            }
+        }
+        return moments
+    }
+
+    /// Starts [type] and runs it to its end, returning the pips.
+    private func pipsThrough(_ type: TimerType, prep: Int = 0) -> [String] {
+        let (vm, _) = pipViewModel()
+        vm.start(workout: workout(type, prep: prep))
+        let moments = pipMoments(vm, from: 0, to: Double(prep + type.estimatedDuration.seconds))
+        XCTAssertEqual(vm.phase, .completed)
+        return moments
+    }
+
+    private func emom(_ interval: Int, _ rounds: Int) -> TimerType {
+        .emom(intervalDuration: TimerDuration(seconds: interval), rounds: RoundCount(value: rounds))
+    }
+
+    private func tabata(_ work: Int, _ rest: Int, _ rounds: Int) -> TimerType {
+        .tabata(workDuration: TimerDuration(seconds: work), restDuration: TimerDuration(seconds: rest),
+                rounds: RoundCount(value: rounds))
+    }
+
+    func testAnEmomPipsOnceARoundAtHalfTheMinuteAndNeverInGetReady() {
+        let (vm, haptics) = pipViewModel()
+        // A 20s get ready is long enough to pip, and must not.
+        vm.start(workout: workout(emom(60, 3), prep: 20))
+        XCTAssertEqual(pipMoments(vm, from: 0, to: 20), [], "no pips in the get-ready countdown")
+        XCTAssertEqual(pipMoments(vm, from: 20, to: 200), ["running:1:30", "running:2:30", "running:3:30"])
+        XCTAssertEqual(vm.phase, .completed)
+        XCTAssertEqual(halfwayTaps(haptics), 3, "round 2's pips are also the workout's halfway: one tap, not two")
+        XCTAssertTrue(vm.audio.cueLog.contains("voice:halfway"), "the spoken Halfway still plays")
+    }
+
+    func testAFifteenSecondIntervalPipsAtSevenLeft() {
+        XCTAssertEqual(pipsThrough(emom(15, 2)), ["running:1:7", "running:2:7"])
+    }
+
+    func testATabataPipsOnceAWorkBlockAndNeverInARest() {
+        XCTAssertEqual(pipsThrough(tabata(20, 10, 3)), ["running:1:10", "running:2:10", "running:3:10"])
+    }
+
+    func testAPhaseUnderTenSecondsNeverPips() {
+        XCTAssertEqual(pipsThrough(tabata(5, 10, 2)), [], "a 5s work block is too short; a 10s rest is a rest")
+        XCTAssertEqual(pipsThrough(emom(9, 2)), [])
+        XCTAssertEqual(pipsThrough(.amrap(duration: TimerDuration(seconds: 9))), [])
+        XCTAssertEqual(pipsThrough(emom(10, 1)), ["running:1:5"], "10s is the shortest phase that pips")
+    }
+
+    func testAnAmrapOrForTimePipsOnceAtHalfTimeWithOneHalfwayTap() {
+        for type in [TimerType.amrap(duration: TimerDuration(seconds: 600)), .forTime(timeCap: TimerDuration(seconds: 600))] {
+            let (vm, haptics) = pipViewModel()
+            vm.start(workout: workout(type))
+            XCTAssertEqual(pipMoments(vm, from: 0, to: 299.9), [], "\(type)")
+            let heard = vm.audio.cueLog.count
+            let felt = haptics.log.count
+            XCTAssertEqual(pipMoments(vm, from: 299.9, to: 300), ["running:1:300"], "\(type)")
+            XCTAssertEqual(Array(vm.audio.cueLog.dropFirst(heard)), ["beep:mid", "voice:halfway"],
+                           "\(type): the pips, with the optional line on them")
+            XCTAssertEqual(Array(haptics.log.dropFirst(felt)), ["retry"], "\(type): one halfway tap on the tick")
+            XCTAssertEqual(pipMoments(vm, from: 300, to: 600), [], "\(type)")
+            XCTAssertEqual(vm.phase, .completed)
+            XCTAssertEqual(halfwayTaps(haptics), 1, "\(type)")
+        }
+    }
+
+    func testAnAmrapTallyNeverRearmsThePips() {
+        let (vm, _) = pipViewModel()
+        vm.start(workout: workout(.amrap(duration: TimerDuration(seconds: 60))))
+        XCTAssertEqual(pipMoments(vm, from: 0, to: 30), ["running:1:30"])
+        // A round counted on the midpoint: the tally is the athlete's, not a phase.
+        vm.debugCountRounds(1)
+        XCTAssertEqual(pipMoments(vm, from: 30, to: 60), [])
+    }
+
+    func testBeepsOnlyStillPipsAndSilentPipsNothing() {
+        let (beeps, _) = pipViewModel(beepsOnly: true)
+        beeps.start(workout: workout(emom(60, 2)))
+        XCTAssertEqual(pipMoments(beeps, from: 0, to: 120), ["running:1:30", "running:2:30"])
+        XCTAssertFalse(beeps.audio.cueLog.contains { $0.hasPrefix("voice:") })
+
+        let (silent, haptics) = pipViewModel()
+        silent.audio.setMuted(true)
+        silent.start(workout: workout(emom(60, 2)))
+        tick(silent, from: 0, to: 120)
+        XCTAssertEqual(silent.phase, .completed)
+        XCTAssertEqual(silent.audio.cueLog, [], "Silent plays nothing, pips included")
+        XCTAssertEqual(halfwayTaps(haptics), 2, "the wrist still feels the moment, as it does the 3, 2, 1")
+    }
+
+    func testATickFarPastTheMidpointStaysQuietButASkippedTickStillPips() {
+        // The watch slept from 28s to 32s: the next tick reads 28 left, past 30 and 29.
+        let (vm, _) = pipViewModel()
+        vm.start(workout: workout(emom(60, 2)))
+        tick(vm, from: 0, to: 28)
+        vm.debugTick(elapsed: 32)
+        XCTAssertEqual(pipCount(vm), 0, "never late")
+        XCTAssertEqual(pipMoments(vm, from: 32, to: 120), ["running:2:30"], "the next round still pips")
+
+        // One skipped tick (31 left, then 29): the pips land a second late.
+        let (skip, _) = pipViewModel()
+        skip.start(workout: workout(emom(60, 1)))
+        tick(skip, from: 0, to: 29)
+        XCTAssertEqual(pipCount(skip), 0)
+        skip.debugTick(elapsed: 31)
+        XCTAssertEqual(pipCount(skip), 1)
+
+        // A long suspension across rounds lands in round 3 with 25 left.
+        let (asleep, _) = pipViewModel()
+        asleep.start(workout: workout(emom(60, 3)))
+        tick(asleep, from: 0, to: 10)
+        asleep.debugTick(elapsed: 155)
+        XCTAssertEqual(asleep.session?.currentRound, 3)
+        XCTAssertEqual(pipMoments(asleep, from: 155, to: 180), [])
+        XCTAssertEqual(pipCount(asleep), 0)
+
+        // An AMRAP woken past its halfway never pips.
+        let (amrap, _) = pipViewModel()
+        amrap.start(workout: workout(.amrap(duration: TimerDuration(seconds: 600))))
+        tick(amrap, from: 0, to: 290)
+        amrap.debugTick(elapsed: 302)
+        XCTAssertEqual(pipMoments(amrap, from: 302, to: 600), [])
+        XCTAssertEqual(pipCount(amrap), 0)
+    }
+
+    func testPausedAtTheMidpointNeverPipsAndResumingPastItNeverPipsLate() {
+        let (vm, _) = pipViewModel()
+        vm.start(workout: workout(.amrap(duration: TimerDuration(seconds: 60))))
+        tick(vm, from: 0, to: 29)
+        vm.pause()
+        // Paused, the clock stands at 31 left while the minutes go by.
+        tick(vm, from: 29, to: 40)
+        XCTAssertEqual(vm.session?.timeRemaining.seconds, 31)
+        XCTAssertEqual(pipCount(vm), 0)
+        vm.resume()
+        // The first tick after the resume lands at 27 left.
+        vm.debugTick(elapsed: 44)
+        XCTAssertEqual(vm.session?.timeRemaining.seconds, 27)
+        XCTAssertEqual(pipMoments(vm, from: 44, to: 80), [])
+        XCTAssertEqual(vm.phase, .completed)
+        XCTAssertEqual(pipCount(vm), 0)
+
+        // A pause before the midpoint moves it with the clock: on time, not late.
+        let (paused, _) = pipViewModel()
+        paused.start(workout: workout(.amrap(duration: TimerDuration(seconds: 60))))
+        tick(paused, from: 0, to: 29)
+        paused.pause()
+        paused.resume()
+        XCTAssertEqual(pipMoments(paused, from: 29, to: 31), ["running:1:30"])
+    }
+
+    func testANewWorkoutPipsAgain() {
+        let (vm, _) = pipViewModel()
+        vm.start(workout: workout(emom(20, 1)))
+        XCTAssertEqual(pipMoments(vm, from: 0, to: 20), ["running:1:10"])
+        vm.restart()
+        XCTAssertEqual(pipMoments(vm, from: 0, to: 12), ["running:1:10"], "a restart re-arms the pips")
+        vm.reset()
+        vm.start(workout: workout(emom(20, 1)))
+        XCTAssertEqual(pipMoments(vm, from: 0, to: 12), ["running:1:10"], "and so does a new workout")
+    }
+}
+
 final class HealthTrackerTests: XCTestCase {
     private func freshDefaults() -> (UserDefaults, () -> Void) {
         let suite = "watch-cue-tests-\(UUID().uuidString)"

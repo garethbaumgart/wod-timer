@@ -7,6 +7,7 @@ import app.mentalmetal.wharfwod.wear.domain.TimerType
 import app.mentalmetal.wharfwod.wear.domain.Workout
 import app.mentalmetal.wharfwod.wear.services.AudioCues
 import app.mentalmetal.wharfwod.wear.services.HapticCue
+import app.mentalmetal.wharfwod.wear.services.VoiceSettings
 import app.mentalmetal.wharfwod.wear.services.WorkoutTracking
 import app.mentalmetal.wharfwod.wear.services.WristHaptics
 
@@ -16,24 +17,32 @@ class SpyHaptics : WristHaptics {
     override fun cancelPending() { log.add("cancel") }
 }
 
-class SpyAudio : AudioCues {
+/**
+ * Logs each cue as "beep:name" / "voice:name". With [settings] it logs only
+ * what the real player would play, by the same rules (Beeps only drops the
+ * voice, Silent drops everything).
+ */
+class SpyAudio(private val settings: VoiceSettings? = null) : AudioCues {
     val log = mutableListOf<String>()
-    override fun playHighBeep() { log.add("beep:high") }
-    override fun playLowBeep(secondsLeft: Int) { log.add("beep:low_$secondsLeft") }
-    override fun playGo() { log.add("voice:go") }
-    override fun playLetsGo() { log.add("voice:lets_go") }
-    override fun playRest() { log.add("voice:rest") }
-    override fun playHalfway() { log.add("voice:halfway") }
-    override fun playGetReady() { log.add("voice:get_ready") }
-    override fun playTenSeconds() { log.add("voice:ten_seconds") }
-    override fun playLastRound() { log.add("voice:last_round") }
-    override fun playKeepGoing() { log.add("voice:keep_going") }
-    override fun playComeOn() { log.add("voice:come_on") }
-    override fun playAlmostThere() { log.add("voice:almost_there") }
-    override fun playGoodJob() { log.add("voice:good_job") }
-    override fun playThatsIt() { log.add("voice:thats_it") }
-    override fun playNextRound() { log.add("voice:next_round") }
-    override fun playComplete() { log.add("voice:complete") }
+    private fun beep(name: String) { if (settings == null || settings.beepFile(name) != null) log.add("beep:$name") }
+    private fun voice(name: String) { if (settings == null || settings.voiceFile(name) != null) log.add("voice:$name") }
+    override fun playHighBeep() = beep("high")
+    override fun playLowBeep(secondsLeft: Int) = beep("low_$secondsLeft")
+    override fun playMidBeep() = beep("mid")
+    override fun playGo() = voice("go")
+    override fun playLetsGo() = voice("lets_go")
+    override fun playRest() = voice("rest")
+    override fun playHalfway() = voice("halfway")
+    override fun playGetReady() = voice("get_ready")
+    override fun playTenSeconds() = voice("ten_seconds")
+    override fun playLastRound() = voice("last_round")
+    override fun playKeepGoing() = voice("keep_going")
+    override fun playComeOn() = voice("come_on")
+    override fun playAlmostThere() = voice("almost_there")
+    override fun playGoodJob() = voice("good_job")
+    override fun playThatsIt() = voice("thats_it")
+    override fun playNextRound() = voice("next_round")
+    override fun playComplete() = voice("complete")
 }
 
 class SpyTracker : WorkoutTracking {

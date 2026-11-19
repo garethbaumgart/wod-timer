@@ -18,7 +18,8 @@ import app.mentalmetal.wharfwod.wear.services.WristHaptics
  * voice line on it), one wrist cue per change with GO, last round, round,
  * rest, work precedence, the optional halfway and ten-second lines that
  * keep clear of the countdown (the encouragement lines and the coin flips
- * on GO and the end went on 8 Nov 2026), and the workout session hooks.
+ * on GO and the end went on 8 Nov 2026), the mandatory mid-round pips
+ * (2.5.0), and the workout session hooks.
  * Ticks are whole milliseconds of the engine clock, so the deltas sum to
  * the elapsed time itself.
  */
@@ -50,6 +51,8 @@ class TimerViewModel(
         const val ROUND_COUNT_COOLDOWN_MS = 700L
         /** A stop before this many seconds of workout is a false start: the record is discarded. */
         const val KEEP_RECORD_AFTER_SECONDS = 60
+        /** The shortest phase that gets mid-round pips: they land at least five seconds before the 3, 2, 1. */
+        const val MID_ROUND_MIN_PHASE_SECONDS = 10
         const val HINT_KEY = "wear_hint_amrap_counted"
     }
 
@@ -73,6 +76,7 @@ class TimerViewModel(
 
     private var lastTickMillis = 0L
     private var lastLowBeep: String? = null
+    private var lastMidBeep: String? = null
     private var lastVoiceAtMs: Long? = null
     private var playedGo = false
     private var lastRound = 0
@@ -262,7 +266,7 @@ class TimerViewModel(
             changeBeeped = true
             audio.playHighBeep()
         }
-        // One wrist cue per tick: GO, then last round, round, rest, work.
+        // One wrist cue per tick: GO, then last round, round, rest, work, then the mid-round pips.
         var wristCue: HapticCue? = null
 
         if (new.state == TimerState.PREPARING && !playedGetReady) {
@@ -272,6 +276,9 @@ class TimerViewModel(
         }
 
         playPhaseCountdown(new)
+
+        // Mandatory, so outside the optional voice cues below; never blocks one.
+        val midPipped = playMidRoundPips(new)
 
         if (old.state == TimerState.PREPARING && new.state == TimerState.RUNNING && !playedGo) {
             playedGo = true
@@ -313,14 +320,18 @@ class TimerViewModel(
             lastRound = new.currentRound
         }
 
+        if (midPipped && wristCue == null) wristCue = HapticCue.HALFWAY
+
         wristCue?.let { haptics.play(it) }
 
         if (voiceCuePlayed || !clearToSpeak(new)) return
 
+        // The halfway can land on mid-round pips (an AMRAP's or For Time's
+        // always does), which already reached the wrist: one cue a tick.
         if (new.progress >= 0.5 && old.progress < 0.5 && !playedHalfway) {
             playedHalfway = true
             say { audio.playHalfway() }
-            haptics.play(HapticCue.HALFWAY)
+            if (wristCue == null) haptics.play(HapticCue.HALFWAY)
             return
         }
         if (new.state != TimerState.PREPARING && !playedTenSeconds && new.workout.timerType.estimatedDuration.seconds > 15) {
@@ -356,6 +367,30 @@ class TimerViewModel(
         haptics.play(HapticCue.COUNT_IN)
     }
 
+    /**
+     * The mid-round pips (2.5.0, no setting): halfway through every EMOM
+     * interval and Tabata work block, and halfway through an AMRAP or For
+     * Time clock; never in get ready or a rest. Once per phase, on the
+     * seconds left the 3-2-1 reads: a tick one second past the midpoint (a
+     * skipped tick) still pips, one further past (the watch was asleep)
+     * stays quiet rather than pip late. Returns whether it pipped.
+     */
+    private fun playMidRoundPips(s: TimerSession): Boolean {
+        if (s.state != TimerState.RUNNING) return false
+        val phase = phaseSeconds(s)
+        if (phase < MID_ROUND_MIN_PHASE_SECONDS) return false
+        val half = phase / 2
+        val left = s.timeRemaining.seconds
+        if (left != half && left != half - 1) return false
+        // An AMRAP's round number is the athlete's own tally: key on the clock.
+        val intervals = s.workout.timerType is TimerType.Emom || s.workout.timerType is TimerType.Tabata
+        val key = if (intervals) "${s.state}:${s.currentRound}" else "clock"
+        if (key == lastMidBeep) return false
+        lastMidBeep = key
+        audio.playMidBeep()
+        return true
+    }
+
     private fun phaseSeconds(s: TimerSession): Int {
         if (s.state == TimerState.PREPARING) return s.workout.prepCountdown.seconds
         return when (val t = s.workout.timerType) {
@@ -371,6 +406,7 @@ class TimerViewModel(
 
     private fun resetCueState() {
         lastLowBeep = null
+        lastMidBeep = null
         lastVoiceAtMs = null
         playedGo = false
         lastRound = 0

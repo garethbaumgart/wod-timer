@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
@@ -110,6 +110,7 @@ void main() {
     }
     when(() => audio.playLowBeep(any())).thenAnswer((_) async => right(unit));
     when(audio.playHighBeep).thenAnswer((_) async => right(unit));
+    when(audio.playMidBeep).thenAnswer((_) async => right(unit));
     when(() => haptic.heavyImpact()).thenAnswer((_) async => right(unit));
     when(() => haptic.mediumImpact()).thenAnswer((_) async => right(unit));
     when(() => haptic.success()).thenAnswer((_) async => right(unit));

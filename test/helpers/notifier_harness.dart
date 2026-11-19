@@ -206,6 +206,11 @@ class NotifierHarness {
       heard.add('${engine.elapsed.inSeconds}s high');
       return right(unit);
     });
+    when(audio.playMidBeep).thenAnswer((_) async {
+      beeped.add('mid');
+      heard.add('${engine.elapsed.inSeconds}s mid');
+      return right(unit);
+    });
     for (final entry in haptics.entries) {
       when(entry.value).thenAnswer((_) async {
         felt.add(entry.key);

@@ -127,6 +127,7 @@ void main() {
     when(() => audio.playGetReady()).thenAnswer((_) async => right(unit));
     when(() => audio.playLowBeep(any())).thenAnswer((_) async => right(unit));
     when(audio.playHighBeep).thenAnswer((_) async => right(unit));
+    when(audio.playMidBeep).thenAnswer((_) async => right(unit));
     when(() => audio.playRest()).thenAnswer((_) async => right(unit));
     when(() => audio.playNextRound()).thenAnswer((_) async => right(unit));
     when(() => audio.playLastRound()).thenAnswer((_) async => right(unit));

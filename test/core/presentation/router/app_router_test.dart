@@ -2,11 +2,11 @@
 // placeholder instead of crashing, and the chevrons, settings icon and
 // "Go to Setup" move between screens the way the Android back tests
 // expect them to.
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
@@ -146,6 +146,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PlaceholderHomePage), findsOneWidget);
   });
+
+  // Flutter 3.50: go_router before 18 looked for the in-framework
+  // MaterialApp to pick its page type. Under material_ui's MaterialApp it
+  // found none and fell back to NoTransitionPage, so setup and the live
+  // screen appeared with no slide and iOS lost its swipe back, while every
+  // other test here stayed green.
+  Future<void> expectSlidesIn(WidgetTester tester, Type page) async {
+    // Mid-flight: the navigation resolves on the next frame, then the page
+    // starts its entrance.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    final route = ModalRoute.of(
+      tester.element(find.byType(page, skipOffstage: false)),
+    )!;
+    expect(route, isA<PageRoute<void>>());
+    expect(
+      route.transitionDuration,
+      greaterThan(Duration.zero),
+      reason: 'go_router fell back to NoTransitionPage',
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(page), findsOneWidget);
+  }
+
+  testWidgets(
+    'a Home card slides its setup in, as a Material page does',
+    (tester) async {
+      await pumpApp(tester);
+      router.go(AppRoutes.timerSetupPath(TimerTypes.emom));
+      await expectSlidesIn(tester, EmomSetupPage);
+    },
+    variant: const TargetPlatformVariant(
+      {TargetPlatform.android, TargetPlatform.iOS},
+    ),
+  );
+
+  testWidgets(
+    'START slides the live screen in over its setup',
+    (tester) async {
+      await pumpApp(tester, at: AppRoutes.timerSetupPath(TimerTypes.amrap));
+      router.go(AppRoutes.timerActivePath(TimerTypes.amrap));
+      await expectSlidesIn(tester, TimerActivePage);
+    },
+    variant: const TargetPlatformVariant(
+      {TargetPlatform.android, TargetPlatform.iOS},
+    ),
+  );
 
   test('route paths are built from the mode code', () {
     expect(AppRoutes.timerSetupPath('emom'), '/timer/emom');

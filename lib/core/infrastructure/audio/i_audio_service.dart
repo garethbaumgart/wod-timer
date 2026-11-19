@@ -20,6 +20,12 @@ abstract class IAudioService {
   /// work and end. The voice line for the change starts with it.
   Future<Either<AudioFailure, Unit>> playHighBeep();
 
+  /// Play the mid-round pips (2.5.0): two quick pips, quieter than the high
+  /// beep, halfway through every EMOM interval and Tabata work block, and
+  /// halfway through an AMRAP or For Time clock. A beep, not a voice line:
+  /// Beeps only and every voice pack play it; only Silent mutes it.
+  Future<Either<AudioFailure, Unit>> playMidBeep();
+
   /// Play the "Go" sound at workout start.
   Future<Either<AudioFailure, Unit>> playGo();
 

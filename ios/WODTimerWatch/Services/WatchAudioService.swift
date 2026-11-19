@@ -123,6 +123,13 @@ final class WatchAudioService {
         playBeep("high")
     }
 
+    /// The mid-round pips (2.5.0): two quick pips, quieter than the high
+    /// beep, halfway through an EMOM interval, a Tabata work block or an
+    /// AMRAP / For Time clock. A beep, so only Silent stops it.
+    func playMidBeep() {
+        playBeep("mid")
+    }
+
     // MARK: - Sound check (2.2.0)
 
     /// The high beep with the chosen voice's "Let's go" on it, as a change

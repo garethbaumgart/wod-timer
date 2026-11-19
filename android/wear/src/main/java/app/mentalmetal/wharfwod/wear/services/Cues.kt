@@ -45,6 +45,8 @@ object HapticPatterns {
 interface AudioCues {
     fun playHighBeep()
     fun playLowBeep(secondsLeft: Int)
+    /** The mid-round pips (2.5.0): a beep, so only Silent stops it. */
+    fun playMidBeep()
     fun playGo()
     fun playLetsGo()
     fun playRest()

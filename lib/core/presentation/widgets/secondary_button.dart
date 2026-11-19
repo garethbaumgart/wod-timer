@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 
 /// A secondary action button with outline style.

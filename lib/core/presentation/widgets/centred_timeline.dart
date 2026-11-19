@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Layout rule 2 (1.3.1): a timeline sits exactly midway between the
 /// visible bottom of the content above it (glyph bottoms, not box edges)

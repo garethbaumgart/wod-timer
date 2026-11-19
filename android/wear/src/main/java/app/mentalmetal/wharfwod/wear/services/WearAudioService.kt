@@ -76,6 +76,7 @@ class WearAudioService(
 
     override fun playHighBeep() = beep("high")
     override fun playLowBeep(secondsLeft: Int) = beep("low_${secondsLeft.coerceIn(1, 3)}")
+    override fun playMidBeep() = beep("mid")
     override fun playGo() = voice("countdown_go")
     override fun playLetsGo() = voice("lets_go")
     override fun playRest() = voice("rest")

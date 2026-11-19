@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Signal design color palette - deep ink background with neon green accent
 /// and colored sidebar lines per timer type.

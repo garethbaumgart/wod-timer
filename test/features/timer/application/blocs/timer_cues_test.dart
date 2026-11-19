@@ -119,6 +119,7 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
+        '30s mid',
         '30s halfway',
         '50s ten seconds',
         ...countIn(60),
@@ -173,6 +174,7 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
+        '30s mid',
         '57s low 3',
         '58s low 2',
         '59s low 1',
@@ -186,11 +188,14 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
+        '30s mid',
         ...countIn(60),
         '60s next round',
+        '90s mid',
         '90s halfway',
         ...countIn(120),
         '120s last round',
+        '150s mid',
         '170s ten seconds',
         ...countIn(180),
         '180s good job',
@@ -240,10 +245,12 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
+        '10s mid',
         ...countIn(20),
         '20s rest',
         ...countIn(30),
         '30s last round',
+        '40s mid',
         ...countIn(50),
         '50s rest',
         // Ten seconds (50s) would talk over Rest, so it sits out.
@@ -288,6 +295,7 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
+        '30s mid',
         '30s halfway',
         '50s ten seconds',
         ...countIn(60),
@@ -331,12 +339,105 @@ void main() {
       expect(heard(), [
         '0s high',
         '0s go',
+        '30s mid',
         '30s halfway',
         '50s ten seconds',
         '57s low 3',
         '58s low 2',
         '59s low 1',
       ]);
+    });
+  });
+
+  group('mid-round pips (2.5.0, no setting)', () {
+    test('every EMOM minute pips once at its halfway, with one tap', () async {
+      await h.notifier.start(emomWorkout(rounds: 3));
+      h.run(1, 180);
+      expect(heard().where((c) => c.endsWith(' mid')), [
+        '30s mid',
+        '90s mid',
+        '150s mid',
+      ]);
+    });
+
+    test('every tick of 100ms still pips once per round', () async {
+      await h.notifier.start(emomWorkout(interval: 20, rounds: 2));
+      for (var ms = 100; ms <= 40000; ms += 100) {
+        h.tick(ms ~/ 1000, ms % 1000);
+      }
+      expect(h.beeped.where((b) => b == 'mid'), hasLength(2));
+    });
+
+    test('a 15s EMOM pips at 7s left (the half rounds down)', () async {
+      await h.notifier.start(emomWorkout(interval: 15, rounds: 1));
+      h.run(1, 15);
+      expect(heard().where((c) => c.endsWith(' mid')), ['8s mid']);
+    });
+
+    test('Tabata pips in every work block, never in rest', () async {
+      await h.notifier.start(tabataWorkout(rounds: 2));
+      h.run(1, 60);
+      expect(heard().where((c) => c.endsWith(' mid')), ['10s mid', '40s mid']);
+    });
+
+    test('phases under 10s get no pips', () async {
+      await h.notifier.start(tabataWorkout(work: 5, rest: 5, rounds: 2));
+      h.run(1, 20);
+      expect(h.beeped, isNot(contains('mid')));
+    });
+
+    test('AMRAP and For Time pip once at the clock halfway, with one tap '
+        'shared with the spoken Halfway', () async {
+      await h.notifier.start(amrapWorkout(seconds: 600));
+      h.run(1, 299);
+      final taps = h.felt.length;
+      h.tick(300);
+      expect(heard().sublist(heard().length - 2), ['300s mid', '300s halfway']);
+      expect(h.felt.length - taps, 1);
+      h.run(301, 600);
+      expect(h.beeped.where((b) => b == 'mid'), hasLength(1));
+    });
+
+    test('tallying AMRAP rounds never re-arms the pips', () async {
+      await h.notifier.start(amrapWorkout(seconds: 120));
+      h.run(1, 60);
+      h.now = h.now.add(const Duration(seconds: 5));
+      h.notifier.countRound();
+      h.run(61, 61);
+      expect(h.beeped.where((b) => b == 'mid'), hasLength(1));
+    });
+
+    test('a catch-up tick past the halfway stays quiet', () async {
+      await h.notifier.start(emomWorkout(rounds: 2));
+      h
+        ..tick(1)
+        ..tick(40);
+      expect(h.beeped, isNot(contains('mid')));
+    });
+
+    test(
+      'paused at the halfway: no pips while paused, none late on resume',
+      () async {
+        await h.notifier.start(emomWorkout(rounds: 2));
+        h.run(1, 29);
+        h.notifier.pause();
+        h.tick(30);
+        expect(h.beeped, isNot(contains('mid')));
+        h.notifier.resume();
+        h.tick(45);
+        expect(h.beeped, isNot(contains('mid')));
+        h.run(46, 120);
+        expect(heard().where((c) => c.endsWith(' mid')), ['90s mid']);
+      },
+    );
+
+    test('AGAIN re-arms the pips for the new run', () async {
+      await h.notifier.start(emomWorkout(interval: 20, rounds: 1));
+      h.run(1, 20);
+      expect(h.beeped.where((b) => b == 'mid'), hasLength(1));
+      await h.notifier.restart();
+      h.run(1, 20);
+      expect(h.beeped.where((b) => b == 'mid'), hasLength(2));
     });
   });
 

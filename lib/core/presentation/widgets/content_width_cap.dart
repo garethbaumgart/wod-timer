@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Caps content width on large screens (tablets) while leaving phone
 /// layouts untouched — the constraint only binds when the viewport is
