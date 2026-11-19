@@ -34,8 +34,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.ScalingLazyListScope
+import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import app.mentalmetal.wharfwod.wear.WodApp
 import app.mentalmetal.wharfwod.wear.application.SetupMemory
@@ -52,15 +61,45 @@ import app.mentalmetal.wharfwod.wear.services.WearAudioService
 /** Home: the stacked wordmark, the four timers in the phone's order with the remembered workout drawn as a timeline, then Voice and Health. */
 @Composable
 fun HomeScreen(app: WodApp, onMode: (String) -> Unit, onVoice: () -> Unit, onHealth: () -> Unit) {
-    val state = rememberScalingLazyListState()
+    val state = rememberScalingLazyListState(initialCenterItemIndex = 0)
     val memory = app.setupMemory
-    ScalingLazyColumn(state = state, modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        item { Wordmark() }
-        for (code in Palette.modeOrder) {
+    ScrollingList(state, centreFirst = true) {
+        // The wordmark rides on the first timer, and the list opens with
+        // that pair centred: as an item of its own above a centred first
+        // row it sat against the top edge, where a 192dp circle is too
+        // narrow for it.
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Wordmark()
+                Palette.modeOrder.first().let { code -> ModeRow(code, memory.summary(code), memory.shape(code)) { onMode(code) } }
+            }
+        }
+        for (code in Palette.modeOrder.drop(1)) {
             item { ModeRow(code, memory.summary(code), memory.shape(code)) { onMode(code) } }
         }
         item { SettingsRow("Voice", app.audio.settings.label, onVoice) }
         item { SettingsRow("Health", healthLabel(app.tracker), onHealth) }
+    }
+}
+
+/**
+ * Every list of the app: a scaling column with the scroll bar Wear expects
+ * while a list moves (quality rule WO-V8; its absence was one of the three
+ * findings of Google's Wear review on 19 Nov 2026), and the rotary
+ * scrolling it.
+ */
+@Composable
+private fun ScrollingList(state: ScalingLazyListState, centreFirst: Boolean = false, content: ScalingLazyListScope.() -> Unit) {
+    Scaffold(
+        modifier = Modifier.background(Color.Black),
+        positionIndicator = { PositionIndicator(scalingLazyListState = state) },
+    ) {
+        ScalingLazyColumn(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            autoCentering = AutoCenteringParams(itemIndex = if (centreFirst) 0 else 1),
+            content = content,
+        )
     }
 }
 
@@ -72,11 +111,16 @@ fun healthLabel(tracker: ExerciseTracker): String = when {
 
 @Composable
 private fun Wordmark() {
-    Column(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("WHARF", color = Color.White, fontSize = 22.sp, fontWeight = Heavy, letterSpacing = 1.sp)
+    // The mark is artwork, not reading text: it is sized in dp, so the
+    // system font size does not push it into the top of the circle.
+    val size = with(LocalDensity.current) { 22.dp.toSp() }
+    val spacing = with(LocalDensity.current) { 1.dp.toSp() }
+    val style = TextStyle(fontSize = size, lineHeight = size * 1.2f, fontWeight = Heavy, platformStyle = PlatformTextStyle(includeFontPadding = false))
+    Column(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("WHARF", color = Color.White, style = style, letterSpacing = spacing)
         Row {
-            Text("WOD", color = Palette.work, fontSize = 22.sp, fontWeight = Heavy, letterSpacing = 1.sp)
-            Text(".", color = Palette.rest, fontSize = 22.sp, fontWeight = Heavy)
+            Text("WOD", color = Palette.work, style = style, letterSpacing = spacing)
+            Text(".", color = Palette.rest, style = style)
         }
     }
 }
@@ -97,8 +141,9 @@ private fun ModeRow(code: String, summary: String, shape: List<app.mentalmetal.w
             Box(Modifier.width(3.5.dp).height(30.dp).clip(RoundedCornerShape(2.dp)).background(accent))
             Spacer(Modifier.width(9.dp))
             Column {
-                Text(Palette.title(code), color = Color.White, fontSize = 17.sp, fontWeight = Heavy, maxLines = 1)
-                Text(summary, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                // No line limits in a list: at a large font size a row grows, it never cuts its words.
+                Text(Palette.title(code), color = Color.White, fontSize = 17.sp, fontWeight = Heavy)
+                Text(summary, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         Spacer(Modifier.height(6.dp))
@@ -118,9 +163,9 @@ private fun SettingsRow(title: String, value: String, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.weight(1f))
-        Text(value, color = Palette.label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(8.dp))
+        Text(value, color = Palette.label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
     }
 }
 
@@ -157,9 +202,10 @@ private fun type(code: String, v: List<Int>, countUp: Boolean): TimerType = when
 }
 
 /**
- * Setup: the mode's values stacked, the focused one white; the rotary
- * (bezel or crown) moves it, a tap on another value focuses it. Every
- * change is remembered. START carries the total.
+ * Setup: the mode's values (Tabata's work and rest side by side), the
+ * focused one white; the rotary (bezel or crown) moves it, a tap on
+ * another value focuses it. Every change is remembered. START carries the
+ * total. Laid out on a [RoundColumn], so nothing leaves the circle.
  */
 @Composable
 fun SetupScreen(code: String, memory: SetupMemory, onStart: (Workout) -> Unit) {
@@ -180,9 +226,29 @@ fun SetupScreen(code: String, memory: SetupMemory, onStart: (Workout) -> Unit) {
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
     val g = geometry()
+    val k = g.labelScale(
+        chrome = g.topMargin.value + g.bottomMargin.value + g.startHeight.value,
+        labels = SETUP_TITLE,
+        heroMin = g.widthDp * 0.4f,
+    )
 
-    Column(
-        Modifier
+    @Composable
+    fun Cell(i: Int, size: androidx.compose.ui.unit.TextUnit, modifier: Modifier = Modifier) {
+        val f = fields[i]
+        // The label keeps its size; the value takes what the cell has left
+        // and shrinks to it, so three values fit a 192dp watch and none is cut.
+        Column(
+            modifier.clickable { focused = i }.semantics { contentDescription = "${f.label} ${f.display(values[i])}" },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Caption(f.label, color = f.color, size = 10.sp)
+            FitText(f.display(values[i]), color = if (focused == i) Color.White else Color.White.copy(alpha = 0.45f), size = size)
+        }
+    }
+
+    RoundColumn(
+        top = g.topMargin, bottom = g.bottomMargin,
+        modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .onRotaryScrollEvent { event ->
@@ -192,45 +258,47 @@ fun SetupScreen(code: String, memory: SetupMemory, onStart: (Workout) -> Unit) {
                 true
             }
             .focusRequester(focusRequester)
-            .focusable()
-            .padding(horizontal = g.sideMargin)
-            .padding(top = 18.dp, bottom = g.bottomMargin),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .focusable(),
     ) {
-        Caption(Palette.title(code), color = Palette.mode(code), size = 12.sp)
-        Spacer(Modifier.weight(1f))
-        fields.forEachIndexed { i, f ->
-            Column(
-                Modifier.clickable { focused = i }.semantics { contentDescription = "${f.label} ${f.display(values[i])}" },
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Caption(f.label, color = f.color, size = 10.sp)
-                Text(
-                    f.display(values[i]),
-                    color = if (focused == i) Color.White else Color.White.copy(alpha = 0.45f),
-                    fontSize = if (fields.size == 1) 44.sp else if (fields.size == 2) 30.sp else 24.sp,
-                    fontWeight = Heavy, maxLines = 1,
+        Slot((SETUP_TITLE * k).dp) { Caption(Palette.title(code), color = Palette.mode(code), size = 12.sp) }
+        Column(Modifier.fill().fillMaxWidth(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            when (fields.size) {
+                1 -> Cell(0, 44.sp, Modifier.weight(1f, fill = false))
+                2 -> {
+                    Cell(0, 30.sp, Modifier.weight(1f, fill = false))
+                    Cell(1, 30.sp, Modifier.weight(1f, fill = false))
+                }
+                // Tabata: work and rest side by side where the circle is
+                // widest, rounds under them. Stacked three deep they pushed
+                // START off a 192dp screen.
+                else -> {
+                    Row(Modifier.weight(1f, fill = false).fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                        Cell(0, 30.sp, Modifier.weight(1f))
+                        Cell(1, 30.sp, Modifier.weight(1f))
+                    }
+                    Cell(2, 30.sp, Modifier.weight(1f, fill = false))
+                }
+            }
+            if (code == "fortime") {
+                Caption(
+                    if (countUp) "COUNTS UP" else "COUNTS DOWN", size = 10.sp,
+                    modifier = Modifier.padding(top = 2.dp).clickable { countUp = !countUp; memory.save(type(code, values, countUp)) },
                 )
             }
         }
-        if (code == "fortime") {
-            Text(
-                if (countUp) "COUNTS UP" else "COUNTS DOWN", color = Palette.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-                modifier = Modifier.padding(top = 2.dp).clickable { countUp = !countUp; memory.save(type(code, values, countUp)) },
-            )
-        }
-        Spacer(Modifier.weight(1f))
         val subtitle = when (current) {
             is TimerType.Amrap -> null
             is TimerType.ForTime -> if (countUp) "up to the cap" else "down from the cap"
             else -> "${current.estimatedDuration.clock} total"
         }
-        StartButton(subtitle) {
+        StartButton(subtitle, Modifier.capsule()) {
             memory.save(current)
             onStart(Workout.of(current))
         }
     }
 }
+
+private const val SETUP_TITLE = 16f
 
 // MARK: Voice
 
@@ -242,7 +310,7 @@ fun VoiceScreen(audio: WearAudioService) {
     var checkResult by remember { mutableStateOf("Plays a beep and a line") }
     val settings = audio.settings
     val current: String = run { version; settings.label }
-    ScalingLazyColumn(state = state, modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    ScrollingList(state) {
         item { Caption("VOICE", color = Palette.brand, size = 12.sp, modifier = Modifier.padding(top = 4.dp)) }
         val choices = listOf(
             Triple("Major", "Drill sergeant") { settings.setMuted(false); settings.setBeepsOnly(false); settings.setRandomizePerCue(false); settings.setVoicePack(VoicePack.MAJOR); audio.playLetsGo() },
@@ -266,7 +334,7 @@ fun VoiceScreen(audio: WearAudioService) {
             Text(
                 "Cues play through the watch speaker or your headphones. Hear nothing? Check the media volume.",
                 color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
             )
         }
     }
@@ -285,8 +353,8 @@ private fun ChoiceRow(name: String, detail: String, selected: Boolean, accent: C
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            Text(detail, color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 2)
+            Text(name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(detail, color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
         }
         if (selected) Text("✓", color = accent, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
@@ -306,7 +374,7 @@ fun HealthScreen(tracker: ExerciseTracker, requestPermissions: () -> Unit) {
     var version by remember { mutableIntStateOf(0) }
     val enabled = run { version; tracker.recordWorkout }
     val allowed = run { version; tracker.hasPermission }
-    ScalingLazyColumn(state = state, modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    ScrollingList(state) {
         item { Caption("HEALTH", color = Palette.brand, size = 12.sp, modifier = Modifier.padding(top = 4.dp)) }
         item {
             Row(
@@ -337,14 +405,14 @@ fun HealthScreen(tracker: ExerciseTracker, requestPermissions: () -> Unit) {
                 if (enabled) "GO starts an exercise, so the watch counts the WOD as a workout. Stays out of the way if another app is already recording one."
                 else "The timer keeps going while your wrist is down, and a workout you are recording in another app keeps going too.",
                 color = Palette.label, fontSize = 11.sp, fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
             )
         }
         item {
             Text(
                 if (allowed) "Activity access: allowed" else "Activity access: not allowed yet, so the timer stops when the wrist drops",
                 color = if (allowed) Palette.label else Palette.error, fontSize = 11.sp, fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
             )
         }
         if (!allowed) {
