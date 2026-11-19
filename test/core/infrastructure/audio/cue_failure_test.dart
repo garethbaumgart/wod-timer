@@ -221,6 +221,34 @@ void main() {
     expect(unhandled, isEmpty);
   });
 
+  // WHARFWOD-4 (15 Nov 2026): the iOS shape of the same failure. The
+  // source call returns fine, then AVPlayerItem reports .failed and the
+  // plugin sends the error down the player's event stream, which is how
+  // the not-awaited play threw it. Seen on an App Review iPhone, 11 s
+  // after launch, on 2.5.1 build 34.
+  test('a clip iOS accepts and then cannot open is handled too', () {
+    final unhandled = unhandledIn((clock) {
+      platform.failsAfterSource = true;
+      final audio = AudioService();
+      unawaited(audio.playHighBeep());
+      clock.elapse(const Duration(seconds: 3));
+
+      expect(platform.started, isEmpty, reason: 'a failed clip never plays');
+      expect(events.single.$2, containsPair('error', 'other'));
+      expect(audio.activeHolds, 0, reason: 'the music gets its volume back');
+
+      // The player that failed was rebuilt, and the next cue plays.
+      platform.failsAfterSource = false;
+      unawaited(audio.playHighBeep());
+      unawaited(audio.playHighBeep());
+      clock.elapse(const Duration(milliseconds: 100));
+      expect(platform.started, hasLength(2));
+
+      unawaited(audio.dispose());
+    });
+    expect(unhandled, isEmpty);
+  });
+
   test('players that cannot be created at launch are not an unhandled error, '
       'and the next cue tries again', () {
     final unhandled = unhandledIn((clock) {
@@ -275,6 +303,10 @@ class _FakePlatform extends AudioplayersPlatformInterface {
   /// Whether setting a source fails on the spot.
   bool refuses = false;
 
+  /// Whether the source is accepted and then fails on the event stream,
+  /// as audioplayers_darwin reports an AVPlayerItem that goes to .failed.
+  bool failsAfterSource = false;
+
   /// Whether the native player cannot be created at all.
   bool refusesCreate = false;
 
@@ -327,6 +359,23 @@ class _FakePlatform extends AudioplayersPlatformInterface {
     String? mimeType,
   }) async {
     if (refuses) throw PlatformException(code: 'AndroidAudioError');
+    if (failsAfterSource) {
+      // The exact error WHARFWOD-4 carried, sent after the call returns.
+      scheduleMicrotask(
+        () => _events[playerId]?.addError(
+          PlatformException(
+            code: 'DarwinAudioError',
+            message:
+                'Failed to set source. For troubleshooting, see '
+                'https://github.com/bluefireteam/audioplayers/blob/main/'
+                'troubleshooting.md',
+            details: 'AVPlayerItem.Status.failed on setSourceUrl: '
+                'Unknown error',
+          ),
+        ),
+      );
+      return;
+    }
     sourced.add(playerId);
     final loads = modeOf(playerId) == PlayerMode.lowLatency
         ? lowLatencyLoads
