@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.material.MaterialTheme
@@ -93,9 +94,14 @@ class MainActivity : ComponentActivity() {
             }
         }
         LaunchedEffect(debugRoute) { if (debugRoute != null && !workoutRunning) nav.navigate(debugRoute) }
+        // Where the app opens is decided once. Passed live, it flipped to "live" when a workout
+        // started and back to "home" at DONE; each flip rebuilt the graph and reset the back
+        // stack, and DONE's own pop then took the one entry left: a black screen with the app
+        // still running (caught on the release build of 2.5.2, 19 Nov 2026, before it shipped).
+        val start = remember { if (workoutRunning) "live" else "home" }
         SwipeDismissableNavHost(
             navController = nav,
-            startDestination = if (workoutRunning) "live" else "home",
+            startDestination = start,
             userSwipeEnabled = !onLive,
         ) {
             composable("home") {
@@ -109,7 +115,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
             composable("live") {
-                LiveScreen(app.timer, ambient) { nav.popBackStack() }
+                // Back to setup when the workout was started from it; to Home when the app
+                // opened straight onto a running workout and there is nothing under it.
+                LiveScreen(app.timer, ambient) {
+                    if (nav.previousBackStackEntry != null) nav.popBackStack()
+                    else nav.navigate("home") { popUpTo("live") { inclusive = true } }
+                }
             }
             composable("voice") { VoiceScreen(app.audio) }
             composable("health") { HealthScreen(app.tracker, ::requestPermissions) }
