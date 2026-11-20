@@ -369,8 +369,7 @@ class _FakePlatform extends AudioplayersPlatformInterface {
                 'Failed to set source. For troubleshooting, see '
                 'https://github.com/bluefireteam/audioplayers/blob/main/'
                 'troubleshooting.md',
-            details:
-                'AVPlayerItem.Status.failed on setSourceUrl: '
+            details: 'AVPlayerItem.Status.failed on setSourceUrl: '
                 'Unknown error',
           ),
         ),

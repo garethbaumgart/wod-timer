@@ -41,8 +41,7 @@ void main() {
       expect(
         assets,
         contains('assets/fonts/Outfit-$name.ttf'),
-        reason:
-            'Outfit-$name.ttf is missing: with runtime fetching disabled '
+        reason: 'Outfit-$name.ttf is missing: with runtime fetching disabled '
             'a request for this weight throws the exact WHARFWOD-1 exception',
       );
     }
