@@ -54,7 +54,10 @@ class SessionLease {
         rethrow;
       }
     }
-    hold.timer = _startTimer(releaseAfter, () => unawaited(_release(key, hold)));
+    hold.timer = _startTimer(
+      releaseAfter,
+      () => unawaited(_release(key, hold)),
+    );
   }
 
   /// The player [key] finished or stopped: release its hold, if open.

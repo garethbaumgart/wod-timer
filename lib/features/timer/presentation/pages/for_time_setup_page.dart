@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
+import 'package:wod_timer/features/session/domain/session_block.dart';
+import 'package:wod_timer/features/session/presentation/session_entry.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
@@ -46,6 +48,14 @@ class _ForTimeSetupPageState extends ConsumerState<ForTimeSetupPage> {
     return SetupScaffold(
       title: 'FOR TIME',
       onStart: _onStart,
+      capsule: thenCapsule(
+        context: context,
+        ref: ref,
+        first: () => ForTimeBlock(
+          capSeconds: _setup.capSeconds,
+          countUp: _setup.countUp,
+        ),
+      ),
       startSubtitle: subtitleFor(_setup),
       body: (context, {required landscape}) => BezelSetupBody(
         landscape: landscape,

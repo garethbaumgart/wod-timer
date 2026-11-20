@@ -52,55 +52,63 @@ void main() {
   /// Lets the unawaited timeout release settle.
   Future<void> settle() => Future<void>.delayed(Duration.zero);
 
-  test('overlapping cues share one activation and release after the last',
-      () async {
-    await lease.acquire('beep_0');
-    await lease.acquire('voice_0');
-    expect(activations, 1);
-    expect(lease.active, 2);
-    await lease.complete('beep_0');
-    expect(deactivations, 0, reason: 'the line is still playing');
-    await lease.complete('voice_0');
-    expect(deactivations, 1);
-    expect(lease.active, 0);
-  });
+  test(
+    'overlapping cues share one activation and release after the last',
+    () async {
+      await lease.acquire('beep_0');
+      await lease.acquire('voice_0');
+      expect(activations, 1);
+      expect(lease.active, 2);
+      await lease.complete('beep_0');
+      expect(deactivations, 0, reason: 'the line is still playing');
+      await lease.complete('voice_0');
+      expect(deactivations, 1);
+      expect(lease.active, 0);
+    },
+  );
 
-  test('a player that never reports completion is released by the timeout',
-      () async {
-    await lease.acquire('voice_0');
-    expect(timers.single.duration, AudioService.releaseAfter);
-    timers.single.fire();
-    await settle();
-    expect(deactivations, 1);
-    expect(lease.active, 0);
-    await lease.complete('voice_0');
-    expect(deactivations, 1, reason: 'a late completion releases nothing');
-  });
+  test(
+    'a player that never reports completion is released by the timeout',
+    () async {
+      await lease.acquire('voice_0');
+      expect(timers.single.duration, AudioService.releaseAfter);
+      timers.single.fire();
+      await settle();
+      expect(deactivations, 1);
+      expect(lease.active, 0);
+      await lease.complete('voice_0');
+      expect(deactivations, 1, reason: 'a late completion releases nothing');
+    },
+  );
 
-  test('completion first cancels the timeout, so nothing releases twice',
-      () async {
-    await lease.acquire('voice_0');
-    await lease.complete('voice_0');
-    expect(timers.single.isActive, isFalse);
-    timers.single.fire();
-    await settle();
-    expect(deactivations, 1);
-  });
+  test(
+    'completion first cancels the timeout, so nothing releases twice',
+    () async {
+      await lease.acquire('voice_0');
+      await lease.complete('voice_0');
+      expect(timers.single.isActive, isFalse);
+      timers.single.fire();
+      await settle();
+      expect(deactivations, 1);
+    },
+  );
 
-  test('a new clip on the same player takes over its hold without a flap',
-      () async {
-    await lease.acquire('voice_0');
-    await lease.acquire('voice_0');
-    expect(activations, 1);
-    expect(deactivations, 0);
-    expect(lease.active, 1);
-    timers.first.fire(); // the replaced hold's timeout: already handed over
-    await settle();
-    expect(deactivations, 0);
-    await lease.complete('voice_0');
-    expect(deactivations, 1);
-    expect(lease.active, 0);
-  });
+  test(
+    'a new clip on the same player takes over its hold without a flap',
+    () async {
+      await lease.acquire('voice_0');
+      await lease.acquire('voice_0');
+      expect(activations, 1);
+      expect(deactivations, 0);
+      expect(lease.active, 1);
+      timers.first.fire(); // the replaced hold's timeout: already handed over
+      await settle();
+      expect(deactivations, 0);
+      await lease.complete('voice_0');
+      expect(deactivations, 1);
+      expect(lease.active, 0);
+    },
+  );
 
   test('the timeout outlasts the longest clip', () {
     expect(

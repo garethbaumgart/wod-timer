@@ -26,7 +26,10 @@ void main() {
   late GoRouter router;
   late MockHapticService haptic;
 
-  Future<void> pumpApp(WidgetTester tester, {String at = AppRoutes.home}) async {
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    String at = AppRoutes.home,
+  }) async {
     tester.view
       ..physicalSize = const Size(390 * 3, 844 * 3)
       ..devicePixelRatio = 3;
@@ -177,9 +180,10 @@ void main() {
       router.go(AppRoutes.timerSetupPath(TimerTypes.emom));
       await expectSlidesIn(tester, EmomSetupPage);
     },
-    variant: const TargetPlatformVariant(
-      {TargetPlatform.android, TargetPlatform.iOS},
-    ),
+    variant: const TargetPlatformVariant({
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
   );
 
   testWidgets(
@@ -189,9 +193,10 @@ void main() {
       router.go(AppRoutes.timerActivePath(TimerTypes.amrap));
       await expectSlidesIn(tester, TimerActivePage);
     },
-    variant: const TargetPlatformVariant(
-      {TargetPlatform.android, TargetPlatform.iOS},
-    ),
+    variant: const TargetPlatformVariant({
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
   );
 
   test('route paths are built from the mode code', () {

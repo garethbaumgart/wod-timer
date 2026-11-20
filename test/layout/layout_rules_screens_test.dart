@@ -18,6 +18,7 @@ import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_theme.dart';
 import 'package:wod_timer/core/presentation/widgets/bottom_slab.dart';
 import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
+import 'package:wod_timer/features/session/presentation/widgets/session_widgets.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
 import 'package:wod_timer/features/timer/application/setup/live_hints.dart';
@@ -73,7 +74,16 @@ void main() {
         ? inkBottom!
         : math.max(inkBottom!, tester.getRect(tiles).bottom);
     final gapAbove = timeline.top - contentBottom;
-    final gapBelow = slab.top - timeline.bottom;
+    // Since 2.6.0 a setup screen's "+ THEN" capsule sits with START: the
+    // timeline is centred against its top instead of the slab's.
+    final capsules = find
+        .byType(SessionCapsule)
+        .evaluate()
+        .map((e) => tester.getRect(find.byWidget(e.widget)));
+    final below = capsules
+        .where((r) => r.top >= timeline.bottom)
+        .fold(slab.top, (low, r) => math.min(low, r.top));
+    final gapBelow = below - timeline.bottom;
     expect(gapAbove, greaterThan(4), reason: '$reason: ink touches timeline');
     // Within a point, plus the one device pixel a small glyph's painted
     // edge can land past its outline (calibrated: the outline metrics are

@@ -4,6 +4,8 @@ import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
+import 'package:wod_timer/features/session/domain/session_block.dart';
+import 'package:wod_timer/features/session/presentation/session_entry.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
@@ -49,6 +51,14 @@ class _EmomSetupPageState extends ConsumerState<EmomSetupPage> {
     return SetupScaffold(
       title: 'EMOM',
       onStart: _onStart,
+      capsule: thenCapsule(
+        context: context,
+        ref: ref,
+        first: () => EmomBlock(
+          intervalSeconds: _setup.intervalSeconds,
+          rounds: _setup.rounds,
+        ),
+      ),
       startSubtitle: '${setupClock(_setup.totalSeconds)} total',
       body: (context, {required landscape}) => WheelsSetupBody(
         landscape: landscape,

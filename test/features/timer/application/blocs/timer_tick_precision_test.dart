@@ -22,13 +22,16 @@ void main() {
     expect(h.state.sessionOrNull!.elapsed.seconds, 604);
   });
 
-  test('ticks that jitter either side of 100ms still sum to the clock', () async {
-    await h.notifier.start(amrapWorkout(seconds: 1200));
-    var micros = 0;
-    for (var i = 1; i <= 3000; i++) {
-      micros += i.isEven ? 99400 : 100600; // averages 100ms exactly
-      h.engine.emit(Duration(microseconds: micros));
-    }
-    expect(h.state.sessionOrNull!.elapsed.seconds, 300);
-  });
+  test(
+    'ticks that jitter either side of 100ms still sum to the clock',
+    () async {
+      await h.notifier.start(amrapWorkout(seconds: 1200));
+      var micros = 0;
+      for (var i = 1; i <= 3000; i++) {
+        micros += i.isEven ? 99400 : 100600; // averages 100ms exactly
+        h.engine.emit(Duration(microseconds: micros));
+      }
+      expect(h.state.sessionOrNull!.elapsed.seconds, 300);
+    },
+  );
 }

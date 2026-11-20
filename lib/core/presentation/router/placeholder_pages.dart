@@ -7,6 +7,7 @@ import 'package:wod_timer/core/presentation/theme/app_spacing.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/core/presentation/widgets/content_width_cap.dart';
 import 'package:wod_timer/core/presentation/widgets/wordmark.dart';
+import 'package:wod_timer/features/session/presentation/widgets/todays_wod_card.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
@@ -99,7 +100,8 @@ class HomeMode {
 /// Home (1.3.1): the stacked wordmark, then every mode as a card showing
 /// the setup it will open on, drawn as a timeline. Phones list the four
 /// cards; tablets put the last mode started in a big tile across the top
-/// and the other three in a row below.
+/// and the other three in a row below. Since 2.6.0 Today's WOD's card sits
+/// above the modes on every layout.
 class PlaceholderHomePage extends ConsumerWidget {
   const PlaceholderHomePage({required this.onTimerSelected, super.key});
 
@@ -172,9 +174,28 @@ class PlaceholderHomePage extends ConsumerWidget {
       onTimerSelected(type);
     }
 
-    final Widget cards = tablet
-        ? _HomeTiles(modes: modes, lastMode: memory.lastMode, onSelect: select)
-        : _HomeCards(modes: modes, compact: landscape, onSelect: select);
+    final cards = tablet
+        ? Column(
+            spacing: 14,
+            children: [
+              const TodaysWodCard(),
+              Expanded(
+                child: _HomeTiles(
+                  modes: modes,
+                  lastMode: memory.lastMode,
+                  onSelect: select,
+                ),
+              ),
+            ],
+          )
+        : _HomeCards(
+            modes: modes,
+            compact: landscape,
+            onSelect: select,
+            // Held sideways the card joins the wordmark's column, so the
+            // four modes still fit without scrolling.
+            header: landscape ? null : const TodaysWodCard(),
+          );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -203,8 +224,17 @@ class PlaceholderHomePage extends ConsumerWidget {
     Widget cards, {
     required bool tablet,
   }) {
+    // A phone gives the top and bottom room to Today's WOD's card, so it
+    // and the four modes fit a 6.3in phone without scrolling.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
+      padding: tablet
+          ? const EdgeInsets.fromLTRB(18, 50, 18, 20)
+          : const EdgeInsets.fromLTRB(
+              18,
+              TodaysWodCard.homeTopPadding,
+              18,
+              TodaysWodCard.homeBottomPadding,
+            ),
       child: ContentWidthCap(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,6 +278,10 @@ class PlaceholderHomePage extends ConsumerWidget {
                 const Spacer(),
                 const Wordmark(),
                 const Spacer(),
+                if (!tablet) ...[
+                  const TodaysWodCard(compact: true),
+                  const SizedBox(height: 8),
+                ],
                 Align(
                   alignment: Alignment.centerLeft,
                   child: _buildSettingsButton(context),
@@ -356,7 +390,11 @@ class _HomeCards extends StatelessWidget {
     required this.modes,
     required this.compact,
     required this.onSelect,
+    this.header,
   });
+
+  /// Today's WOD's card, above the modes.
+  final Widget? header;
 
   final List<HomeMode> modes;
 
@@ -374,6 +412,7 @@ class _HomeCards extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: compact ? 10 : 14,
             children: [
+              ?header,
               for (final mode in modes)
                 _HomeCard(
                   mode: mode,
