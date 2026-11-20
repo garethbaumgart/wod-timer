@@ -61,8 +61,22 @@ class TodaysWodCard extends ConsumerWidget {
     fontFeatures: const [FontFeature.tabularFigures()],
   );
 
+  /// The card caps the system text size the way the end screen's tiles
+  /// do, so the largest accessibility size never overflows Home.
+  static const double maxTextScale = 1.4;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(
+        textScaler: media.textScaler.clamp(maxScaleFactor: maxTextScale),
+      ),
+      child: Builder(builder: (context) => _build(context, ref)),
+    );
+  }
+
+  Widget _build(BuildContext context, WidgetRef ref) {
     // Read on every build, as Home reads setup memory: Home is rebuilt each
     // time it is navigated back to, after START saved a session.
     final last = ref.watch(sessionStoreProvider).lastSession;
@@ -158,11 +172,11 @@ class TodaysWodCard extends ConsumerWidget {
           Expanded(
             child: note == null
                 ? const SizedBox.shrink()
-                : Text(
-                    note,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _muted,
+                // At large text sizes it shrinks rather than losing words.
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(note, maxLines: 1, style: _muted),
                   ),
           ),
           const SizedBox(width: 8),

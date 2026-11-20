@@ -190,8 +190,23 @@ class _SessionActivePageState extends ConsumerState<SessionActivePage> {
     context.go(AppRoutes.home);
   }
 
+  /// The session's screens cap the system text size the way the end
+  /// screen's tiles do (2.5.1), so the largest accessibility size never
+  /// overflows or clips a live line.
+  static const double maxTextScale = 1.4;
+
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(
+        textScaler: media.textScaler.clamp(maxScaleFactor: maxTextScale),
+      ),
+      child: Builder(builder: _buildRun),
+    );
+  }
+
+  Widget _buildRun(BuildContext context) {
     final run = ref.watch(todaysWodProvider);
     if (run == null) {
       // Nothing running (DONE, or a cold link): Home.
