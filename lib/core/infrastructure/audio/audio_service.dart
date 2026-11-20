@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:meta/meta.dart';
@@ -298,6 +299,13 @@ class AudioService implements IAudioService {
   }) async {
     if (_isMuted) {
       return right(unit);
+    }
+
+    // The cue log (2.6.0): a debug build prints every cue it plays, so a
+    // run on a simulator or an emulator can be checked against what each
+    // transition should play. Release builds print nothing.
+    if (kDebugMode && _playAsset == null) {
+      debugPrint('[wharfwod] cue $assetPath');
     }
 
     // Fire and forget - don't await playback to avoid blocking UI
