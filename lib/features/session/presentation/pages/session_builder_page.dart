@@ -114,7 +114,7 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
         startEnabled: session.isRunnable,
         startSubtitle: session.isEmpty ? null : 'About $minutes min',
         body: (context, {required landscape}) =>
-            _buildBody(context, entries, session),
+            _buildBody(context, entries, session, landscape: landscape),
       ),
     );
   }
@@ -122,9 +122,51 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
   Widget _buildBody(
     BuildContext context,
     List<DraftBlock> entries,
-    WodSession session,
-  ) {
+    WodSession session, {
+    required bool landscape,
+  }) {
     final full = entries.length >= WodSession.maxBlocks;
+    final list = _BlockList(
+      entries: entries,
+      onEdit: (index) =>
+          context.go(AppRoutes.todaysWodBlockPath(entries[index].id)),
+      onRemove: _remove,
+    );
+    final capsule = full
+        ? const SizedBox(height: SessionCapsule.defaultHeight)
+        : SessionCapsule(
+            label: '+ ADD BLOCK',
+            semanticsLabel: 'Add a block',
+            onTap: () => _openAddSheet(context),
+          );
+    if (landscape) {
+      // Held sideways the rows get the whole height (three or more on a
+      // phone); "+ ADD BLOCK" and the strip sit beside them.
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(flex: 3, child: list),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 20,
+                children: [
+                  capsule,
+                  if (!session.isEmpty)
+                    SessionStrip(
+                      blocks: session.blocks,
+                      height: SessionBuilderPage.stripHeight,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final rowsMax = math.max(
@@ -137,22 +179,10 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
           children: [
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: rowsMax),
-              child: _BlockList(
-                entries: entries,
-                onEdit: (index) =>
-                    context.go(AppRoutes.todaysWodBlockPath(entries[index].id)),
-                onRemove: _remove,
-              ),
+              child: list,
             ),
             const SizedBox(height: 16),
-            if (full)
-              const SizedBox(height: SessionCapsule.defaultHeight)
-            else
-              SessionCapsule(
-                label: '+ ADD BLOCK',
-                semanticsLabel: 'Add a block',
-                onTap: () => _openAddSheet(context),
-              ),
+            capsule,
             Expanded(
               child: session.isEmpty
                   ? const SizedBox.shrink()

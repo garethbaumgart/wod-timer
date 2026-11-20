@@ -105,15 +105,21 @@ void main() {
         await app.advance(tester, 14);
         final inSession = tester.widget<Text>(clockText());
         final sessionRect = tester.getRect(clockText());
-        expect(inSession.style!.fontSize, alone.style!.fontSize);
-        expect(sessionRect.height, closeTo(aloneRect.height, 0.01));
         final lower = sessionRect.top - aloneRect.top;
         if (device.size.width < device.size.height) {
           // The strip and its line in place of the 30pt above the phase
-          // word: about 14pt lower, as mocked.
+          // word: the same clock, about 14pt lower, as mocked.
+          expect(inSession.style!.fontSize, alone.style!.fontSize);
+          expect(sessionRect.height, closeTo(aloneRect.height, 0.01));
           expect(lower, inInclusiveRange(12, 16));
         } else {
-          expect(lower, greaterThanOrEqualTo(0));
+          // Held sideways the strip's room comes from the clock (retest
+          // fix 10: clear space between the lines, the timeline's zone
+          // kept); session_landscape_test.dart measures the space.
+          final session = inSession.style!.fontSize!;
+          final single = alone.style!.fontSize!;
+          expect(session, lessThanOrEqualTo(single));
+          expect(session, greaterThan(single * 0.6));
         }
       });
     }

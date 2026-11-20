@@ -203,6 +203,15 @@ class LiveFrame extends StatelessWidget {
 
   static double phaseSlotOf({required bool landscape}) => landscape ? 32 : 40;
 
+  /// Held sideways in a session: the clear space kept between the clock's
+  /// ink and the lines above and below it.
+  static const double inkClear = 6;
+
+  /// How far (in em) [reference]'s glyphs paint past the clock's trimmed
+  /// line box: a slash well past it, round digits a little.
+  static double overshootEmOf(String reference) =>
+      reference.contains('/') ? 0.12 : 0.04;
+
   @override
   Widget build(BuildContext context) {
     final textScaler = MediaQuery.textScalerOf(context);
@@ -237,21 +246,43 @@ class LiveFrame extends StatelessWidget {
         final zoneReserve = secondLineWhileRunning
             ? 40.0
             : secondSlot + timelineHeight + 24;
+        // Held sideways in a session (2.6.0) the strip and its line take
+        // their room from the clock, not from the timeline's zone, and the
+        // clock's ink keeps clear of the phase word and the second line.
+        // A timer on its own is sized exactly as before.
+        final header = this.header;
+        final sessionSideways = landscape && header != null;
+        final above = sessionSideways
+            ? header.heightOf(context, landscape: true)
+            : topPad;
         final clockSlot = landscape
             ? math.max<double>(
                 80,
-                area - topPad - phaseSlot - secondSlot - zoneReserve,
+                area - above - phaseSlot - secondSlot - zoneReserve,
               )
             : area * clockShare;
         final reference = clockReference;
-        final spec = reference == null
+        TextStyle resolve(TextStyle style) => GlyphInk.resolve(context, style);
+        var spec = reference == null
             ? null
             : ClockSpec.fit(
                 reference: reference,
                 maxWidth: width * 0.94,
                 slotHeight: clockSlot,
-                resolve: (style) => GlyphInk.resolve(context, style),
+                resolve: resolve,
               );
+        if (sessionSideways && spec != null && reference != null) {
+          // A slash or a round digit paints past the trimmed line box:
+          // leave that, and [inkClear], above and below the digits.
+          final size = spec.style.fontSize!;
+          spec = ClockSpec.fit(
+            reference: reference,
+            maxWidth: width * 0.94,
+            slotHeight:
+                clockSlot - 2 * (inkClear + overshootEmOf(reference) * size),
+            resolve: resolve,
+          );
+        }
 
         // Layout rule 2: where the content above the timeline's glyphs end.
         // Measured from what the slot is sized for (the big digits' line
@@ -275,7 +306,6 @@ class LiveFrame extends StatelessWidget {
           aboveInset = secondSlot;
         }
 
-        final header = this.header;
         return Column(
           children: [
             if (header == null)
