@@ -217,7 +217,12 @@ class _SessionActivePageState extends ConsumerState<SessionActivePage> {
       return TimerActivePage(
         key: ValueKey('timer-${run.index}'),
         timerType: run.block.kind.code,
-        session: _TimerBlockFrame(run: run, onStop: _stop, onBack: _back),
+        session: _TimerBlockFrame(
+          run: run,
+          onStop: _stop,
+          onBack: _back,
+          canSkipNow: () => _controller.canSkip,
+        ),
       );
     }
     return SessionPhaseView(
@@ -235,11 +240,13 @@ class _TimerBlockFrame implements LiveSessionFrame {
     required this.run,
     required this.onStop,
     required this.onBack,
+    required this.canSkipNow,
   });
 
   final WodRun run;
   final VoidCallback onStop;
   final VoidCallback onBack;
+  final bool Function() canSkipNow;
 
   @override
   LiveHeader header(TimerNotifierState state) => SessionHeader(
@@ -257,6 +264,9 @@ class _TimerBlockFrame implements LiveSessionFrame {
 
   @override
   void back() => onBack();
+
+  @override
+  bool get canSkip => canSkipNow();
 }
 
 /// A Sets block's get-ready, a set, the rest after it, or a Rest block, in

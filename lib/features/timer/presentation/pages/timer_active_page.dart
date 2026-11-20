@@ -143,6 +143,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     final notifier = ref.read(timerNotifierProvider.notifier);
     final state = ref.read(timerNotifierProvider);
     if (state is TimerPreparing) {
+      if (widget.session?.canSkip == false) return;
       ref.read(hapticServiceProvider).mediumImpact();
       notifier.skipPrep();
       return;

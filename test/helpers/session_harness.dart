@@ -71,6 +71,8 @@ class SessionHarness {
     while (left > 0) {
       final step = left < stepMs ? left : stepMs;
       left -= step;
+      // The tap cooldowns' clock keeps time with the engines.
+      h.now = h.now.add(Duration(milliseconds: step));
       _emit(sessionEngine, step);
       _emit(h.engine, step);
       await flush();
@@ -79,6 +81,7 @@ class SessionHarness {
 
   /// One tick of [ms] on both clocks at once (the app was suspended).
   Future<void> jump(int ms) async {
+    h.now = h.now.add(Duration(milliseconds: ms));
     _emit(sessionEngine, ms);
     _emit(h.engine, ms);
     await flush();

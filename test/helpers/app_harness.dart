@@ -138,6 +138,8 @@ class AppHarness {
   /// Runs both engines on by [seconds], a frame per second.
   Future<void> advance(WidgetTester tester, int seconds) async {
     for (var i = 0; i < seconds; i++) {
+      // The tap cooldowns' clock keeps time with the engines.
+      now = now.add(const Duration(seconds: 1));
       for (final engine in [sessionEngine, timerEngine]) {
         engine.emit(engine.elapsed + const Duration(seconds: 1));
       }

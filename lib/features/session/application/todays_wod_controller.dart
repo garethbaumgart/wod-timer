@@ -185,11 +185,32 @@ class TodaysWodController extends Notifier<WodRun?> {
   String? _lastLowBeep;
   DateTime? _blockedUntil;
 
+  /// When the screen last changed phase (a block, a get-ready, a set or
+  /// its rest began), by tap or by the clock.
+  DateTime? _phaseChangedAt;
+
+  static String? _phaseKey(WodRun? run) =>
+      run == null ? null : '${run.index}:${run.phase.name}:${run.set}';
+
+  /// Within [actionCooldown] of a phase change: a tap now was made on the
+  /// screen before, so TAP TO SKIP and SET DONE ignore it.
+  bool get _settling {
+    final at = _phaseChangedAt;
+    return at != null && clock().isBefore(at.add(actionCooldown));
+  }
+
+  /// Whether a tap may skip the get-ready on screen now (a timer block's
+  /// get-ready is skipped by the timer page).
+  bool get canSkip => !_settling;
+
   @override
   WodRun? build() {
     _engine = ref.watch(sessionEngineProvider);
     _audio = ref.watch(audioServiceProvider);
     _haptic = ref.watch(hapticServiceProvider);
+    listenSelf((previous, next) {
+      if (_phaseKey(previous) != _phaseKey(next)) _phaseChangedAt = clock();
+    });
     ref
       ..listen(timerNotifierProvider, _onTimerState)
       // The voice she picks on the builder applies at once (a timer block
@@ -306,7 +327,7 @@ class TodaysWodController extends Notifier<WodRun?> {
   void setDone() {
     final run = state;
     if (run == null || run.phase != WodPhase.setWork || run.paused) return;
-    if (_blocked()) return;
+    if (_blocked() || _settling) return;
     _block();
     final block = run.block as SetsBlock;
     _pass(() {
@@ -330,7 +351,7 @@ class TodaysWodController extends Notifier<WodRun?> {
         run.phase != WodPhase.setRest) {
       return;
     }
-    if (_blocked()) return;
+    if (_blocked() || _settling) return;
     _block();
     _haptic.mediumImpact();
     _pass(() => _phaseDone(0));
