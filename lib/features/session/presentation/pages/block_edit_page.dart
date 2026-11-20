@@ -40,6 +40,8 @@ class BlockEdit {
 }
 
 /// Shows "SETS REMOVED" with UNDO, which puts the block back where it was.
+/// [messenger] is the builder's own, so the bar never outlives the builder:
+/// leaving it (START, back, an edit screen) takes the bar with it.
 void showBlockRemoved(
   ScaffoldMessengerState messenger,
   SessionDraft draft,
@@ -51,8 +53,12 @@ void showBlockRemoved(
     ..showSnackBar(
       SnackBar(
         content: Text('${removed.block.kind.label} REMOVED'),
+        // A bar with an action stays up by default: this one times out
+        // after the default four seconds, long enough to take back a swipe.
+        persist: false,
         action: SnackBarAction(
           label: 'UNDO',
+          textColor: AppColors.primary,
           onPressed: () => draft.restore(index, removed),
         ),
       ),
@@ -89,12 +95,10 @@ class BlockEditPage extends ConsumerWidget {
       },
       onRemove: () {
         ref.read(hapticServiceProvider).mediumImpact();
-        final messenger = ScaffoldMessenger.of(context);
         final removed = draft.removeAt(index);
+        // The builder offers it back (UNDO) when it opens.
+        if (removed != null) draft.noteRemoved(index, removed);
         back();
-        if (removed != null) {
-          showBlockRemoved(messenger, draft, index, removed);
-        }
       },
     );
     return switch (edit.block.kind) {

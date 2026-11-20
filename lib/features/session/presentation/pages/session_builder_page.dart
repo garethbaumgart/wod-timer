@@ -42,12 +42,29 @@ class SessionBuilderPage extends ConsumerStatefulWidget {
 class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
   bool _starting = false;
 
+  /// The builder's own messenger: the removed bar lives and dies with the
+  /// builder, so it never rides onto an edit screen, Home or a live screen.
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // A block removed on its edit screen: offer it back here.
+      final removed = ref.read(sessionDraftProvider.notifier).takeRemoved();
+      final messenger = _messenger.currentState;
+      if (removed != null && messenger != null && mounted) {
+        showBlockRemoved(
+          messenger,
+          ref.read(sessionDraftProvider.notifier),
+          removed.index,
+          removed.entry,
+        );
+      }
+    });
     if (widget.openAddSheet) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) showAddBlockSheet(context, ref);
+        if (mounted) _openAddSheet(context);
       });
     }
   }
@@ -72,7 +89,14 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
     final removed = draft.removeAt(index);
     if (removed == null) return;
     ref.read(hapticServiceProvider).mediumImpact();
-    showBlockRemoved(ScaffoldMessenger.of(context), draft, index, removed);
+    final messenger = _messenger.currentState;
+    if (messenger != null) showBlockRemoved(messenger, draft, index, removed);
+  }
+
+  /// The add sheet takes the removed bar down first.
+  void _openAddSheet(BuildContext context) {
+    _messenger.currentState?.removeCurrentSnackBar();
+    showAddBlockSheet(context, ref);
   }
 
   @override
@@ -82,13 +106,16 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
     final minutes = session.aboutMinutes(
       getReadySeconds: TodaysWodController.getReadySeconds,
     );
-    return SetupScaffold(
-      title: "TODAY'S WOD",
-      onStart: _onStart,
-      startEnabled: session.isRunnable,
-      startSubtitle: session.isEmpty ? null : 'About $minutes min',
-      body: (context, {required landscape}) =>
-          _buildBody(context, entries, session),
+    return ScaffoldMessenger(
+      key: _messenger,
+      child: SetupScaffold(
+        title: "TODAY'S WOD",
+        onStart: _onStart,
+        startEnabled: session.isRunnable,
+        startSubtitle: session.isEmpty ? null : 'About $minutes min',
+        body: (context, {required landscape}) =>
+            _buildBody(context, entries, session),
+      ),
     );
   }
 
@@ -124,7 +151,7 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
               SessionCapsule(
                 label: '+ ADD BLOCK',
                 semanticsLabel: 'Add a block',
-                onTap: () => showAddBlockSheet(context, ref),
+                onTap: () => _openAddSheet(context),
               ),
             Expanded(
               child: session.isEmpty

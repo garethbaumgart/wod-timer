@@ -43,6 +43,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
 
   /// Opens the builder on [blocks], noting where from.
   void open(List<SessionBlock> blocks, BuilderSource source) {
+    _removed = null;
     state = List.unmodifiable([
       for (final block in blocks.take(WodSession.maxBlocks)) _entry(block),
     ]);
@@ -69,6 +70,19 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     final next = [...state];
     final removed = next.removeAt(index);
     state = List.unmodifiable(next);
+    return removed;
+  }
+
+  /// A block removed from its edit screen, for the builder to offer back
+  /// (UNDO) when it opens again: taken by [takeRemoved].
+  ({int index, DraftBlock entry})? _removed;
+
+  void noteRemoved(int index, DraftBlock entry) =>
+      _removed = (index: index, entry: entry);
+
+  ({int index, DraftBlock entry})? takeRemoved() {
+    final removed = _removed;
+    _removed = null;
     return removed;
   }
 
