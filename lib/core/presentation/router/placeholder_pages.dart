@@ -11,6 +11,8 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
+import 'package:wod_timer/preview/todays_wod/home_card.dart';
+import 'package:wod_timer/preview/todays_wod/todays_wod_preview.dart';
 
 /// Placeholder page for routes that haven't been implemented yet.
 class PlaceholderPage extends StatelessWidget {
@@ -174,7 +176,15 @@ class PlaceholderHomePage extends ConsumerWidget {
 
     final Widget cards = tablet
         ? _HomeTiles(modes: modes, lastMode: memory.lastMode, onSelect: select)
-        : _HomeCards(modes: modes, compact: landscape, onSelect: select);
+        : _HomeCards(
+            modes: modes,
+            compact: landscape,
+            onSelect: select,
+            // PROTOTYPE ("Today's WOD"): off in a normal launch.
+            header: TodaysWodPreview.enabled && !landscape
+                ? const TodaysWodHomeCard()
+                : null,
+          );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -203,8 +213,12 @@ class PlaceholderHomePage extends ConsumerWidget {
     Widget cards, {
     required bool tablet,
   }) {
+    // PROTOTYPE ("Today's WOD"): the fifth card needs the room.
+    final fifthCard = TodaysWodPreview.enabled && !tablet;
+    final top = fifthCard ? TodaysWodHomeCard.homeTopPadding : 50.0;
+    final bottom = fifthCard ? TodaysWodHomeCard.homeBottomPadding : 20.0;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 50, 18, 20),
+      padding: EdgeInsets.fromLTRB(18, top, 18, bottom),
       child: ContentWidthCap(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,6 +370,7 @@ class _HomeCards extends StatelessWidget {
     required this.modes,
     required this.compact,
     required this.onSelect,
+    this.header,
   });
 
   final List<HomeMode> modes;
@@ -363,6 +378,9 @@ class _HomeCards extends StatelessWidget {
   /// Landscape: no total line, an 8pt timeline, tighter padding.
   final bool compact;
   final void Function(String timerType) onSelect;
+
+  /// PROTOTYPE ("Today's WOD"): a card above the modes.
+  final Widget? header;
 
   @override
   Widget build(BuildContext context) {
@@ -374,6 +392,7 @@ class _HomeCards extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: compact ? 10 : 14,
             children: [
+              ?header,
               for (final mode in modes)
                 _HomeCard(
                   mode: mode,

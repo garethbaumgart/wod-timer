@@ -6,6 +6,8 @@ import 'package:wod_timer/core/presentation/pages/settings_page.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/router/placeholder_pages.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
+import 'package:wod_timer/preview/todays_wod/preview_pages.dart';
+import 'package:wod_timer/preview/todays_wod/todays_wod_preview.dart';
 
 part 'app_router.g.dart';
 
@@ -13,7 +15,8 @@ part 'app_router.g.dart';
 @riverpod
 GoRouter appRouter(Ref ref) {
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    // PROTOTYPE ("Today's WOD"): null in a normal launch.
+    initialLocation: TodaysWodPreview.initialLocation ?? AppRoutes.home,
     debugLogDiagnostics: true,
     routes: [
       GoRoute(
@@ -54,6 +57,8 @@ GoRouter appRouter(Ref ref) {
         name: 'settings',
         builder: (context, state) => const SettingsPage(),
       ),
+      // PROTOTYPE ("Today's WOD"): no routes in a normal launch.
+      if (TodaysWodPreview.enabled) ...todaysWodPreviewRoutes(),
     ],
     errorBuilder: (context, state) => const PlaceholderPage(
       title: 'Page Not Found',

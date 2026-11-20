@@ -17,6 +17,8 @@ import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/stopwatch_bezel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
+import 'package:wod_timer/preview/todays_wod/session_widgets.dart';
+import 'package:wod_timer/preview/todays_wod/todays_wod_preview.dart';
 
 /// The frame every setup screen shares (1.3.1): header (back, mode in
 /// white, voice chip), the mode's controls, then the edge-to-edge START
@@ -348,6 +350,15 @@ class WheelsSetupBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessory = this.accessory;
+    final timeline = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: WorkoutTimeline(
+        shape: shape,
+        height: timelineHeight,
+        midTicks: true,
+      ),
+    );
+    final inkInset = SetupWheel.inkInset(context, rowHeight);
     return Column(
       children: [
         Expanded(
@@ -385,18 +396,20 @@ class WheelsSetupBody extends StatelessWidget {
         ),
         Expanded(
           flex: landscape ? 1 : BezelSetupBody.liftBelow,
-          child: CentredTimeline(
-            aboveInkInset: SetupWheel.inkInset(context, rowHeight),
-            height: timelineHeight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: WorkoutTimeline(
-                shape: shape,
-                height: timelineHeight,
-                midTicks: true,
-              ),
-            ),
-          ),
+          // PROTOTYPE ("Today's WOD"): "+ THEN" above START. Off in a
+          // normal launch.
+          child: TodaysWodPreview.enabled && !landscape
+              ? ThenZone(
+                  aboveInkInset: inkInset,
+                  timelineHeight: timelineHeight,
+                  timeline: timeline,
+                  onThen: () => context.go(TodaysWodPreview.path('builder')),
+                )
+              : CentredTimeline(
+                  aboveInkInset: inkInset,
+                  height: timelineHeight,
+                  child: timeline,
+                ),
         ),
       ],
     );
