@@ -515,12 +515,14 @@ void main() {
       },
     );
 
-    test("through a timer block's end: the session moves on", () async {
+    test("through a timer block's end: the session moves on, the time "
+        'after the end charged to the Rest', () async {
       await s.start(const [amrap, rest20]);
       await s.advance(30);
+      // 40s of the AMRAP left, then 260s after its end: the Rest is over.
       await s.jump(300000);
-      expect(s.run.phase, WodPhase.rest);
-      expect(s.run.outcomes.single.block, amrap);
+      expect(s.run.isFinished, isTrue);
+      expect(s.run.outcomes.map((o) => o.block), [amrap, rest20]);
     });
 
     test("through a set's rest to the next set", () async {

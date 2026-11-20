@@ -521,8 +521,23 @@ class TodaysWodController extends Notifier<WodRun?> {
     if (workout == null) return;
     await _timer.start(workout, inSession: true);
     // Stopped or restarted while the timer was starting.
-    if (generation != _generation) _timer.reset();
+    if (generation != _generation) {
+      _timer.reset();
+      return;
+    }
+    // Where this timer's clock starts on the session's (both pause
+    // together), so its end can be placed on the session's clock.
+    _timerStartedAtMs = _engine.elapsed.inMilliseconds;
+    _timerEndsAfterMs =
+        (workout.prepCountdown.seconds +
+            workout.timerType.estimatedDuration.seconds) *
+        1000;
   }
+
+  /// The running timer block's start on the session's clock, and how long
+  /// after it the timer ends by the clock (get-ready included).
+  int _timerStartedAtMs = 0;
+  int _timerEndsAfterMs = 0;
 
   /// The timer a timer block runs.
   static TimerType timerTypeOf(SessionBlock block) => switch (block) {
@@ -570,6 +585,10 @@ class TodaysWodController extends Notifier<WodRun?> {
         final capped = next.endedAtTimeCap;
         final generation = _generation;
         final block = run.block;
+        // Ended by its clock (not FINISH): where on the session's clock.
+        final endedAtMs = block is! ForTimeBlock || capped
+            ? _timerStartedAtMs + _timerEndsAfterMs
+            : null;
         final outcome = switch (block) {
           ForTimeBlock() => BlockOutcome(
             block: block,
@@ -587,11 +606,24 @@ class TodaysWodController extends Notifier<WodRun?> {
           if (generation != _generation || state?.phase != WodPhase.timer) {
             return;
           }
-          _pass(() => _blockEnded(outcome));
+          _pass(() => _blockEnded(outcome, carryMs: _sinceTimerEnd(endedAtMs)));
         });
       default:
         break;
     }
+  }
+
+  /// The session time since a timer block ended at [endedAtMs] (its own
+  /// clock's end, placed on the session's): what a Rest after it is
+  /// charged with when the app comes back from a suspension that straddled
+  /// the end. The time spent in the timer block is never rest time. If the
+  /// session's clock has not caught up to the end yet, its next tick
+  /// counts from the end.
+  int _sinceTimerEnd(int? endedAtMs) {
+    if (endedAtMs == null) return 0;
+    if (_lastTickMs > endedAtMs) return _lastTickMs - endedAtMs;
+    _lastTickMs = endedAtMs;
+    return 0;
   }
 
   /// A block ran to its end: the change, then the next block.
