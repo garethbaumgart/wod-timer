@@ -32,11 +32,11 @@ void main() {
     testWidgets('empty: one slim line and + NEW', (tester) async {
       await app.pump(tester, device: Device.phone);
       expect(find.text("TODAY'S WOD"), findsOneWidget);
-      expect(find.text('chain timers, hands free'), findsOneWidget);
+      expect(find.text('CHAIN TIMERS INTO ONE SESSION'), findsOneWidget);
       expect(find.text('+ NEW'), findsOneWidget);
       expect(find.byType(SessionStrip), findsNothing);
       final card = tester.getRect(find.byType(TodaysWodCard));
-      expect(card.height, lessThan(60));
+      expect(card.height, lessThan(80));
       // The four modes keep their order under it.
       final names = ['FOR TIME', 'EMOM', 'AMRAP', 'TABATA'];
       final tops = [for (final n in names) tester.getRect(find.text(n)).top];
@@ -88,7 +88,7 @@ void main() {
         device: Device.phone,
         stored: {SessionStore.lastSessionKey: '{"v":9}'},
       );
-      expect(find.text('chain timers, hands free'), findsOneWidget);
+      expect(find.text('CHAIN TIMERS INTO ONE SESSION'), findsOneWidget);
       expect(tester.takeException(), isNull);
       expect(app.prefs.getString(SessionStore.lastSessionKey), '{"v":9}');
     });

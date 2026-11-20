@@ -15,7 +15,8 @@ import 'package:wod_timer/features/timer/application/providers/timer_providers.d
 /// Home's "TODAY'S WOD" card (2.6.0), above the four modes, in the mode
 /// cards' dress. With a last session: its blocks named in their colours,
 /// its strip, how long it runs, and "+ NEW"; the card repeats it. Without
-/// one: a slim line inviting her to chain timers, and "+ NEW".
+/// one: "TODAY'S WOD" and "+ NEW" over one line inviting her to chain
+/// timers, which fits an iPhone SE at its size.
 class TodaysWodCard extends ConsumerWidget {
   const TodaysWodCard({super.key, this.compact = false});
 
@@ -114,11 +115,13 @@ class TodaysWodCard extends ConsumerWidget {
                 children: [
                   _header(
                     context,
-                    note: last == null
-                        ? 'chain timers, hands free'
-                        : 'about $minutes min',
+                    note: last == null ? null : 'about $minutes min',
                     onNew: newSession,
                   ),
+                  if (last == null) ...[
+                    const SizedBox(height: _labelToSummary),
+                    Text(invite, maxLines: 1, softWrap: false, style: _invite),
+                  ],
                   if (last != null) ...[
                     const SizedBox(height: _labelToSummary),
                     _repeatLine(last),
@@ -134,10 +137,15 @@ class TodaysWodCard extends ConsumerWidget {
     );
   }
 
+  /// The empty card's invitation: terse capitals, one line on an SE.
+  static const invite = 'CHAIN TIMERS INTO ONE SESSION';
+
+  static TextStyle get _invite => _muted.copyWith(fontWeight: FontWeight.w700);
+
   /// "TODAY'S WOD", the note, "+ NEW". Grows with large text.
   Widget _header(
     BuildContext context, {
-    required String note,
+    required String? note,
     required VoidCallback onNew,
   }) {
     final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
@@ -148,12 +156,14 @@ class TodaysWodCard extends ConsumerWidget {
           Text("TODAY'S WOD", maxLines: 1, style: _label),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              note,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: _muted,
-            ),
+            child: note == null
+                ? const SizedBox.shrink()
+                : Text(
+                    note,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _muted,
+                  ),
           ),
           const SizedBox(width: 8),
           _NewChip(height: _chipHeight * scale, onTap: onNew),
