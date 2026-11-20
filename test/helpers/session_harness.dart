@@ -2,6 +2,7 @@
 // notifier, both engines hand-driven, the cues and haptics recorded by the
 // notifier harness.
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
+import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
 import 'package:wod_timer/features/session/application/todays_wod_controller.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
@@ -12,9 +13,11 @@ import 'notifier_harness.dart';
 class SessionHarness {
   SessionHarness({
     AppSettings settings = const AppSettings(voice: VoiceOption.major),
+    IAudioService? audioService,
   }) {
     h = NotifierHarness(
       settings: settings,
+      audioService: audioService,
       overrides: [sessionEngineProvider.overrideWithValue(sessionEngine)],
     );
     TodaysWodController.clock = () => h.now;

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
+import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
+import 'package:wod_timer/core/application/providers/voice_setting.dart';
 import 'package:wod_timer/core/domain/value_objects/round_count.dart';
 import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
@@ -190,6 +192,13 @@ class TodaysWodController extends Notifier<WodRun?> {
     _haptic = ref.watch(hapticServiceProvider);
     ref
       ..listen(timerNotifierProvider, _onTimerState)
+      // The voice she picks on the builder applies at once (a timer block
+      // also applies it when it starts).
+      ..listen(appSettingsNotifierProvider.select((s) => s.voice), (_, voice) {
+        if (state != null && !state!.isFinished) {
+          applyVoiceSetting(_audio, voice);
+        }
+      })
       ..onDispose(_stopEngine);
     return null;
   }
@@ -225,6 +234,9 @@ class TodaysWodController extends Notifier<WodRun?> {
       'blocks': session.blocks.length,
       'kinds': session.kindCodes,
     });
+    // The session's own cues (a Sets get-ready, a rest) speak in the voice
+    // she chose, from the first one: a timer block sets it again itself.
+    applyVoiceSetting(_audio, ref.read(appSettingsNotifierProvider).voice);
     _lastTickMs = 0;
     _pendingTimerStart = null;
     _ticks = _engine.tickStream.listen(_onTick);

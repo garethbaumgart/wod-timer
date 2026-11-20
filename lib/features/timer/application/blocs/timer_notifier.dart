@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
+import 'package:wod_timer/core/application/providers/voice_setting.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
@@ -101,33 +102,10 @@ class TimerNotifier extends _$TimerNotifier {
   ///
   /// For [VoiceOption.random], enables per-cue randomization so each
   /// voice cue picks a different voice pack at random.
-  void _configureVoice() {
-    final voice = ref.read(appSettingsNotifierProvider).voice;
-    // Silent's full mute is synced by AppSettingsNotifier on load and on
-    // every voice change; here only the spoken cues need switching off.
-    _audioService.setVoiceMuted(
-      muted: voice == VoiceOption.off || voice == VoiceOption.silent,
-    );
-    switch (voice) {
-      case VoiceOption.major:
-        _audioService
-          ..setRandomizePerCue(enabled: false)
-          ..setVoicePack('major');
-      case VoiceOption.liam:
-        _audioService
-          ..setRandomizePerCue(enabled: false)
-          ..setVoicePack('liam');
-      case VoiceOption.holly:
-        _audioService
-          ..setRandomizePerCue(enabled: false)
-          ..setVoicePack('holly');
-      case VoiceOption.random:
-        _audioService.setRandomizePerCue(enabled: true);
-      case VoiceOption.off:
-      case VoiceOption.silent:
-        break;
-    }
-  }
+  void _configureVoice() => applyVoiceSetting(
+    _audioService,
+    ref.read(appSettingsNotifierProvider).voice,
+  );
 
   /// Start a timer session for the given workout. [inSession] marks it as
   /// a block of Today's WOD (see [_inSession]).
