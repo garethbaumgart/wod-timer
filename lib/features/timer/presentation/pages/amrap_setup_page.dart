@@ -4,6 +4,7 @@ import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
+import 'package:wod_timer/features/session/presentation/pages/block_edit_page.dart';
 import 'package:wod_timer/features/session/presentation/session_entry.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
@@ -14,16 +15,32 @@ import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 ///
 /// One decision (how long), in whole minutes on the bezel, then START.
 class AmrapSetupPage extends ConsumerStatefulWidget {
-  const AmrapSetupPage({super.key});
+  const AmrapSetupPage({super.key, this.edit});
+
+  /// Opened from Today's WOD's builder (2.6.0): that block's values, DONE
+  /// in place of START, REMOVE BLOCK in place of "+ THEN".
+  final BlockEdit? edit;
 
   @override
   ConsumerState<AmrapSetupPage> createState() => _AmrapSetupPageState();
 }
 
 class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
-  late AmrapSetup _setup = ref.read(setupMemoryProvider).amrap;
+  late AmrapSetup _setup = switch (widget.edit?.block) {
+    AmrapBlock(:final durationSeconds) => AmrapSetup(
+      durationSeconds: durationSeconds,
+    ),
+    _ => ref.read(setupMemoryProvider).amrap,
+  };
+
+  /// The values on screen as a Today's WOD block.
+  AmrapBlock get _block => AmrapBlock(durationSeconds: _setup.durationSeconds);
 
   Future<void> _onStart() async {
+    if (widget.edit case final edit?) {
+      edit.onDone(_block);
+      return;
+    }
     await ref.read(setupMemoryProvider).saveAmrap(_setup);
     if (!mounted) return;
     await startSetupWorkout(
@@ -42,11 +59,11 @@ class _AmrapSetupPageState extends ConsumerState<AmrapSetupPage> {
     return SetupScaffold(
       title: 'AMRAP',
       onStart: _onStart,
-      capsule: thenCapsule(
-        context: context,
-        ref: ref,
-        first: () => AmrapBlock(durationSeconds: _setup.durationSeconds),
-      ),
+      startLabel: widget.edit == null ? 'START' : BlockEdit.doneLabel,
+      onBack: widget.edit?.onCancel,
+      capsule:
+          widget.edit?.removeCapsule ??
+          thenCapsule(context: context, ref: ref, first: () => _block),
       body: (context, {required landscape}) => BezelSetupBody(
         landscape: landscape,
         bezel: (size) => setupBezel(

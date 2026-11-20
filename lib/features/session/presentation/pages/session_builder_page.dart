@@ -11,7 +11,7 @@ import 'package:wod_timer/features/session/application/session_draft.dart';
 import 'package:wod_timer/features/session/application/session_store.dart';
 import 'package:wod_timer/features/session/application/todays_wod_controller.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
-import 'package:wod_timer/features/session/presentation/block_style.dart';
+import 'package:wod_timer/features/session/presentation/pages/block_edit_page.dart';
 import 'package:wod_timer/features/session/presentation/widgets/session_widgets.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_scaffold.dart';
@@ -72,17 +72,7 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
     final removed = draft.removeAt(index);
     if (removed == null) return;
     ref.read(hapticServiceProvider).mediumImpact();
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('${removed.block.kind.label} REMOVED'),
-          action: SnackBarAction(
-            label: 'UNDO',
-            onPressed: () => draft.restore(index, removed),
-          ),
-        ),
-      );
+    showBlockRemoved(ScaffoldMessenger.of(context), draft, index, removed);
   }
 
   @override

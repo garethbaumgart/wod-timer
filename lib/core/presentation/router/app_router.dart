@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/presentation/pages/settings_page.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/router/placeholder_pages.dart';
+import 'package:wod_timer/features/session/presentation/pages/block_edit_page.dart';
 import 'package:wod_timer/features/session/presentation/pages/session_builder_page.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
 
@@ -55,6 +56,13 @@ GoRouter appRouter(Ref ref) {
         name: 'todaysWod',
         builder: (context, state) => SessionBuilderPage(
           openAddSheet: state.uri.queryParameters['add'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.todaysWodBlock,
+        name: 'todaysWodBlock',
+        builder: (context, state) => BlockEditPage(
+          index: int.tryParse(state.pathParameters['index'] ?? '') ?? -1,
         ),
       ),
       GoRoute(
