@@ -176,9 +176,12 @@ Workout tabataWorkout({
 class NotifierHarness {
   /// [audioService] swaps the mocked service for a real one (a sink-backed
   /// AudioService), so a test can hear exactly which files the app plays.
+  ///
+  /// [overrides] are added to the container's (Today's WOD's own engine).
   NotifierHarness({
     AppSettings settings = const AppSettings(),
     IAudioService? audioService,
+    List<Override> overrides = const [],
   }) {
     when(() => audio.setVoicePack(any())).thenReturn(null);
     when(
@@ -232,6 +235,7 @@ class NotifierHarness {
             minValueMoments: 1,
           ),
         ),
+        ...overrides,
       ],
     );
   }

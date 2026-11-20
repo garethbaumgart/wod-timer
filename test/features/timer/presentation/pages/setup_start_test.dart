@@ -30,7 +30,8 @@ class _RecordingTimerNotifier extends TimerNotifier {
   TimerNotifierState build() => const TimerNotifierState.initial();
 
   @override
-  Future<void> start(Workout workout) async => started = workout;
+  Future<void> start(Workout workout, {bool inSession = false}) async =>
+      started = workout;
 }
 
 class _MockHapticService extends Mock implements IHapticService {}
