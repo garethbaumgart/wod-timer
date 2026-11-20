@@ -190,6 +190,9 @@ class BlockRow extends StatelessWidget {
 
   static const double height = 58;
 
+  /// The widest a name may be: FOR TIME at 24pt fits.
+  static const double nameMaxWidth = 140;
+
   @override
   Widget build(BuildContext context) {
     final trailing = this.trailing;
@@ -227,7 +230,12 @@ class BlockRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              Flexible(
+              // The name at its own width (shrinking only past a cap), so
+              // the detail always gets the rest of the row and every row's
+              // detail and handle sit on the same edge (a flexible name
+              // left its unused share after the handle: ragged rows).
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: nameMaxWidth),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
