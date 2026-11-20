@@ -58,6 +58,12 @@ void main() {
       });
       trackEvent('rate_tapped', {'source': 'settings'});
       trackEvent('feedback_tapped', {'source': 'settings'});
+      // Today's WOD (2.6.0); its timer blocks add in_session to the two
+      // workout events.
+      trackEvent('session_builder_opened', {'source': 'then'});
+      trackEvent('session_started', {'blocks': 5, 'kinds': 'amrap,emom'});
+      trackEvent('workout_started', {'type': 'emom', 'in_session': true});
+      trackEvent('session_completed', {'blocks': 5, 'ended_by': 'finished'});
 
       expect(sent.map((e) => e.$1), [
         'app_open',
@@ -65,6 +71,10 @@ void main() {
         'workout_completed',
         'rate_tapped',
         'feedback_tapped',
+        'session_builder_opened',
+        'session_started',
+        'workout_started',
+        'session_completed',
       ]);
       for (final (name, props) in sent) {
         expect(props['is_test'], 1, reason: name);
@@ -73,6 +83,12 @@ void main() {
       // The event's own props are kept alongside.
       expect(sent[1].$2, {
         'type': 'emom',
+        'is_test': 1,
+        'test_reason': 'simulator',
+      });
+      expect(sent[7].$2, {
+        'type': 'emom',
+        'in_session': true,
         'is_test': 1,
         'test_reason': 'simulator',
       });

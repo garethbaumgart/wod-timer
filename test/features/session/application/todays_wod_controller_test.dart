@@ -186,6 +186,33 @@ void main() {
       );
     });
 
+    test('a session sends its events in order, stopped or finished', () async {
+      await s.start(const [rest20, amrap]);
+      await s.advance(20 + 70);
+      await s.controller.again();
+      await s.flush();
+      await s.advance(25);
+      s.controller.stop();
+      expect(s.events.map((e) => e.$1), [
+        'session_started',
+        'workout_started',
+        'workout_completed',
+        'session_completed',
+        'session_started',
+        'workout_started',
+        'workout_completed',
+        'session_completed',
+      ]);
+      expect(s.eventsNamed('session_completed').map((e) => e.$2['ended_by']), [
+        'finished',
+        'stopped',
+      ]);
+      expect(s.eventsNamed('workout_completed').map((e) => e.$2['ended_by']), [
+        'timer',
+        'user',
+      ]);
+    });
+
     test('a timer on its own sends exactly what it always has', () async {
       await s.h.notifier.start(emomWorkout(interval: 10, rounds: 1));
       s.h.run(0, 10);
