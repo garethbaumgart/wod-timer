@@ -6,6 +6,7 @@ import 'package:wod_timer/core/presentation/pages/settings_page.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/router/placeholder_pages.dart';
 import 'package:wod_timer/features/session/presentation/pages/block_edit_page.dart';
+import 'package:wod_timer/features/session/presentation/pages/session_active_page.dart';
 import 'package:wod_timer/features/session/presentation/pages/session_builder_page.dart';
 import 'package:wod_timer/features/timer/presentation/pages/pages.dart';
 
@@ -57,6 +58,11 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => SessionBuilderPage(
           openAddSheet: state.uri.queryParameters['add'] == '1',
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.todaysWodActive,
+        name: 'todaysWodActive',
+        builder: (context, state) => const SessionActivePage(),
       ),
       GoRoute(
         path: AppRoutes.todaysWodBlock,
