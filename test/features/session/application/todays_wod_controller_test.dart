@@ -189,6 +189,8 @@ void main() {
     test('a session sends its events in order, stopped or finished', () async {
       await s.start(const [rest20, amrap]);
       await s.advance(20 + 70);
+      // AGAIN waits out the end screen's first 700ms (retest fix 12).
+      s.later();
       await s.controller.again();
       await s.flush();
       await s.advance(25);
@@ -490,6 +492,8 @@ void main() {
       await s.start(const [rest20]);
       await s.advance(20);
       expect(s.run.isFinished, isTrue);
+      // AGAIN waits out the end screen's first 700ms (retest fix 12).
+      s.later();
       await s.controller.again();
       expect(s.run.isFinished, isFalse);
       expect(s.run.index, 0);

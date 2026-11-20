@@ -225,6 +225,9 @@ void main() {
       expect(find.text('2'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
+      // The end screen ignores taps for its first 700ms (retest fix 12).
+      await tester.pump(const Duration(milliseconds: 700));
+      app.later();
       await tester.tap(find.text('AGAIN'));
       await tester.pumpAndSettle();
       expect(run().isFinished, isFalse);
@@ -251,6 +254,9 @@ void main() {
       expect(find.byType(EndFactTiles), findsNothing);
       expect(find.text('SETS'), findsOneWidget);
       expect(find.textContaining('AMRAP', findRichText: true), findsNothing);
+      // The end screen ignores taps for its first 700ms (retest fix 12).
+      await tester.pump(const Duration(milliseconds: 700));
+      app.later();
       await tester.tap(find.text('DONE'));
       await tester.pumpAndSettle();
       expect(app.router.state.uri.path, AppRoutes.home);

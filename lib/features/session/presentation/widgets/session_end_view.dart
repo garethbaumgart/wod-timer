@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -52,7 +53,7 @@ class BlockResult {
 /// the session's colour (brand green), one fact tile per scored block
 /// three to a row, the strip, AGAIN | DONE. Stopped, it says so and shows
 /// only the blocks that were completed.
-class SessionEndView extends StatelessWidget {
+class SessionEndView extends StatefulWidget {
   const SessionEndView({
     required this.run,
     required this.onAgain,
@@ -64,25 +65,62 @@ class SessionEndView extends StatelessWidget {
   final VoidCallback onAgain;
   final VoidCallback onDone;
 
+  /// AGAIN and DONE ignore taps this long after the screen appears, so
+  /// the second tap of a double tap on the last SET DONE never restarts
+  /// the session or leaves before the results are seen.
+  static const tapGuard = Duration(milliseconds: 700);
+
+  @override
+  State<SessionEndView> createState() => _SessionEndViewState();
+
   /// The session's own colour: its hero and AGAIN.
   static const Color accent = AppColors.primary;
 
+  static const double _rowGap = 8;
+  static const int perRow = 3;
+}
+
+class _SessionEndViewState extends State<SessionEndView> {
+  /// Started as the screen appears (not on first use).
+  late final Timer _guard;
+
+  @override
+  void initState() {
+    super.initState();
+    _guard = Timer(SessionEndView.tapGuard, () {});
+  }
+
+  WodRun get run => widget.run;
+
+  static const Color accent = SessionEndView.accent;
   static const double _topPad = 28;
   static const double _heroGap = 36;
   static const double _tilesGap = 28;
-  static const double _rowGap = 8;
-  static const int perRow = 3;
 
   List<BlockResult> get _results => [
     for (final outcome in run.outcomes) ?BlockResult.of(outcome),
   ];
 
   @override
+  void dispose() {
+    _guard.cancel();
+    super.dispose();
+  }
+
+  void _onAgain() {
+    if (!_guard.isActive) widget.onAgain();
+  }
+
+  void _onDone() {
+    if (!_guard.isActive) widget.onDone();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) onDone();
+        if (!didPop) widget.onDone();
       },
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
@@ -124,10 +162,11 @@ class SessionEndView extends StatelessWidget {
     final unit = GlyphInk.resolve(context, LiveStyles.unit(16));
     final time = setupClock(run.totalMs ~/ 1000);
     final results = _results;
-    final rows = (results.length / perRow).ceil();
+    final rows = (results.length / SessionEndView.perRow).ceil();
     final tilesHeight = rows == 0
         ? 0.0
-        : rows * EndFactTiles.heightOf(context) + (rows - 1) * _rowGap;
+        : rows * EndFactTiles.heightOf(context) +
+              (rows - 1) * SessionEndView._rowGap;
     const stripZone = LiveFrame.timelineHeight + 2 * 24;
     final topPad = landscape ? 16.0 : _topPad;
     final header =
@@ -222,14 +261,14 @@ class SessionEndView extends StatelessWidget {
           label: 'AGAIN',
           background: accent,
           foreground: Colors.black,
-          onTap: onAgain,
+          onTap: _onAgain,
           semanticsLabel: 'Run the same session again',
         ),
         SlabCell(
           label: 'DONE',
           background: AppColors.soft,
           foreground: Colors.white,
-          onTap: onDone,
+          onTap: _onDone,
           semanticsLabel: 'Done, back to Home',
         ),
       ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
@@ -60,6 +61,16 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// while paused).
   bool _showHoldHint = false;
 
+  /// AGAIN and DONE ignore taps this long after the end screen appears
+  /// (2.6.0), so the second tap of a double tap on FINISH never restarts
+  /// the workout or leaves before the result is seen.
+  static const endGuard = Duration(milliseconds: 700);
+
+  /// Running while the end screen is new; null when it is not shown.
+  Timer? _endGuard;
+
+  bool get _endSettling => _endGuard?.isActive ?? false;
+
   // Fixed slots (layout rule 1), in logical points before TabletScale.
   static const double _timelineHeight = LiveFrame.timelineHeight;
 
@@ -83,6 +94,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
   @override
   void dispose() {
+    _endGuard?.cancel();
     _pausedPulse.dispose();
     if (widget.session == null) {
       WakelockPlus.disable();
@@ -204,12 +216,19 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   Future<void> _onAgain() async {
+    if (_endSettling) return;
     await ref.read(timerNotifierProvider.notifier).restart();
   }
 
   /// DONE lands on this mode's setup with the workout just run loaded, so
   /// fixing one number and going again is DONE, wheel, START.
   void _onDone() => _goToSetup();
+
+  /// The DONE cell (the back gesture goes straight to [_onDone]).
+  void _onDoneTap() {
+    if (_endSettling) return;
+    _onDone();
+  }
 
   // ===================================================================
   // Build
@@ -230,6 +249,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           ..stop()
           ..value = _pausedPulse.upperBound;
       }
+    }
+
+    // The end screen's tap guard starts when it appears.
+    if (timerState is TimerCompleted && widget.session == null) {
+      _endGuard ??= Timer(endGuard, () {});
+    } else if (_endGuard != null) {
+      _endGuard!.cancel();
+      _endGuard = null;
     }
 
     // Show placeholder when timer is not configured yet
@@ -909,7 +936,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                     label: 'DONE',
                     background: AppColors.soft,
                     foreground: Colors.white,
-                    onTap: _onDone,
+                    onTap: _onDoneTap,
                     semanticsLabel: 'Done, back to setup',
                   ),
                 ],
@@ -1024,7 +1051,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           label: 'DONE',
           background: AppColors.soft,
           foreground: Colors.white,
-          onTap: _onDone,
+          onTap: _onDoneTap,
           semanticsLabel: 'Done, back to setup',
         ),
       ],

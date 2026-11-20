@@ -272,6 +272,8 @@ class TodaysWodController extends Notifier<WodRun?> {
   Future<void> again() async {
     final run = state;
     if (run == null || !run.isFinished) return;
+    // The end screen is new: a second tap of a double tap, not AGAIN.
+    if (_settling) return;
     await start(run.session);
   }
 
