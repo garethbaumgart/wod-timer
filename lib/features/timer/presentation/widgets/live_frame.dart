@@ -125,6 +125,10 @@ abstract class LiveSessionFrame {
   (String, Color) get gettingReadyFor;
 
   void stop();
+
+  /// The back gesture on the get-ready: never ends the session (only the
+  /// very first get-ready goes back to the builder).
+  void back();
 }
 
 /// The phase-word style at the largest size up to [size] at which [text]

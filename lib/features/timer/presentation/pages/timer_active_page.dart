@@ -164,6 +164,19 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// The back gesture / Android back never leaves a live workout silently.
   void _onPopAttempt() {
     final state = ref.read(timerNotifierProvider);
+    // In a session the back gesture never ends it: on a get-ready the
+    // session decides, paused it hints at HOLD TO STOP, otherwise nothing.
+    if (widget.session case final session?) {
+      switch (state) {
+        case TimerPreparing():
+          session.back();
+        case TimerPaused():
+          _flashHoldHint();
+        default:
+          break;
+      }
+      return;
+    }
     switch (state) {
       case TimerPreparing():
         _onStopConfirmed();

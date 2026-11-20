@@ -174,6 +174,16 @@ class _SessionActivePageState extends ConsumerState<SessionActivePage> {
     _controller.stop();
   }
 
+  /// Back (Android, the iOS edge swipe) never ends a session: only before
+  /// anything has happened does it go back to the builder, as HOLD TO STOP
+  /// does there.
+  void _back() {
+    if (!_controller.nothingDoneYet) return;
+    _leaving = true;
+    _controller.exit();
+    context.go(AppRoutes.todaysWod);
+  }
+
   void _done() {
     _leaving = true;
     _controller.exit();
@@ -207,23 +217,29 @@ class _SessionActivePageState extends ConsumerState<SessionActivePage> {
       return TimerActivePage(
         key: ValueKey('timer-${run.index}'),
         timerType: run.block.kind.code,
-        session: _TimerBlockFrame(run: run, onStop: _stop),
+        session: _TimerBlockFrame(run: run, onStop: _stop, onBack: _back),
       );
     }
     return SessionPhaseView(
       key: ValueKey('phase-${run.index}'),
       run: run,
       onStop: _stop,
+      onBack: _back,
     );
   }
 }
 
 /// What a timer block's live screen shows of the session.
 class _TimerBlockFrame implements LiveSessionFrame {
-  const _TimerBlockFrame({required this.run, required this.onStop});
+  const _TimerBlockFrame({
+    required this.run,
+    required this.onStop,
+    required this.onBack,
+  });
 
   final WodRun run;
   final VoidCallback onStop;
+  final VoidCallback onBack;
 
   @override
   LiveHeader header(TimerNotifierState state) => SessionHeader(
@@ -238,6 +254,9 @@ class _TimerBlockFrame implements LiveSessionFrame {
 
   @override
   void stop() => onStop();
+
+  @override
+  void back() => onBack();
 }
 
 /// A Sets block's get-ready, a set, the rest after it, or a Rest block, in
@@ -245,10 +264,18 @@ class _TimerBlockFrame implements LiveSessionFrame {
 /// block's longest value sets, one second line, the block's timeline, the
 /// slab. Tap above the slab to skip a get-ready or a rest, or to resume.
 class SessionPhaseView extends ConsumerStatefulWidget {
-  const SessionPhaseView({required this.run, required this.onStop, super.key});
+  const SessionPhaseView({
+    required this.run,
+    required this.onStop,
+    required this.onBack,
+    super.key,
+  });
 
   final WodRun run;
   final VoidCallback onStop;
+
+  /// The back gesture (see the session page): never ends the session.
+  final VoidCallback onBack;
 
   @override
   ConsumerState<SessionPhaseView> createState() => _SessionPhaseViewState();
@@ -302,7 +329,7 @@ class _SessionPhaseViewState extends ConsumerState<SessionPhaseView>
 
   void _onPopAttempt() {
     if (run.phase == WodPhase.getReady) {
-      widget.onStop();
+      widget.onBack();
     } else if (run.paused) {
       _flashHoldHint();
     }
