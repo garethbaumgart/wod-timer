@@ -177,18 +177,36 @@ void main() {
       });
     });
 
-    test('a timer block remembers through setup memory without moving the '
-        'tablet hero', () async {
+    test('golden fixture: remembering every kind of block leaves the four '
+        "setup screens' memory exactly as it was", () async {
       final (prefs, store) = await storeWith(_v252Prefs);
-      await store.rememberBlock(
-        const EmomBlock(intervalSeconds: 30, rounds: 20),
+      for (final block in everyKind.blocks) {
+        await store.rememberBlock(block);
+      }
+      await prefs.reload();
+      for (final entry in _v252Prefs.entries) {
+        expect(prefs.get(entry.key), entry.value, reason: entry.key);
+      }
+      final memory = SetupMemory(prefs);
+      expect(memory.amrap, const AmrapSetup(durationSeconds: 720));
+      expect(
+        memory.forTime,
+        const ForTimeSetup(capSeconds: 900, countUp: false),
       );
-      expect(prefs.getInt(SetupMemory.emomIntervalKey), 30);
-      expect(prefs.getInt(SetupMemory.emomRoundsKey), 20);
-      expect(prefs.getString(SetupMemory.lastModeKey), 'tabata');
+      expect(memory.emom, const EmomSetup(intervalSeconds: 90, rounds: 12));
+      expect(memory.lastMode, 'tabata');
+      // Each kind's own last values feed the add sheet.
+      for (final block in everyKind.blocks) {
+        expect(store.lastBlockOf(block.kind), block);
+      }
+    });
+
+    test("a timer kind never remembered yet offers its setup screen's last "
+        'values', () async {
+      final (_, store) = await storeWith(_v252Prefs);
       expect(
         store.lastBlockOf(BlockKind.emom),
-        const EmomBlock(intervalSeconds: 30, rounds: 20),
+        const EmomBlock(intervalSeconds: 90, rounds: 12),
       );
     });
 

@@ -12,8 +12,8 @@ import 'package:wod_timer/features/timer/presentation/widgets/setup_scaffold.dar
 
 /// "+ THEN" on a setup screen (2.6.0): a new Today's WOD whose first block
 /// is [first], the values on screen, in the builder with the add sheet up.
-/// The values are remembered as that mode's last, as START would, without
-/// making it the tablet's last mode started.
+/// The values are remembered as that kind's last block, never as the
+/// setup screen's own (only its START writes those).
 SetupCapsule thenCapsule({
   required BuildContext context,
   required WidgetRef ref,

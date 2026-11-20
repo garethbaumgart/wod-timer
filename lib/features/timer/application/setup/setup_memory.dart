@@ -62,35 +62,27 @@ class SetupMemory {
     }
   }
 
-  /// [markLastMode] false keeps the tablet hero where it is: Today's WOD
-  /// (2.6.0) remembers a timer block's values here without making that
-  /// mode the last one started on its own.
-  Future<void> saveAmrap(AmrapSetup setup, {bool markLastMode = true}) =>
-      _write({
-        amrapDurationKey: setup.durationSeconds,
-        if (markLastMode) lastModeKey: 'amrap',
-      });
+  Future<void> saveAmrap(AmrapSetup setup) =>
+      _write({amrapDurationKey: setup.durationSeconds, lastModeKey: 'amrap'});
 
-  Future<void> saveForTime(ForTimeSetup setup, {bool markLastMode = true}) =>
-      _write({
-        forTimeCapKey: setup.capSeconds,
-        forTimeCountUpKey: setup.countUp,
-        if (markLastMode) lastModeKey: 'fortime',
-      });
-
-  Future<void> saveEmom(EmomSetup setup, {bool markLastMode = true}) => _write({
-    emomIntervalKey: setup.intervalSeconds,
-    emomRoundsKey: setup.rounds,
-    if (markLastMode) lastModeKey: 'emom',
+  Future<void> saveForTime(ForTimeSetup setup) => _write({
+    forTimeCapKey: setup.capSeconds,
+    forTimeCountUpKey: setup.countUp,
+    lastModeKey: 'fortime',
   });
 
-  Future<void> saveTabata(TabataSetup setup, {bool markLastMode = true}) =>
-      _write({
-        tabataWorkKey: setup.workSeconds,
-        tabataRestKey: setup.restSeconds,
-        tabataRoundsKey: setup.rounds,
-        if (markLastMode) lastModeKey: 'tabata',
-      });
+  Future<void> saveEmom(EmomSetup setup) => _write({
+    emomIntervalKey: setup.intervalSeconds,
+    emomRoundsKey: setup.rounds,
+    lastModeKey: 'emom',
+  });
+
+  Future<void> saveTabata(TabataSetup setup) => _write({
+    tabataWorkKey: setup.workSeconds,
+    tabataRestKey: setup.restSeconds,
+    tabataRoundsKey: setup.rounds,
+    lastModeKey: 'tabata',
+  });
 
   int _readInt(String key, SetupRange range) {
     try {

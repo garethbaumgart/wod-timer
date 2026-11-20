@@ -131,8 +131,9 @@ abstract class SessionCodec {
 /// repeat it, and each block kind's last values for the add sheet. No
 /// history: nothing else is kept.
 ///
-/// New additive keys only. The four timers' last values are setup memory's
-/// own keys, written without moving the tablet hero. A session this build
+/// New additive keys only; the four setup screens' memory is only ever
+/// read here (a timer never used as a block offers what its setup screen
+/// remembers), never written. A session this build
 /// cannot read reads as none and its key is left exactly as found until
 /// the next session is started.
 class SessionStore {
@@ -164,24 +165,64 @@ class SessionStore {
     }
   }
 
-  /// The block the add sheet offers for [kind]: what that kind was set to
-  /// last, on its own setup screen or in a session.
+  /// A timer block's own last values (2.6.0): editing a block never
+  /// touches what that timer's setup screen remembers.
+  static const amrapDurationKey = 'wod_block_amrap_duration_s';
+  static const forTimeCapKey = 'wod_block_fortime_cap_s';
+  static const forTimeCountUpKey = 'wod_block_fortime_count_up';
+  static const emomIntervalKey = 'wod_block_emom_interval_s';
+  static const emomRoundsKey = 'wod_block_emom_rounds';
+  static const tabataWorkKey = 'wod_block_tabata_work_s';
+  static const tabataRestKey = 'wod_block_tabata_rest_s';
+  static const tabataRoundsKey = 'wod_block_tabata_rounds';
+
+  /// The block the add sheet offers for [kind]: what a block of that kind
+  /// was set to last, or, for a timer never used as a block yet, what its
+  /// setup screen remembers (read only).
   SessionBlock lastBlockOf(BlockKind kind) => switch (kind) {
     BlockKind.forTime => ForTimeBlock(
-      capSeconds: _memory.forTime.capSeconds,
-      countUp: _memory.forTime.countUp,
+      capSeconds: _readInt(
+        forTimeCapKey,
+        SetupRanges.forTimeCap,
+        fallback: _memory.forTime.capSeconds,
+      ),
+      countUp: _readBool(forTimeCountUpKey, fallback: _memory.forTime.countUp),
     ),
     BlockKind.emom => EmomBlock(
-      intervalSeconds: _memory.emom.intervalSeconds,
-      rounds: _memory.emom.rounds,
+      intervalSeconds: _readInt(
+        emomIntervalKey,
+        SetupRanges.emomInterval,
+        fallback: _memory.emom.intervalSeconds,
+      ),
+      rounds: _readInt(
+        emomRoundsKey,
+        SetupRanges.emomRounds,
+        fallback: _memory.emom.rounds,
+      ),
     ),
     BlockKind.amrap => AmrapBlock(
-      durationSeconds: _memory.amrap.durationSeconds,
+      durationSeconds: _readInt(
+        amrapDurationKey,
+        SetupRanges.amrapDuration,
+        fallback: _memory.amrap.durationSeconds,
+      ),
     ),
     BlockKind.tabata => TabataBlock(
-      workSeconds: _memory.tabata.workSeconds,
-      restSeconds: _memory.tabata.restSeconds,
-      rounds: _memory.tabata.rounds,
+      workSeconds: _readInt(
+        tabataWorkKey,
+        SetupRanges.tabataWork,
+        fallback: _memory.tabata.workSeconds,
+      ),
+      restSeconds: _readInt(
+        tabataRestKey,
+        SetupRanges.tabataRest,
+        fallback: _memory.tabata.restSeconds,
+      ),
+      rounds: _readInt(
+        tabataRoundsKey,
+        SetupRanges.tabataRounds,
+        fallback: _memory.tabata.rounds,
+      ),
     ),
     BlockKind.rest => RestBlock(seconds: _readInt(restKey, SessionRanges.rest)),
     BlockKind.sets => SetsBlock(
@@ -190,51 +231,63 @@ class SessionStore {
     ),
   };
 
-  /// Remembers [block]'s values as its kind's last.
+  /// Remembers [block]'s values as its kind's last, under the block's own
+  /// keys only.
   Future<void> rememberBlock(SessionBlock block) async {
+    final values = <String, Object>{
+      ...switch (block) {
+        ForTimeBlock(:final capSeconds, :final countUp) => {
+          forTimeCapKey: capSeconds,
+          forTimeCountUpKey: countUp,
+        },
+        EmomBlock(:final intervalSeconds, :final rounds) => {
+          emomIntervalKey: intervalSeconds,
+          emomRoundsKey: rounds,
+        },
+        AmrapBlock(:final durationSeconds) => {
+          amrapDurationKey: durationSeconds,
+        },
+        TabataBlock(:final workSeconds, :final restSeconds, :final rounds) => {
+          tabataWorkKey: workSeconds,
+          tabataRestKey: restSeconds,
+          tabataRoundsKey: rounds,
+        },
+        RestBlock(:final seconds) => {restKey: seconds},
+        SetsBlock(:final sets, :final restSeconds) => {
+          setsKey: sets,
+          setsRestKey: restSeconds,
+        },
+      },
+    };
     try {
-      switch (block) {
-        case ForTimeBlock(:final capSeconds, :final countUp):
-          await _memory.saveForTime(
-            ForTimeSetup(capSeconds: capSeconds, countUp: countUp),
-            markLastMode: false,
-          );
-        case EmomBlock(:final intervalSeconds, :final rounds):
-          await _memory.saveEmom(
-            EmomSetup(intervalSeconds: intervalSeconds, rounds: rounds),
-            markLastMode: false,
-          );
-        case AmrapBlock(:final durationSeconds):
-          await _memory.saveAmrap(
-            AmrapSetup(durationSeconds: durationSeconds),
-            markLastMode: false,
-          );
-        case TabataBlock(:final workSeconds, :final restSeconds, :final rounds):
-          await _memory.saveTabata(
-            TabataSetup(
-              workSeconds: workSeconds,
-              restSeconds: restSeconds,
-              rounds: rounds,
-            ),
-            markLastMode: false,
-          );
-        case RestBlock(:final seconds):
-          await _prefs.setInt(restKey, seconds);
-        case SetsBlock(:final sets, :final restSeconds):
-          await _prefs.setInt(setsKey, sets);
-          await _prefs.setInt(setsRestKey, restSeconds);
+      for (final MapEntry(:key, :value) in values.entries) {
+        switch (value) {
+          case final int v:
+            await _prefs.setInt(key, v);
+          case final bool v:
+            await _prefs.setBool(key, v);
+        }
       }
     } on Object {
       // Remembering is a convenience; never block a workout on it.
     }
   }
 
-  int _readInt(String key, SetupRange range) {
+  bool _readBool(String key, {required bool fallback}) {
+    try {
+      return _prefs.getBool(key) ?? fallback;
+    } on Object {
+      return fallback;
+    }
+  }
+
+  int _readInt(String key, SetupRange range, {int? fallback}) {
+    final otherwise = fallback ?? range.fallback;
     try {
       final value = _prefs.getInt(key);
-      return value == null ? range.fallback : range.normalize(value);
+      return value == null ? otherwise : range.normalize(value);
     } on Object {
-      return range.fallback;
+      return otherwise;
     }
   }
 }
