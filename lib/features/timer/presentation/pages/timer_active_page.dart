@@ -108,6 +108,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   // ===================================================================
 
   void _onPauseResume() {
+    // In a session the slab waits out a phase change (a timer on its own
+    // pauses at once, as always).
+    if (widget.session?.canTap == false) return;
     final timerNotifier = ref.read(timerNotifierProvider.notifier);
     final state = ref.read(timerNotifierProvider);
 
@@ -144,6 +147,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   void _onFinish() {
+    if (widget.session?.canTap == false) return;
     ref.read(timerNotifierProvider.notifier).finish();
   }
 
@@ -155,7 +159,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     final notifier = ref.read(timerNotifierProvider.notifier);
     final state = ref.read(timerNotifierProvider);
     if (state is TimerPreparing) {
-      if (widget.session?.canSkip == false) return;
+      if (widget.session?.canTap == false) return;
       ref.read(hapticServiceProvider).mediumImpact();
       notifier.skipPrep();
       return;

@@ -127,9 +127,9 @@ abstract class LiveSessionFrame {
   void stop();
 
   /// False for a moment after the session changed phase: a tap made on
-  /// the screen before (a double tap that skipped a Rest) must not skip
-  /// this get-ready too.
-  bool get canSkip;
+  /// the screen before (a double tap that skipped a Rest, or ended the
+  /// block before) must not skip, pause, resume or finish this one.
+  bool get canTap;
 
   /// The back gesture on the get-ready: never ends the session (only the
   /// very first get-ready goes back to the builder).

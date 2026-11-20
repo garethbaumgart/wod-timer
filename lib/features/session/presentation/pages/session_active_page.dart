@@ -236,7 +236,7 @@ class _SessionActivePageState extends ConsumerState<SessionActivePage> {
           run: run,
           onStop: _stop,
           onBack: _back,
-          canSkipNow: () => _controller.canSkip,
+          canTapNow: () => _controller.canTap,
         ),
       );
     }
@@ -255,13 +255,13 @@ class _TimerBlockFrame implements LiveSessionFrame {
     required this.run,
     required this.onStop,
     required this.onBack,
-    required this.canSkipNow,
+    required this.canTapNow,
   });
 
   final WodRun run;
   final VoidCallback onStop;
   final VoidCallback onBack;
-  final bool Function() canSkipNow;
+  final bool Function() canTapNow;
 
   @override
   LiveHeader header(TimerNotifierState state) => SessionHeader(
@@ -281,7 +281,7 @@ class _TimerBlockFrame implements LiveSessionFrame {
   void back() => onBack();
 
   @override
-  bool get canSkip => canSkipNow();
+  bool get canTap => canTapNow();
 }
 
 /// A Sets block's get-ready, a set, the rest after it, or a Rest block, in

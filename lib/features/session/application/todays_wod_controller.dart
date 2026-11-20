@@ -199,9 +199,10 @@ class TodaysWodController extends Notifier<WodRun?> {
     return at != null && clock().isBefore(at.add(actionCooldown));
   }
 
-  /// Whether a tap may skip the get-ready on screen now (a timer block's
-  /// get-ready is skipped by the timer page).
-  bool get canSkip => !_settling;
+  /// Whether a bottom-bar control or the skip tap may act now: not within
+  /// [actionCooldown] of a phase change (a timer block's own controls ask
+  /// through the timer page).
+  bool get canTap => !_settling;
 
   @override
   WodRun? build() {
@@ -364,7 +365,7 @@ class TodaysWodController extends Notifier<WodRun?> {
   /// as on a timer on its own.
   void pause() {
     final run = state;
-    if (run == null || run.paused || _blocked()) return;
+    if (run == null || run.paused || _blocked() || _settling) return;
     switch (run.phase) {
       case WodPhase.timer:
         _timer.pause();
@@ -379,7 +380,7 @@ class TodaysWodController extends Notifier<WodRun?> {
 
   void resume() {
     final run = state;
-    if (run == null || !run.paused) return;
+    if (run == null || !run.paused || _settling) return;
     if (run.phase == WodPhase.timer) {
       _timer.resume();
       return;
@@ -578,6 +579,11 @@ class TodaysWodController extends Notifier<WodRun?> {
           state = run.copyWith(paused: true);
         }
       case TimerPreparing() || TimerRunning() || TimerResting():
+        // GO, or a Tabata's work and rest: a phase change for the taps.
+        if (previous is! TimerPaused &&
+            previous.runtimeType != next.runtimeType) {
+          _phaseChangedAt = clock();
+        }
         if (run.paused) {
           _engine.resume();
           state = run.copyWith(paused: false);
