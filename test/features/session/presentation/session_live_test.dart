@@ -7,6 +7,7 @@ import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/features/session/application/todays_wod_controller.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
 import 'package:wod_timer/features/session/presentation/widgets/session_widgets.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/end_fact_tiles.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/hold_to_stop_cell.dart';
 
 import '../../../helpers/app_harness.dart';
@@ -187,5 +188,73 @@ void main() {
     await holdStop(tester);
     expect(app.router.state.uri.path, AppRoutes.todaysWod);
     expect(app.container.read(todaysWodProvider), isNull);
+  });
+
+  group('the end screen', () {
+    testWidgets('finished: the time, a tile per scored block, the strip, '
+        'AGAIN | DONE', (tester) async {
+      await startSession(
+        tester,
+        blocks: const [
+          SetsBlock(sets: 1, restSeconds: 60),
+          RestBlock(seconds: 15),
+          ForTimeBlock(capSeconds: 120, countUp: true),
+          EmomBlock(intervalSeconds: 15, rounds: 2),
+          AmrapBlock(durationSeconds: 60),
+        ],
+      );
+      await app.advance(tester, 10);
+      await setDone(tester);
+      await app.advance(tester, 15);
+      await app.advance(tester, 30);
+      app.later();
+      await tester.tap(find.text('FINISH'));
+      await tester.pumpAndSettle();
+      await app.advance(tester, 41);
+      await app.advance(tester, 71);
+      await tester.pumpAndSettle();
+      expect(run().isFinished, isTrue);
+      expect(find.text('Finished'), findsOneWidget);
+      expect(find.text("TODAY'S WOD  ·  5 BLOCKS"), findsOneWidget);
+      expect(find.text('TIME'), findsOneWidget);
+      expect(find.text('AGAIN'), findsOneWidget);
+      expect(find.text('DONE'), findsOneWidget);
+      expect(find.text('0:20'), findsOneWidget, reason: 'FOR TIME result');
+      expect(find.byType(SessionStrip), findsOneWidget);
+      // SETS, FOR TIME, EMOM, AMRAP: two rows, the rest has none.
+      expect(find.text('2'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('AGAIN'));
+      await tester.pumpAndSettle();
+      expect(run().isFinished, isFalse);
+      expect(find.text('GET READY'), findsOneWidget);
+    });
+
+    testWidgets('stopped: says so, shows only what was completed; DONE goes '
+        'Home', (tester) async {
+      await startSession(
+        tester,
+        blocks: const [
+          SetsBlock(sets: 1, restSeconds: 60),
+          AmrapBlock(durationSeconds: 600),
+        ],
+      );
+      await app.advance(tester, 10);
+      await setDone(tester);
+      await app.advance(tester, 20);
+      app.later();
+      await tester.tap(find.text('PAUSE'));
+      await tester.pump();
+      await holdStop(tester);
+      expect(find.text('Stopped'), findsOneWidget);
+      expect(find.byType(EndFactTiles), findsNothing);
+      expect(find.text('SETS'), findsOneWidget);
+      expect(find.textContaining('AMRAP', findRichText: true), findsNothing);
+      await tester.tap(find.text('DONE'));
+      await tester.pumpAndSettle();
+      expect(app.router.state.uri.path, AppRoutes.home);
+      expect(app.container.read(todaysWodProvider), isNull);
+    });
   });
 }

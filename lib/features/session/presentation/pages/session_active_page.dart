@@ -10,6 +10,7 @@ import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
 import 'package:wod_timer/features/session/application/todays_wod_controller.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
 import 'package:wod_timer/features/session/presentation/block_style.dart';
+import 'package:wod_timer/features/session/presentation/widgets/session_end_view.dart';
 import 'package:wod_timer/features/session/presentation/widgets/session_widgets.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_state.dart';
@@ -192,12 +193,10 @@ class _SessionActivePageState extends ConsumerState<SessionActivePage> {
       return const Scaffold(backgroundColor: AppColors.backgroundDark);
     }
     if (run.isFinished) {
-      // The session's end screen comes in P6.
-      return Scaffold(
-        backgroundColor: AppColors.backgroundDark,
-        body: Center(
-          child: TextButton(onPressed: _done, child: const Text('DONE')),
-        ),
+      return SessionEndView(
+        run: run,
+        onAgain: _controller.again,
+        onDone: _done,
       );
     }
     if (run.phase == WodPhase.timer) {
