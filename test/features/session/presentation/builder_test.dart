@@ -122,7 +122,12 @@ void main() {
       await pumpBuilder(tester);
       await tester.tap(find.text('10 × 1:00'));
       await tester.pumpAndSettle();
-      expect(app.router.state.uri.path, AppRoutes.todaysWodBlockPath(2));
+      expect(
+        app.router.state.uri.path,
+        AppRoutes.todaysWodBlockPath(
+          app.container.read(sessionDraftProvider)[2].id,
+        ),
+      );
       expect(find.text('EMOM'), findsOneWidget);
       expect(find.text('DONE'), findsOneWidget);
       expect(find.text('REMOVE BLOCK'), findsOneWidget);

@@ -31,6 +31,11 @@ class DraftBlock {
 class SessionDraft extends Notifier<List<DraftBlock>> {
   int _nextId = 0;
 
+  /// Bumped by [open]: an UNDO from an earlier session never lands in a
+  /// new one.
+  int _generation = 0;
+  int get generation => _generation;
+
   @override
   List<DraftBlock> build() => const [];
 
@@ -44,6 +49,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
   /// Opens the builder on [blocks], noting where from.
   void open(List<SessionBlock> blocks, BuilderSource source) {
     _removed = null;
+    _generation++;
     state = List.unmodifiable([
       for (final block in blocks.take(WodSession.maxBlocks)) _entry(block),
     ]);
@@ -57,11 +63,21 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     state = List.unmodifiable([...state, _entry(block)]);
   }
 
-  void replace(int index, SessionBlock block) {
-    if (index < 0 || index >= state.length) return;
-    state = List.unmodifiable(
-      [...state]..[index] = DraftBlock(state[index].id, block),
-    );
+  /// Where the block with [id] is now, or -1 when it has gone. Edits,
+  /// removals and undos go by a block's id, never by a position that a
+  /// reorder, an undo or a removal elsewhere may have moved.
+  int indexOfId(int id) => state.indexWhere((e) => e.id == id);
+
+  DraftBlock? entryOf(int id) {
+    final i = indexOfId(id);
+    return i < 0 ? null : state[i];
+  }
+
+  /// Gives the block with [id] new values; nothing if it has gone.
+  void replaceById(int id, SessionBlock block) {
+    final index = indexOfId(id);
+    if (index < 0) return;
+    state = List.unmodifiable([...state]..[index] = DraftBlock(id, block));
   }
 
   /// Removes the block at [index] and returns it, for an undo.
@@ -71,6 +87,13 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     final removed = next.removeAt(index);
     state = List.unmodifiable(next);
     return removed;
+  }
+
+  /// Removes the block with [id]; returns where it was and the block.
+  ({int index, DraftBlock entry})? removeById(int id) {
+    final index = indexOfId(id);
+    final removed = removeAt(index);
+    return removed == null ? null : (index: index, entry: removed);
   }
 
   /// A block removed from its edit screen, for the builder to offer back
@@ -86,9 +109,11 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     return removed;
   }
 
-  /// Puts a removed block back (UNDO).
-  void restore(int index, DraftBlock entry) {
-    if (isFull) return;
+  /// Puts a removed block back (UNDO) near where it was: never twice,
+  /// never into a session opened since ([generation]), never past twelve.
+  void restore(int index, DraftBlock entry, {required int generation}) {
+    if (generation != _generation || isFull) return;
+    if (indexOfId(entry.id) >= 0) return;
     final at = index.clamp(0, state.length);
     state = List.unmodifiable([...state]..insert(at, entry));
   }

@@ -140,7 +140,7 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
               child: _BlockList(
                 entries: entries,
                 onEdit: (index) =>
-                    context.go(AppRoutes.todaysWodBlockPath(index)),
+                    context.go(AppRoutes.todaysWodBlockPath(entries[index].id)),
                 onRemove: _remove,
               ),
             ),

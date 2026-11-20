@@ -68,7 +68,7 @@ GoRouter appRouter(Ref ref) {
         path: AppRoutes.todaysWodBlock,
         name: 'todaysWodBlock',
         builder: (context, state) => BlockEditPage(
-          index: int.tryParse(state.pathParameters['index'] ?? '') ?? -1,
+          id: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
         ),
       ),
       GoRoute(

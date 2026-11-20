@@ -15,16 +15,17 @@ abstract class AppRoutes {
   static const String settings = '/settings';
 
   /// Today's WOD (2.6.0): the builder, a block's edit screen (path
-  /// parameter `index`), and the live session with its end screen.
+  /// parameter `id`), and the live session with its end screen.
   static const String todaysWod = '/wod';
-  static const String todaysWodBlock = '/wod/block/:index';
+  static const String todaysWodBlock = '/wod/block/:id';
   static const String todaysWodActive = '/wod/active';
 
   /// The builder; [addBlock] opens it with the add sheet up.
   static String todaysWodPath({bool addBlock = false}) =>
       addBlock ? '$todaysWod?add=1' : todaysWod;
 
-  static String todaysWodBlockPath(int index) => '/wod/block/$index';
+  /// A block's edit screen, by its builder id.
+  static String todaysWodBlockPath(int id) => '/wod/block/$id';
 
   /// Helper to generate timer setup path.
   static String timerSetupPath(String timerType) => '/timer/$timerType';

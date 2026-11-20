@@ -48,6 +48,7 @@ void showBlockRemoved(
   int index,
   DraftBlock removed,
 ) {
+  final generation = draft.generation;
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -59,45 +60,47 @@ void showBlockRemoved(
         action: SnackBarAction(
           label: 'UNDO',
           textColor: AppColors.primary,
-          onPressed: () => draft.restore(index, removed),
+          onPressed: () =>
+              draft.restore(index, removed, generation: generation),
         ),
       ),
     );
 }
 
-/// The edit screen for block [index] of the builder's session: the same
-/// wheels its setup screen uses (a Rest one duration wheel, Sets a count
-/// and a rest wheel).
+/// The edit screen for the builder's block [id]: the same wheels its setup
+/// screen uses (a Rest one duration wheel, Sets a count and a rest wheel).
+/// It goes by the block's id, so an undo or a reorder in the meantime can
+/// never make DONE write over another block.
 class BlockEditPage extends ConsumerWidget {
-  const BlockEditPage({required this.index, super.key});
+  const BlockEditPage({required this.id, super.key});
 
-  final int index;
+  final int id;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final entries = ref.read(sessionDraftProvider);
-    if (index < 0 || index >= entries.length) {
+    final draft = ref.read(sessionDraftProvider.notifier);
+    final entry = draft.entryOf(id);
+    if (entry == null) {
       // A stale link (the block went): back to the builder.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go(AppRoutes.todaysWod);
       });
       return const Scaffold(backgroundColor: AppColors.backgroundDark);
     }
-    final draft = ref.read(sessionDraftProvider.notifier);
     void back() => context.go(AppRoutes.todaysWod);
     final edit = BlockEdit(
-      block: entries[index].block,
+      block: entry.block,
       onCancel: back,
       onDone: (block) {
-        draft.replace(index, block);
+        draft.replaceById(id, block);
         unawaited(ref.read(sessionStoreProvider).rememberBlock(block));
         back();
       },
       onRemove: () {
         ref.read(hapticServiceProvider).mediumImpact();
-        final removed = draft.removeAt(index);
+        final removed = draft.removeById(id);
         // The builder offers it back (UNDO) when it opens.
-        if (removed != null) draft.noteRemoved(index, removed);
+        if (removed != null) draft.noteRemoved(removed.index, removed.entry);
         back();
       },
     );
