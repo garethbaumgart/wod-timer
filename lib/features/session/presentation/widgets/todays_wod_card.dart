@@ -36,6 +36,9 @@ class TodaysWodCard extends ConsumerWidget {
   /// the summary's, and the summary's baseline to the strip (measured on
   /// the 3x capture of the approved mock).
   static const double _labelToSummary = 6.5;
+
+  /// "TODAY'S WOD" to the note beside it.
+  static const double _labelToNote = 10;
   static const double _summaryToStrip = 12.5;
 
   static TextStyle get _label => AppTypography.labelSmall.copyWith(
@@ -188,10 +191,18 @@ class TodaysWodCard extends ConsumerWidget {
                     child: DefaultTextStyle.merge(style: _label, child: label),
                   );
                 }
+                // The label fits but the gap before the note does not
+                // (an iPhone 16 held sideways, 2.6.1): the label alone.
+                if (labelWidth + _labelToNote > constraints.maxWidth) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text("TODAY'S WOD", maxLines: 1, style: _label),
+                  );
+                }
                 return Row(
                   children: [
                     Text("TODAY'S WOD", maxLines: 1, style: _label),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: _labelToNote),
                     Expanded(
                       child: note == null
                           ? const SizedBox.shrink()
@@ -206,6 +217,34 @@ class TodaysWodCard extends ConsumerWidget {
           _NewChip(height: _chipHeight * scale, onTap: onNew),
         ],
       ),
+    );
+  }
+
+  /// The smallest the repeat line is ever drawn, in points (2.6.1): where
+  /// every name would be smaller, the last ones give way to "+N".
+  static const double minSummarySize = 13;
+
+  /// The repeat line naming [shown] of the [named] blocks, then "+N" for
+  /// the rest. A session of rests only still says what it is.
+  static TextSpan repeatSpan(List<SessionBlock> named, int shown) {
+    final hidden = named.length - shown;
+    return TextSpan(
+      style: _summary,
+      children: [
+        for (final (i, block) in named.take(shown).indexed) ...[
+          if (i > 0) const TextSpan(text: '  ·  '),
+          TextSpan(
+            text: block.summary,
+            style: TextStyle(color: block.kind.textColor),
+          ),
+        ],
+        if (hidden > 0) TextSpan(text: '  ·  +$hidden'),
+        if (named.isEmpty)
+          TextSpan(
+            text: 'Rest',
+            style: TextStyle(color: BlockKind.rest.textColor),
+          ),
+      ],
     );
   }
 
@@ -228,34 +267,45 @@ class TodaysWodCard extends ConsumerWidget {
         ),
         const SizedBox(width: 4),
         Expanded(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  for (final (i, block) in named.indexed) ...[
-                    if (i > 0) const TextSpan(text: '  ·  '),
-                    TextSpan(
-                      text: block.summary,
-                      style: TextStyle(color: block.kind.textColor),
-                    ),
-                  ],
-                  // A session of rests only still says what it is.
-                  if (named.isEmpty)
-                    TextSpan(
-                      text: 'Rest',
-                      style: TextStyle(color: BlockKind.rest.textColor),
-                    ),
-                ],
-              ),
-              maxLines: 1,
-              style: _summary,
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final scaler = MediaQuery.textScalerOf(context);
+              final style = GlyphInk.resolve(context, _summary);
+              // Wider than this at full size would draw it smaller than
+              // [minSummarySize].
+              final widest =
+                  constraints.maxWidth * style.fontSize! / minSummarySize;
+              var shown = named.length;
+              while (shown > 1 &&
+                  _width(repeatSpan(named, shown), style, scaler) > widest) {
+                shown--;
+              }
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text.rich(
+                  repeatSpan(named, shown),
+                  maxLines: 1,
+                  style: _summary,
+                ),
+              );
+            },
           ),
         ),
       ],
     );
+  }
+
+  static double _width(TextSpan span, TextStyle style, TextScaler scaler) {
+    final painter = TextPainter(
+      text: TextSpan(style: style, children: [span]),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
   }
 }
 
