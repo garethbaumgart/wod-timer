@@ -27,6 +27,9 @@ class SessionBuilderPage extends ConsumerStatefulWidget {
   final bool openAddSheet;
 
   static const double rowSpacing = 8;
+
+  /// The builder caps the system text size as the session's screens do.
+  static const double maxTextScale = 1.4;
   static const double stripHeight = 12;
 
   /// The capsule under the rows, with its gap.
@@ -106,15 +109,26 @@ class _SessionBuilderPageState extends ConsumerState<SessionBuilderPage> {
     final minutes = session.aboutMinutes(
       getReadySeconds: TodaysWodController.getReadySeconds,
     );
-    return ScaffoldMessenger(
-      key: _messenger,
-      child: SetupScaffold(
-        title: "TODAY'S WOD",
-        onStart: _onStart,
-        startEnabled: session.isRunnable,
-        startSubtitle: session.isEmpty ? null : 'About $minutes min',
-        body: (context, {required landscape}) =>
-            _buildBody(context, entries, session, landscape: landscape),
+    // Large text is capped as on the session's other screens, and the
+    // title shrinks rather than fading if it still cannot fit.
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(
+        textScaler: media.textScaler.clamp(
+          maxScaleFactor: SessionBuilderPage.maxTextScale,
+        ),
+      ),
+      child: ScaffoldMessenger(
+        key: _messenger,
+        child: SetupScaffold(
+          fitTitle: true,
+          title: "TODAY'S WOD",
+          onStart: _onStart,
+          startEnabled: session.isRunnable,
+          startSubtitle: session.isEmpty ? null : 'About $minutes min',
+          body: (context, {required landscape}) =>
+              _buildBody(context, entries, session, landscape: landscape),
+        ),
       ),
     );
   }

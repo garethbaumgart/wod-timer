@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/core/presentation/widgets/glyph_ink.dart';
 import 'package:wod_timer/features/session/application/session_draft.dart';
 import 'package:wod_timer/features/session/application/session_store.dart';
 import 'package:wod_timer/features/session/application/todays_wod_controller.dart';
@@ -167,17 +168,38 @@ class TodaysWodCard extends ConsumerWidget {
       constraints: BoxConstraints(minHeight: _chipHeight * scale),
       child: Row(
         children: [
-          Text("TODAY'S WOD", maxLines: 1, style: _label),
-          const SizedBox(width: 10),
+          // The label whole with the note after it where there is room; in
+          // a narrow card (the wordmark's column held sideways) the note
+          // goes first and the label shrinks rather than overflowing.
           Expanded(
-            child: note == null
-                ? const SizedBox.shrink()
-                // At large text sizes it shrinks rather than losing words.
-                : FittedBox(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const label = Text("TODAY'S WOD", maxLines: 1);
+                final labelWidth = GlyphInk.boxWidth(
+                  "TODAY'S WOD",
+                  GlyphInk.resolve(context, _label),
+                  textScaler: MediaQuery.textScalerOf(context),
+                );
+                if (labelWidth > constraints.maxWidth) {
+                  return FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: Text(note, maxLines: 1, style: _muted),
-                  ),
+                    child: DefaultTextStyle.merge(style: _label, child: label),
+                  );
+                }
+                return Row(
+                  children: [
+                    Text("TODAY'S WOD", maxLines: 1, style: _label),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: note == null
+                          ? const SizedBox.shrink()
+                          : _Note(note, style: _muted),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           const SizedBox(width: 8),
           _NewChip(height: _chipHeight * scale, onTap: onNew),
@@ -274,6 +296,43 @@ class _NewChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "about 41 min": whole where it fits, shrunk no smaller than
+/// [minReadable] where it nearly does, and left out where it cannot be
+/// read (a narrow card held sideways at large text).
+class _Note extends StatelessWidget {
+  const _Note(this.text, {required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  /// The smallest the note is ever drawn, in points.
+  static const double minReadable = 11;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scaler = MediaQuery.textScalerOf(context);
+        final natural = GlyphInk.boxWidth(
+          text,
+          GlyphInk.resolve(context, style),
+          textScaler: scaler,
+        );
+        final label = Text(text, maxLines: 1, style: style);
+        if (natural <= constraints.maxWidth) return label;
+        final shown =
+            scaler.scale(style.fontSize!) * constraints.maxWidth / natural;
+        if (shown < minReadable) return const SizedBox.shrink();
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: label,
+        );
+      },
     );
   }
 }

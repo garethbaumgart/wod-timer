@@ -82,6 +82,7 @@ class SetupScaffold extends StatefulWidget {
     this.startEnabled = true,
     this.capsule,
     this.onBack,
+    this.fitTitle = false,
   });
 
   /// Mode name in the header ("EMOM").
@@ -108,6 +109,10 @@ class SetupScaffold extends StatefulWidget {
 
   /// Back (the chevron, the Android back button); Home when null.
   final VoidCallback? onBack;
+
+  /// Shrink a long title to fit rather than fading it (Today's WOD's
+  /// builder at large text sizes); the setup screens fade, as always.
+  final bool fitTitle;
 
   /// How long START ignores taps after the screen appears. DONE on the
   /// completion screen lands here, so the second tap of a double tap on
@@ -166,6 +171,7 @@ class _SetupScaffoldState extends State<SetupScaffold> {
                 children: [
                   _SetupHeader(
                     title: widget.title,
+                    fitTitle: widget.fitTitle,
                     verticalPadding: landscape ? 4 : 12,
                     onBack: onBack,
                     capsule: landscape ? capsule : null,
@@ -214,9 +220,11 @@ class _SetupHeader extends StatelessWidget {
     required this.onBack,
     this.verticalPadding = 12,
     this.capsule,
+    this.fitTitle = false,
   });
 
   final String title;
+  final bool fitTitle;
   final VoidCallback onBack;
 
   /// Held sideways, the capsule sits here, before the voice chip.
@@ -227,6 +235,10 @@ class _SetupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = AppTypography.sectionHeader.copyWith(
+      color: AppColors.textPrimaryDark,
+      fontSize: 24,
+    );
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
       child: Row(
@@ -254,16 +266,19 @@ class _SetupHeader extends StatelessWidget {
           // Expanded (not Flexible + Spacer, which split the free space and
           // left the chip short of the edge) so the chip sits flush right.
           Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.fade,
-              softWrap: false,
-              style: AppTypography.sectionHeader.copyWith(
-                color: AppColors.textPrimaryDark,
-                fontSize: 24,
-              ),
-            ),
+            child: fitTitle
+                ? FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(title, maxLines: 1, style: titleStyle),
+                  )
+                : Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
+                    style: titleStyle,
+                  ),
           ),
           const SizedBox(width: 12),
           if (capsule case final capsule?) ...[
