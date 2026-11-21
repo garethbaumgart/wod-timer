@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
+import 'package:wod_timer/features/session/application/session_store.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
 
 /// Where the builder was opened from, for analytics.
@@ -26,8 +29,13 @@ class DraftBlock {
 }
 
 /// The session being built (2.6.0). Lives while the app does, so leaving
-/// the builder for an edit screen and coming back keeps it; it is only
-/// stored once START saves it as the last session.
+/// the builder for an edit screen and coming back keeps it.
+///
+/// Every change she makes (add, edit, remove, undo, reorder) is also kept
+/// as the last session (2.6.1), so Home's card and the next launch show
+/// the session as she left it, START or no START. Opening the builder is
+/// not a change: "+ NEW" or "+ THEN" and straight back leaves Home's card
+/// as it was.
 class SessionDraft extends Notifier<List<DraftBlock>> {
   int _nextId = 0;
 
@@ -40,6 +48,12 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
   List<DraftBlock> build() => const [];
 
   DraftBlock _entry(SessionBlock block) => DraftBlock(_nextId++, block);
+
+  /// A change she made: the new blocks, kept as the last session.
+  void _change(List<DraftBlock> next) {
+    state = List.unmodifiable(next);
+    unawaited(ref.read(sessionStoreProvider).saveBuilt(session));
+  }
 
   /// The blocks, in order.
   List<SessionBlock> get blocks => [for (final e in state) e.block];
@@ -60,7 +74,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
 
   void add(SessionBlock block) {
     if (isFull) return;
-    state = List.unmodifiable([...state, _entry(block)]);
+    _change([...state, _entry(block)]);
   }
 
   /// Where the block with [id] is now, or -1 when it has gone. Edits,
@@ -77,7 +91,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
   void replaceById(int id, SessionBlock block) {
     final index = indexOfId(id);
     if (index < 0) return;
-    state = List.unmodifiable([...state]..[index] = DraftBlock(id, block));
+    _change([...state]..[index] = DraftBlock(id, block));
   }
 
   /// Removes the block at [index] and returns it, for an undo.
@@ -85,7 +99,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     if (index < 0 || index >= state.length) return null;
     final next = [...state];
     final removed = next.removeAt(index);
-    state = List.unmodifiable(next);
+    _change(next);
     return removed;
   }
 
@@ -115,7 +129,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     if (generation != _generation || isFull) return;
     if (indexOfId(entry.id) >= 0) return;
     final at = index.clamp(0, state.length);
-    state = List.unmodifiable([...state]..insert(at, entry));
+    _change([...state]..insert(at, entry));
   }
 
   /// Moves the block at [from] so it ends up at [to].
@@ -124,7 +138,7 @@ class SessionDraft extends Notifier<List<DraftBlock>> {
     final next = [...state];
     final entry = next.removeAt(from);
     next.insert(to.clamp(0, next.length), entry);
-    state = List.unmodifiable(next);
+    _change(next);
   }
 }
 

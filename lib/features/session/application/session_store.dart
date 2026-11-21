@@ -127,15 +127,16 @@ abstract class SessionCodec {
   }
 }
 
-/// What Today's WOD keeps (2.6.0): the last session started, so Home can
-/// repeat it, and each block kind's last values for the add sheet. No
-/// history: nothing else is kept.
+/// What Today's WOD keeps (2.6.0): the last session, so Home can repeat
+/// it, and each block kind's last values for the add sheet. No history:
+/// nothing else is kept. The last session is the one started last or, since
+/// 2.6.1, changed last in the builder ([saveBuilt]), whichever came later.
 ///
 /// New additive keys only; the four setup screens' memory is only ever
 /// read here (a timer never used as a block offers what its setup screen
 /// remembers), never written. A session this build
 /// cannot read reads as none and its key is left exactly as found until
-/// the next session is started.
+/// she starts or changes a session.
 class SessionStore {
   SessionStore(this._prefs, this._memory);
 
@@ -147,7 +148,8 @@ class SessionStore {
   static const setsKey = 'wod_block_sets';
   static const setsRestKey = 'wod_block_sets_rest_s';
 
-  /// The last session started, or null (none yet, or unreadable).
+  /// The last session started or changed, or null (none yet, or
+  /// unreadable).
   WodSession? get lastSession {
     try {
       return SessionCodec.decode(_prefs.get(lastSessionKey));
@@ -162,6 +164,19 @@ class SessionStore {
       await _prefs.setString(lastSessionKey, SessionCodec.encode(session));
     } on Object {
       // Repeating is a convenience; never block a workout on it.
+    }
+  }
+
+  /// Keeps [session] as she left it in the builder (2.6.1), so Home's card
+  /// and the next launch show what she changed, START or no START. A
+  /// session she has emptied is forgotten: Home shows its empty card.
+  Future<void> saveBuilt(WodSession session) async {
+    if (session.isRunnable) return saveLastSession(session);
+    if (!session.isEmpty) return;
+    try {
+      await _prefs.remove(lastSessionKey);
+    } on Object {
+      // As above: a convenience, never in the way.
     }
   }
 

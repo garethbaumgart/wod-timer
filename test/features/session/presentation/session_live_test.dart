@@ -175,6 +175,8 @@ void main() {
     expect(find.text('PAUSED'), findsOneWidget);
     expect(find.text('RESUME'), findsOneWidget);
     expect(find.byType(HoldToStopCell), findsOneWidget);
+    // The resume tap is a tap of its own, after the pause's cooldown.
+    app.later();
     await tester.tapAt(tester.getCenter(find.text('2:00')));
     await tester.pump();
     expect(find.text('PAUSED'), findsNothing);

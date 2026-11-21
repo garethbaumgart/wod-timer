@@ -179,9 +179,17 @@ class _SetupWheelState extends State<SetupWheel> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              widget.label.toUpperCase(),
-              style: SetupWheel.labelStyle(widget.labelColor),
+            // One line, shrunk to the column at large text (2.6.1): a
+            // label that wrapped broke mid-word ("ROUND" / "S") and pushed
+            // the wheels down past the capsule on a small phone.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                widget.label.toUpperCase(),
+                maxLines: 1,
+                softWrap: false,
+                style: SetupWheel.labelStyle(widget.labelColor),
+              ),
             ),
             const SizedBox(height: SetupWheel.labelGap),
             SizedBox(

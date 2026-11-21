@@ -41,6 +41,12 @@ class SetupCapsule {
   /// What it takes from the controls upright.
   static const double reserve = SessionCapsule.defaultHeight + gap;
 
+  /// Where even that will not fit under the wheels (the largest text on
+  /// the smallest phone, 2.6.1): a slimmer capsule closer to START.
+  static const double compactHeight = 36;
+  static const double compactGap = 8;
+  static const double compactReserve = compactHeight + compactGap;
+
   Widget build({double height = SessionCapsule.defaultHeight}) =>
       SessionCapsule(
         label: label,
@@ -446,9 +452,14 @@ class WheelsSetupBody extends StatelessWidget {
     required this.shape,
     super.key,
     this.accessory,
+    this.midTicks = true,
   });
 
   final bool landscape;
+
+  /// Ticks where the mid-round pips will sound. A Sets block has no clock
+  /// and no pips, so its screen draws none (2.6.1).
+  final bool midTicks;
 
   /// Built with the row height for the orientation.
   final List<Widget> Function(double rowHeight) wheels;
@@ -482,63 +493,165 @@ class WheelsSetupBody extends StatelessWidget {
         child: WorkoutTimeline(
           shape: shape,
           height: timelineHeight,
-          midTicks: true,
+          midTicks: midTicks,
         ),
       ),
     );
-    return Column(
+    final above = Align(
+      alignment: Alignment.bottomCenter,
+      child: accessory == null
+          ? const SizedBox.shrink()
+          // Scales down rather than overflowing a short phone.
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: landscape ? 0 : 12),
+                child: accessory,
+              ),
+            ),
+    );
+    final row = Padding(
+      padding: EdgeInsets.symmetric(horizontal: edge),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: spacing,
+        children: [
+          for (final wheel in wheels(rowHeight))
+            Flexible(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: columnWidth),
+                child: wheel,
+              ),
+            ),
+        ],
+      ),
+    );
+    // With "+ THEN" the capsule sits with START and the timeline keeps
+    // layout rule 2 against it: midway between the wheels' glyphs and the
+    // capsule. The wheels do not move.
+    final below = capsule == null
+        ? timeline
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final room = constraints.maxHeight;
+              final full = room >= SetupCapsule.reserve + timelineHeight;
+              final height = full
+                  ? SessionCapsule.defaultHeight
+                  : SetupCapsule.compactHeight;
+              final gap = full ? SetupCapsule.gap : SetupCapsule.compactGap;
+              return Column(
+                children: [
+                  Expanded(
+                    // No room left for the timeline at all: it goes, the
+                    // capsule stays.
+                    child: room - height - gap >= timelineHeight
+                        ? timeline
+                        : const SizedBox.shrink(),
+                  ),
+                  capsule.build(height: height),
+                  SizedBox(height: gap),
+                ],
+              );
+            },
+          );
+    return CustomMultiChildLayout(
+      delegate: _WheelsLayout(
+        aboveFlex: landscape ? 1 : BezelSetupBody.liftAbove,
+        belowFlex: landscape ? 1 : BezelSetupBody.liftBelow,
+        belowMin: capsule == null
+            ? 0
+            : SetupCapsule.reserve + timelineHeight + 2 * minTimelineGap,
+        belowHardMin: capsule == null ? 0 : SetupCapsule.compactReserve,
+      ),
       children: [
-        Expanded(
-          flex: landscape ? 1 : BezelSetupBody.liftAbove,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: accessory == null
-                ? const SizedBox.shrink()
-                // Scales down rather than overflowing a short phone.
-                : FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: landscape ? 0 : 12),
-                      child: accessory,
-                    ),
-                  ),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: edge),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: spacing,
-            children: [
-              for (final wheel in wheels(rowHeight))
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: columnWidth),
-                    child: wheel,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          flex: landscape ? 1 : BezelSetupBody.liftBelow,
-          // With "+ THEN" the capsule sits with START and the timeline
-          // keeps layout rule 2 against it: midway between the wheels'
-          // glyphs and the capsule. The wheels do not move.
-          child: capsule == null
-              ? timeline
-              : Column(
-                  children: [
-                    Expanded(child: timeline),
-                    capsule.build(),
-                    const SizedBox(height: SetupCapsule.gap),
-                  ],
-                ),
-        ),
+        LayoutId(id: _WheelsSlot.above, child: above),
+        LayoutId(id: _WheelsSlot.wheels, child: row),
+        LayoutId(id: _WheelsSlot.below, child: below),
       ],
     );
   }
+
+  /// The least room kept on each side of the timeline when space is short.
+  static const double minTimelineGap = 6;
+}
+
+enum _WheelsSlot { above, wheels, below }
+
+/// The wheels' column (2.5.0, 2.6.1): the free space split above and below
+/// the wheels by [aboveFlex] to [belowFlex], as a Column of two Expanded
+/// regions would. Where that leaves the space below too short for the
+/// capsule and the timeline ([belowMin]), the space above gives way first
+/// (a short phone at large text), so the capsule never runs past START
+/// while the wheels themselves fit. Overflow past that is reported, as a
+/// Column reports its own.
+class _WheelsLayout extends MultiChildLayoutDelegate {
+  _WheelsLayout({
+    required this.aboveFlex,
+    required this.belowFlex,
+    required this.belowMin,
+    required this.belowHardMin,
+  });
+
+  final int aboveFlex;
+  final int belowFlex;
+  final double belowMin;
+
+  /// What the space below cannot do without (the capsule and its gap).
+  final double belowHardMin;
+
+  @override
+  void performLayout(Size size) {
+    final wheels = layoutChild(
+      _WheelsSlot.wheels,
+      BoxConstraints(maxWidth: size.width),
+    );
+    final free = math.max(0, size.height - wheels.height).toDouble();
+    final share = free * belowFlex / (aboveFlex + belowFlex);
+    final below = math.min(free, math.max(share, belowMin));
+    final above = free - below;
+    assert(() {
+      final over = wheels.height + belowHardMin - size.height;
+      if (over > 0.01) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: FlutterError(
+              'WheelsSetupBody overflowed by ${over.toStringAsFixed(1)} '
+              'pixels on the bottom.',
+            ),
+            library: 'wod_timer',
+          ),
+        );
+      }
+      return true;
+    }(), 'reports an overflow; never fails');
+    final aboveSize = layoutChild(
+      _WheelsSlot.above,
+      BoxConstraints(maxWidth: size.width, minHeight: above, maxHeight: above),
+    );
+    final belowSize = layoutChild(
+      _WheelsSlot.below,
+      BoxConstraints(
+        maxWidth: size.width,
+        minHeight: math.max(below, belowHardMin),
+        maxHeight: math.max(below, belowHardMin),
+      ),
+    );
+    double centred(Size child) => (size.width - child.width) / 2;
+    positionChild(_WheelsSlot.above, Offset(centred(aboveSize), 0));
+    positionChild(_WheelsSlot.wheels, Offset(centred(wheels), above));
+    positionChild(
+      _WheelsSlot.below,
+      Offset(centred(belowSize), above + wheels.height),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_WheelsLayout old) =>
+      old.aboveFlex != aboveFlex ||
+      old.belowFlex != belowFlex ||
+      old.belowMin != belowMin ||
+      old.belowHardMin != belowHardMin;
 }
 
 /// For Time's count direction: a two-option switch under the bezel,
