@@ -531,6 +531,8 @@ class TodaysWodController extends Notifier<WodRun?> {
     // Where this timer's clock starts on the session's (both pause
     // together), so its end can be placed on the session's clock.
     _timerStartedAtMs = _engine.elapsed.inMilliseconds;
+    _timerPrepMs = workout.prepCountdown.seconds * 1000;
+    _timerSkippedMs = 0;
     _timerEndsAfterMs =
         (workout.prepCountdown.seconds +
             workout.timerType.estimatedDuration.seconds) *
@@ -541,6 +543,20 @@ class TodaysWodController extends Notifier<WodRun?> {
   /// after it the timer ends by the clock (get-ready included).
   int _timerStartedAtMs = 0;
   int _timerEndsAfterMs = 0;
+
+  /// The block's get-ready, and how much of it a skip cut (the timer's
+  /// clock then started that much sooner, and ends that much sooner).
+  int _timerPrepMs = 0;
+  int _timerSkippedMs = 0;
+
+  /// The timer's get-ready just ended: by the clock nothing was cut; by a
+  /// skip, the whole seconds the timer consumed at once (its skip jumps
+  /// its clock by the seconds left on the get-ready).
+  void _noteTimerStarted() {
+    final engineMs = ref.read(timerEngineProvider).elapsed.inMilliseconds;
+    final skipped = _timerPrepMs - (engineMs ~/ 1000) * 1000;
+    _timerSkippedMs = skipped > 0 ? skipped : 0;
+  }
 
   /// The timer a timer block runs.
   static TimerType timerTypeOf(SessionBlock block) => switch (block) {
@@ -579,6 +595,9 @@ class TodaysWodController extends Notifier<WodRun?> {
           state = run.copyWith(paused: true);
         }
       case TimerPreparing() || TimerRunning() || TimerResting():
+        if (previous is TimerPreparing && next is TimerRunning) {
+          _noteTimerStarted();
+        }
         // GO, or a Tabata's work and rest: a phase change for the taps.
         if (previous is! TimerPaused &&
             previous.runtimeType != next.runtimeType) {
@@ -595,7 +614,7 @@ class TodaysWodController extends Notifier<WodRun?> {
         final block = run.block;
         // Ended by its clock (not FINISH): where on the session's clock.
         final endedAtMs = block is! ForTimeBlock || capped
-            ? _timerStartedAtMs + _timerEndsAfterMs
+            ? _timerStartedAtMs + _timerEndsAfterMs - _timerSkippedMs
             : null;
         final outcome = switch (block) {
           ForTimeBlock() => BlockOutcome(

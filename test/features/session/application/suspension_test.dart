@@ -85,6 +85,39 @@ void main() {
     }
   }
 
+  // Retest fix 14: the timer's end is placed from when its clock really
+  // started, so a get-ready cut short does not move it.
+  for (final timerFirst in [true, false]) {
+    final order = timerFirst ? 'timer clock first' : 'session clock first';
+    for (final (name, skipAt) in [
+      ('skipped at once', 0),
+      ('skipped part-way', 6),
+      ('run in full', null),
+    ]) {
+      test(
+        'get-ready $name, then away 60s across the AMRAP end ($order)',
+        () async {
+          await s.start(const [AmrapBlock(durationSeconds: 60), rest120]);
+          if (skipAt != null) {
+            await s.advance(skipAt);
+            s.later();
+            s.h.notifier.skipPrep();
+            await s.flush();
+          } else {
+            await s.advance(10);
+          }
+          expect(s.timer, isA<TimerRunning>());
+          await s.advance(30);
+          expect(s.timer.sessionOrNull!.elapsed.seconds, 30);
+          // 30s of the AMRAP left, 60s away: 30s of the Rest gone.
+          await away(60000, timerFirst: timerFirst);
+          expect(s.run.phase, WodPhase.rest);
+          expect(s.run.remainingSeconds, 90);
+        },
+      );
+    }
+  }
+
   group('the large deltas', () {
     test("from a get-ready through a whole timer: the timer's catch-up, "
         'then only the time after its end', () async {
