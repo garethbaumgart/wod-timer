@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:wod_timer/core/application/providers/app_settings_provider.dart';
 import 'package:wod_timer/core/application/providers/review_prompter_provider.dart';
+import 'package:wod_timer/core/application/providers/voice_setting.dart';
 import 'package:wod_timer/core/infrastructure/audio/i_audio_service.dart';
 import 'package:wod_timer/core/infrastructure/haptic/i_haptic_service.dart';
 import 'package:wod_timer/core/infrastructure/telemetry/telemetry.dart';
@@ -51,6 +52,21 @@ class TimerNotifier extends _$TimerNotifier {
   bool _playedTenSeconds = false;
   bool _playedLastRound = false;
 
+  /// Whether this workout is a block of Today's WOD (2.6.0). A block runs
+  /// exactly as the timer on its own, with three differences: its events
+  /// carry `in_session: true`, and its end (by the clock, the cap or
+  /// FINISH) plays nothing and books no review moment, because the session
+  /// hands over to the next block and owns the cues for that. False for
+  /// every timer started on its own.
+  bool _inSession = false;
+
+  /// The props every workout event carries: a session block says so,
+  /// a timer on its own sends exactly what it always has.
+  Map<String, Object> _eventProps(Map<String, Object> props) => {
+    ...props,
+    if (_inSession) 'in_session': true,
+  };
+
   /// Taps that count AMRAP rounds are ignored for this long after the last
   /// counted round, after GO and after a resume, so a double tap, a late
   /// prep-skip tap or a tap-to-resume can never count a round.
@@ -86,37 +102,16 @@ class TimerNotifier extends _$TimerNotifier {
   ///
   /// For [VoiceOption.random], enables per-cue randomization so each
   /// voice cue picks a different voice pack at random.
-  void _configureVoice() {
-    final voice = ref.read(appSettingsNotifierProvider).voice;
-    // Silent's full mute is synced by AppSettingsNotifier on load and on
-    // every voice change; here only the spoken cues need switching off.
-    _audioService.setVoiceMuted(
-      muted: voice == VoiceOption.off || voice == VoiceOption.silent,
-    );
-    switch (voice) {
-      case VoiceOption.major:
-        _audioService
-          ..setRandomizePerCue(enabled: false)
-          ..setVoicePack('major');
-      case VoiceOption.liam:
-        _audioService
-          ..setRandomizePerCue(enabled: false)
-          ..setVoicePack('liam');
-      case VoiceOption.holly:
-        _audioService
-          ..setRandomizePerCue(enabled: false)
-          ..setVoicePack('holly');
-      case VoiceOption.random:
-        _audioService.setRandomizePerCue(enabled: true);
-      case VoiceOption.off:
-      case VoiceOption.silent:
-        break;
-    }
-  }
+  void _configureVoice() => applyVoiceSetting(
+    _audioService,
+    ref.read(appSettingsNotifierProvider).voice,
+  );
 
-  /// Start a timer session for the given workout.
-  Future<void> start(Workout workout) async {
+  /// Start a timer session for the given workout. [inSession] marks it as
+  /// a block of Today's WOD (see [_inSession]).
+  Future<void> start(Workout workout, {bool inSession = false}) async {
     _lastWorkout = workout;
+    _inSession = inSession;
     _resetAudioState();
     _configureVoice();
 
@@ -126,9 +121,10 @@ class TimerNotifier extends _$TimerNotifier {
       (failure) => state = TimerNotifierState.error(failure: failure),
       (session) {
         state = _stateFromSession(session);
-        trackEvent('workout_started', {
-          'type': session.workout.timerType.typeCode,
-        });
+        trackEvent(
+          'workout_started',
+          _eventProps({'type': session.workout.timerType.typeCode}),
+        );
         // With no prep countdown the session starts directly in running:
         // there is no preparing to running tick transition to catch, so
         // play the GO cue here.
@@ -218,10 +214,13 @@ class TimerNotifier extends _$TimerNotifier {
           endedEarly: true,
         );
         _stopTicking();
-        trackEvent('workout_completed', {
-          'type': session.workout.timerType.typeCode,
-          'ended_by': 'user',
-        });
+        trackEvent(
+          'workout_completed',
+          _eventProps({
+            'type': session.workout.timerType.typeCode,
+            'ended_by': 'user',
+          }),
+        );
         _hapticService.mediumImpact();
       },
     );
@@ -246,10 +245,15 @@ class TimerNotifier extends _$TimerNotifier {
       (session) {
         state = TimerNotifierState.completed(session: session);
         _stopTicking();
-        trackEvent('workout_completed', {
-          'type': session.workout.timerType.typeCode,
-          'ended_by': 'user_finish',
-        });
+        trackEvent(
+          'workout_completed',
+          _eventProps({
+            'type': session.workout.timerType.typeCode,
+            'ended_by': 'user_finish',
+          }),
+        );
+        // A session block hands over; the session plays the change.
+        if (_inSession) return;
         // The change beep with the end line on it ("Good job"); not
         // playComplete() as well.
         _audioService.playHighBeep();
@@ -321,6 +325,7 @@ class TimerNotifier extends _$TimerNotifier {
     _stopTicking();
     _resetAudioState();
     _lastWorkout = null;
+    _inSession = false;
     state = const TimerNotifierState.initial();
   }
 
@@ -334,7 +339,7 @@ class TimerNotifier extends _$TimerNotifier {
     if (_lastWorkout == null) return;
     if (state is! TimerCompleted) return;
     _stopTicking();
-    await start(_lastWorkout!);
+    await start(_lastWorkout!, inSession: _inSession);
   }
 
   void _startTicking() {
@@ -402,10 +407,13 @@ class TimerNotifier extends _$TimerNotifier {
         if (session.state == domain.TimerState.completed) {
           state = TimerNotifierState.completed(session: session);
           _stopTicking();
-          trackEvent('workout_completed', {
-            'type': session.workout.timerType.typeCode,
-            'ended_by': state.endedAtTimeCap ? 'time_cap' : 'timer',
-          });
+          trackEvent(
+            'workout_completed',
+            _eventProps({
+              'type': session.workout.timerType.typeCode,
+              'ended_by': state.endedAtTimeCap ? 'time_cap' : 'timer',
+            }),
+          );
           _endNaturally();
         } else {
           state = _stateFromSession(session);
@@ -647,6 +655,9 @@ class TimerNotifier extends _$TimerNotifier {
   /// branch, which the pause race guard made unreachable, so the sheet
   /// never asked).
   bool _endNaturally() {
+    // A session block hands over: the session plays the change and books
+    // the review moment once, when the whole session has run out.
+    if (_inSession) return !state.endedAtTimeCap;
     // The end is a change like any other: the high beep, the line on it.
     _audioService.playHighBeep();
     if (state.endedAtTimeCap) {

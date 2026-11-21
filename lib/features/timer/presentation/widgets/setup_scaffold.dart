@@ -11,12 +11,61 @@ import 'package:wod_timer/core/presentation/theme/app_typography.dart';
 import 'package:wod_timer/core/presentation/widgets/bottom_slab.dart';
 import 'package:wod_timer/core/presentation/widgets/centred_timeline.dart';
 import 'package:wod_timer/core/presentation/widgets/voice_picker_sheet.dart';
+import 'package:wod_timer/features/session/presentation/widgets/session_widgets.dart';
 import 'package:wod_timer/features/timer/application/blocs/timer_notifier.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/stopwatch_bezel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
+
+/// A secondary action above START (2.6.0): "+ THEN" on the four setup
+/// screens, "REMOVE BLOCK" on a block's edit screen. Upright the controls
+/// place it with START ([SetupCapsuleScope]); held sideways it sits in the
+/// header, where there is room.
+@immutable
+class SetupCapsule {
+  const SetupCapsule({
+    required this.label,
+    required this.semanticsLabel,
+    required this.onTap,
+  });
+
+  final String label;
+  final String semanticsLabel;
+  final VoidCallback onTap;
+
+  /// The capsule's bottom to the START slab.
+  static const double gap = 16;
+
+  /// What it takes from the controls upright.
+  static const double reserve = SessionCapsule.defaultHeight + gap;
+
+  Widget build({double height = SessionCapsule.defaultHeight}) =>
+      SessionCapsule(
+        label: label,
+        semanticsLabel: semanticsLabel,
+        onTap: onTap,
+        height: height,
+      );
+}
+
+/// Hands the scaffold's capsule to the controls built under it (upright).
+class SetupCapsuleScope extends InheritedWidget {
+  const SetupCapsuleScope({
+    required this.capsule,
+    required super.child,
+    super.key,
+  });
+
+  final SetupCapsule? capsule;
+
+  static SetupCapsule? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SetupCapsuleScope>()?.capsule;
+
+  @override
+  bool updateShouldNotify(SetupCapsuleScope old) => old.capsule != capsule;
+}
 
 /// The frame every setup screen shares (1.3.1): header (back, mode in
 /// white, voice chip), the mode's controls, then the edge-to-edge START
@@ -29,6 +78,11 @@ class SetupScaffold extends StatefulWidget {
     required this.onStart,
     super.key,
     this.startSubtitle,
+    this.startLabel = 'START',
+    this.startEnabled = true,
+    this.capsule,
+    this.onBack,
+    this.fitTitle = false,
   });
 
   /// Mode name in the header ("EMOM").
@@ -43,6 +97,22 @@ class SetupScaffold extends StatefulWidget {
   /// Under START: "10:00 total", "Counts up · cap 20:00", or nothing
   /// (AMRAP, whose one value already is the total).
   final String? startSubtitle;
+
+  /// "START", or "DONE" on a block's edit screen (2.6.0).
+  final String startLabel;
+
+  /// False greys START out (Today's WOD with no blocks).
+  final bool startEnabled;
+
+  /// "+ THEN" or "REMOVE BLOCK" above START (2.6.0).
+  final SetupCapsule? capsule;
+
+  /// Back (the chevron, the Android back button); Home when null.
+  final VoidCallback? onBack;
+
+  /// Shrink a long title to fit rather than fading it (Today's WOD's
+  /// builder at large text sizes); the setup screens fade, as always.
+  final bool fitTitle;
 
   /// How long START ignores taps after the screen appears. DONE on the
   /// completion screen lands here, so the second tap of a double tap on
@@ -80,10 +150,12 @@ class _SetupScaffoldState extends State<SetupScaffold> {
     // Setup is reached with context.go (from Home, and from DONE since 1.3.0),
     // so it is the only route on the stack: the Android back button would
     // close the app. Back goes Home instead, like the header chevron.
+    final onBack = widget.onBack ?? () => context.go(AppRoutes.home);
+    final capsule = widget.capsule;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) context.go(AppRoutes.home);
+        if (!didPop) onBack();
       },
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
@@ -99,21 +171,36 @@ class _SetupScaffoldState extends State<SetupScaffold> {
                 children: [
                   _SetupHeader(
                     title: widget.title,
+                    fitTitle: widget.fitTitle,
                     verticalPadding: landscape ? 4 : 12,
+                    onBack: onBack,
+                    capsule: landscape ? capsule : null,
                   ),
-                  Expanded(child: widget.body(context, landscape: landscape)),
+                  Expanded(
+                    child: SetupCapsuleScope(
+                      capsule: landscape ? null : capsule,
+                      child: widget.body(context, landscape: landscape),
+                    ),
+                  ),
                   BottomSlab(
                     cells: [
                       SlabCell(
-                        label: 'START',
+                        label: widget.startLabel,
                         labelSize: 34,
                         subtitle: subtitle,
-                        background: AppColors.start,
-                        foreground: Colors.black,
+                        background: widget.startEnabled
+                            ? AppColors.start
+                            : AppColors.soft,
+                        foreground: widget.startEnabled
+                            ? Colors.black
+                            : AppColors.textDisabledDark,
+                        enabled: widget.startEnabled,
                         onTap: _onStart,
-                        semanticsLabel: subtitle == null
-                            ? 'Start workout'
-                            : 'Start workout. $subtitle',
+                        semanticsLabel: switch ((widget.startLabel, subtitle)) {
+                          ('START', null) => 'Start workout',
+                          ('START', final String sub) => 'Start workout. $sub',
+                          (final label, _) => label,
+                        },
                       ),
                     ],
                   ),
@@ -128,15 +215,30 @@ class _SetupScaffoldState extends State<SetupScaffold> {
 }
 
 class _SetupHeader extends StatelessWidget {
-  const _SetupHeader({required this.title, this.verticalPadding = 12});
+  const _SetupHeader({
+    required this.title,
+    required this.onBack,
+    this.verticalPadding = 12,
+    this.capsule,
+    this.fitTitle = false,
+  });
 
   final String title;
+  final bool fitTitle;
+  final VoidCallback onBack;
+
+  /// Held sideways, the capsule sits here, before the voice chip.
+  final SetupCapsule? capsule;
 
   /// Tighter in landscape, where every point of height counts.
   final double verticalPadding;
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = AppTypography.sectionHeader.copyWith(
+      color: AppColors.textPrimaryDark,
+      fontSize: 24,
+    );
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
       child: Row(
@@ -145,7 +247,7 @@ class _SetupHeader extends StatelessWidget {
             button: true,
             label: 'Go back',
             child: GestureDetector(
-              onTap: () => context.go(AppRoutes.home),
+              onTap: onBack,
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 48,
@@ -164,18 +266,25 @@ class _SetupHeader extends StatelessWidget {
           // Expanded (not Flexible + Spacer, which split the free space and
           // left the chip short of the edge) so the chip sits flush right.
           Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.fade,
-              softWrap: false,
-              style: AppTypography.sectionHeader.copyWith(
-                color: AppColors.textPrimaryDark,
-                fontSize: 24,
-              ),
-            ),
+            child: fitTitle
+                ? FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(title, maxLines: 1, style: titleStyle),
+                  )
+                : Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
+                    style: titleStyle,
+                  ),
           ),
           const SizedBox(width: 12),
+          if (capsule case final capsule?) ...[
+            capsule.build(height: 40),
+            const SizedBox(width: 10),
+          ],
           const _VoiceChip(),
         ],
       ),
@@ -290,10 +399,12 @@ class BezelSetupBody extends StatelessWidget {
           );
         }
         // Leave room for the line under the bezel and a breath above and
-        // below (large text makes that line taller).
+        // below (large text makes that line taller), and for "+ THEN".
+        final capsule = SetupCapsuleScope.maybeOf(context);
+        final reserve = capsule == null ? 0.0 : SetupCapsule.reserve;
         final widest = constraints.maxWidth - 2 * edge;
         final size = math
-            .min(widest, constraints.maxHeight - gap - 96)
+            .min(widest, constraints.maxHeight - gap - 96 - reserve)
             .clamp(140.0, math.max(140.0, widest))
             .toDouble();
         return Column(
@@ -302,7 +413,21 @@ class BezelSetupBody extends StatelessWidget {
             bezel(size),
             const SizedBox(height: gap),
             below,
-            const Spacer(flex: liftBelow),
+            if (capsule == null)
+              const Spacer(flex: liftBelow)
+            else
+              // The capsule sits with START in the space below, so the
+              // bezel stays where it was wherever there is room.
+              Expanded(
+                flex: liftBelow,
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    capsule.build(),
+                    const SizedBox(height: SetupCapsule.gap),
+                  ],
+                ),
+              ),
           ],
         );
       },
@@ -348,6 +473,19 @@ class WheelsSetupBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessory = this.accessory;
+    final capsule = SetupCapsuleScope.maybeOf(context);
+    final timeline = CentredTimeline(
+      aboveInkInset: SetupWheel.inkInset(context, rowHeight),
+      height: timelineHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: WorkoutTimeline(
+          shape: shape,
+          height: timelineHeight,
+          midTicks: true,
+        ),
+      ),
+    );
     return Column(
       children: [
         Expanded(
@@ -385,18 +523,18 @@ class WheelsSetupBody extends StatelessWidget {
         ),
         Expanded(
           flex: landscape ? 1 : BezelSetupBody.liftBelow,
-          child: CentredTimeline(
-            aboveInkInset: SetupWheel.inkInset(context, rowHeight),
-            height: timelineHeight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: WorkoutTimeline(
-                shape: shape,
-                height: timelineHeight,
-                midTicks: true,
-              ),
-            ),
-          ),
+          // With "+ THEN" the capsule sits with START and the timeline
+          // keeps layout rule 2 against it: midway between the wheels'
+          // glyphs and the capsule. The wheels do not move.
+          child: capsule == null
+              ? timeline
+              : Column(
+                  children: [
+                    Expanded(child: timeline),
+                    capsule.build(),
+                    const SizedBox(height: SetupCapsule.gap),
+                  ],
+                ),
         ),
       ],
     );

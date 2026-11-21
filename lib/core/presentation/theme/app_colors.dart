@@ -24,6 +24,13 @@ abstract class AppColors {
   static const Color amrapAccent = Color(0xFF00AAFF); // Blue
   static const Color tabataAccent = Color(0xFF00FF88); // Green (work)
 
+  // Today's WOD blocks (2.6.0): Sets amber; a Rest block's bar the dim rest
+  // pink, so a rest never reads as an EMOM (the same pink, full), with its
+  // name in the lighter pink where it is text. Its clock is full rest pink.
+  static const Color setsAccent = Color(0xFFFFB800);
+  static const Color restBlock = Color(0xFF7A1F4D);
+  static const Color restBlockText = Color(0xFFC7528D);
+
   // Semantic colors
   static const Color success = Color(0xFF00FF88);
   static const Color warning = Color(0xFFFFAA00);

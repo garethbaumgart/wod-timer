@@ -106,6 +106,8 @@ void main() {
       await tester.pump();
       expect(find.text('Finished'), findsOneWidget);
 
+      // The end screen ignores taps for its first 700ms (2.6.0).
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.tap(find.bySemanticsLabel('Run the same workout again'));
       await tester.pump();
       expect(state(), isA<TimerRunning>());

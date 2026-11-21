@@ -1062,6 +1062,8 @@ void main() {
       );
       notifierOf(c).stop();
       await tester.pump();
+      // The end screen ignores taps for its first 700ms (2.6.0).
+      await tester.pump(const Duration(milliseconds: 700));
 
       await tester.tap(find.text('DONE'));
       await tester.pumpAndSettle();

@@ -5,6 +5,9 @@ import 'package:wod_timer/core/domain/value_objects/timer_duration.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/core/presentation/theme/app_colors.dart';
 import 'package:wod_timer/core/presentation/theme/app_typography.dart';
+import 'package:wod_timer/features/session/domain/session_block.dart';
+import 'package:wod_timer/features/session/presentation/pages/block_edit_page.dart';
+import 'package:wod_timer/features/session/presentation/session_entry.dart';
 import 'package:wod_timer/features/timer/application/providers/timer_providers.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_configs.dart';
 import 'package:wod_timer/features/timer/application/setup/setup_memory.dart';
@@ -17,16 +20,39 @@ import 'package:wod_timer/features/timer/presentation/widgets/widgets.dart';
 /// work/rest intervals, typically 20s work / 10s rest x 8 rounds: three
 /// wheels side by side, work blocks green and rest blocks pink under them.
 class TabataSetupPage extends ConsumerStatefulWidget {
-  const TabataSetupPage({super.key});
+  const TabataSetupPage({super.key, this.edit});
+
+  /// Opened from Today's WOD's builder (2.6.0): that block's values, DONE
+  /// in place of START, REMOVE BLOCK in place of "+ THEN".
+  final BlockEdit? edit;
 
   @override
   ConsumerState<TabataSetupPage> createState() => _TabataSetupPageState();
 }
 
 class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
-  late TabataSetup _setup = ref.read(setupMemoryProvider).tabata;
+  late TabataSetup _setup = switch (widget.edit?.block) {
+    TabataBlock(:final workSeconds, :final restSeconds, :final rounds) =>
+      TabataSetup(
+        workSeconds: workSeconds,
+        restSeconds: restSeconds,
+        rounds: rounds,
+      ),
+    _ => ref.read(setupMemoryProvider).tabata,
+  };
+
+  /// The values on screen as a Today's WOD block.
+  TabataBlock get _block => TabataBlock(
+    workSeconds: _setup.workSeconds,
+    restSeconds: _setup.restSeconds,
+    rounds: _setup.rounds,
+  );
 
   Future<void> _onStart() async {
+    if (widget.edit case final edit?) {
+      edit.onDone(_block);
+      return;
+    }
     await ref.read(setupMemoryProvider).saveTabata(_setup);
     if (!mounted) return;
     await startSetupWorkout(
@@ -52,6 +78,11 @@ class _TabataSetupPageState extends ConsumerState<TabataSetupPage> {
     return SetupScaffold(
       title: 'TABATA',
       onStart: _onStart,
+      startLabel: widget.edit == null ? 'START' : BlockEdit.doneLabel,
+      onBack: widget.edit?.onCancel,
+      capsule:
+          widget.edit?.removeCapsule ??
+          thenCapsule(context: context, ref: ref, first: () => _block),
       startSubtitle: '${setupClock(_setup.totalSeconds)} total',
       body: (context, {required landscape}) => WheelsSetupBody(
         landscape: landscape,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
@@ -22,6 +23,7 @@ import 'package:wod_timer/features/timer/domain/entities/timer_state.dart'
 import 'package:wod_timer/features/timer/domain/value_objects/timer_type.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/end_fact_tiles.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/hold_to_stop_cell.dart';
+import 'package:wod_timer/features/timer/presentation/widgets/live_frame.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/rounds_wheel.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/setup_format.dart';
 import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.dart';
@@ -36,10 +38,14 @@ import 'package:wod_timer/features/timer/presentation/widgets/workout_timeline.d
 /// line has a fixed slot (layout rule 1): nothing moves while numbers
 /// count. Stop lives on the paused screen and is hold-to-confirm.
 class TimerActivePage extends ConsumerStatefulWidget {
-  const TimerActivePage({required this.timerType, super.key});
+  const TimerActivePage({required this.timerType, super.key, this.session});
 
   /// The type of timer being displayed.
   final String timerType;
+
+  /// Set when the timer is a block of Today's WOD (2.6.0); null for every
+  /// timer started on its own, which this page shows exactly as before.
+  final LiveSessionFrame? session;
 
   @override
   ConsumerState<TimerActivePage> createState() => _TimerActivePageState();
@@ -55,10 +61,18 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// while paused).
   bool _showHoldHint = false;
 
+  /// AGAIN and DONE ignore taps this long after the end screen appears
+  /// (2.6.0), so the second tap of a double tap on FINISH never restarts
+  /// the workout or leaves before the result is seen.
+  static const endGuard = Duration(milliseconds: 700);
+
+  /// Running while the end screen is new; null when it is not shown.
+  Timer? _endGuard;
+
+  bool get _endSettling => _endGuard?.isActive ?? false;
+
   // Fixed slots (layout rule 1), in logical points before TabletScale.
-  static const double _sidePad = 14;
-  static const double _timelineHeight = 14;
-  static const double _clockShare = 0.42;
+  static const double _timelineHeight = LiveFrame.timelineHeight;
 
   @override
   void initState() {
@@ -69,6 +83,8 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       lowerBound: 0.35,
       upperBound: 0.9,
     );
+    // In a session the session page holds both, across every block.
+    if (widget.session != null) return;
     // A timer that sleeps mid-WOD is the app failing: the wakelock is always
     // held while this page is open (the Keep Screen On switch went in 1.3.0).
     WakelockPlus.enable();
@@ -78,9 +94,12 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
   @override
   void dispose() {
+    _endGuard?.cancel();
     _pausedPulse.dispose();
-    WakelockPlus.disable();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    if (widget.session == null) {
+      WakelockPlus.disable();
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
     super.dispose();
   }
 
@@ -89,6 +108,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   // ===================================================================
 
   void _onPauseResume() {
+    // In a session the slab waits out a phase change (a timer on its own
+    // pauses at once, as always).
+    if (widget.session?.canTap == false) return;
     final timerNotifier = ref.read(timerNotifierProvider.notifier);
     final state = ref.read(timerNotifierProvider);
 
@@ -103,6 +125,11 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// go straight back to setup; otherwise land on the honest "Stopped"
   /// completion state.
   void _onStopConfirmed() {
+    // In a session HOLD TO STOP ends the whole session.
+    if (widget.session case final session?) {
+      session.stop();
+      return;
+    }
     final state = ref.read(timerNotifierProvider);
     if (state is TimerPreparing) {
       ref.read(timerNotifierProvider.notifier).reset();
@@ -120,6 +147,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   void _onFinish() {
+    if (widget.session?.canTap == false) return;
     ref.read(timerNotifierProvider.notifier).finish();
   }
 
@@ -131,6 +159,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     final notifier = ref.read(timerNotifierProvider.notifier);
     final state = ref.read(timerNotifierProvider);
     if (state is TimerPreparing) {
+      if (widget.session?.canTap == false) return;
       ref.read(hapticServiceProvider).mediumImpact();
       notifier.skipPrep();
       return;
@@ -152,13 +181,27 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   /// The back gesture / Android back never leaves a live workout silently.
   void _onPopAttempt() {
     final state = ref.read(timerNotifierProvider);
+    // In a session the back gesture never ends it: on a get-ready the
+    // session decides, paused it hints at HOLD TO STOP, otherwise nothing.
+    if (widget.session case final session?) {
+      switch (state) {
+        case TimerPreparing():
+          session.back();
+        case TimerPaused():
+          _flashHoldHint();
+        default:
+          break;
+      }
+      return;
+    }
     switch (state) {
       case TimerPreparing():
         _onStopConfirmed();
       case TimerPaused():
         _flashHoldHint();
       case TimerCompleted():
-        _onDone();
+        // In a session the block's end is a hand-over, not an end screen.
+        if (widget.session == null) _onDone();
       case TimerRunning() || TimerResting():
         // Mid-rep: pause first, then hold Stop. A stray edge swipe does
         // nothing.
@@ -177,12 +220,19 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   }
 
   Future<void> _onAgain() async {
+    if (_endSettling) return;
     await ref.read(timerNotifierProvider.notifier).restart();
   }
 
   /// DONE lands on this mode's setup with the workout just run loaded, so
   /// fixing one number and going again is DONE, wheel, START.
   void _onDone() => _goToSetup();
+
+  /// The DONE cell (the back gesture goes straight to [_onDone]).
+  void _onDoneTap() {
+    if (_endSettling) return;
+    _onDone();
+  }
 
   // ===================================================================
   // Build
@@ -203,6 +253,14 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           ..stop()
           ..value = _pausedPulse.upperBound;
       }
+    }
+
+    // The end screen's tap guard starts when it appears.
+    if (timerState is TimerCompleted && widget.session == null) {
+      _endGuard ??= Timer(endGuard, () {});
+    } else if (_endGuard != null) {
+      _endGuard!.cancel();
+      _endGuard = null;
     }
 
     // Show placeholder when timer is not configured yet
@@ -236,7 +294,9 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
               child: OrientationBuilder(
                 builder: (context, orientation) {
                   final landscape = orientation == Orientation.landscape;
-                  if (timerState is TimerCompleted) {
+                  // A session block's end is the moment before the session
+                  // hands over: the live screen holds until it does.
+                  if (timerState is TimerCompleted && widget.session == null) {
                     return _buildEnd(timerState, landscape: landscape);
                   }
                   return _buildLive(timerState, landscape: landscape);
@@ -460,127 +520,24 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
   Widget _buildLive(TimerNotifierState state, {required bool landscape}) {
     final session = state.sessionOrNull;
-    final textScaler = MediaQuery.textScalerOf(context);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final slabHeight = BottomSlab.heightOf(context);
-        final area = constraints.maxHeight - slabHeight;
-        final width = constraints.maxWidth - 2 * _sidePad;
-        final topPad = landscape ? 8.0 : 30.0;
-        final phaseSlot = landscape ? 32.0 : 40.0;
-
-        // The second line: a fixed slot the height of its big number, every
-        // content sharing that number's baseline.
-        final bigStyle = GlyphInk.resolve(
-          context,
-          _bigNumberStyle(landscape ? 44 : 64),
-        );
-        final secondSlot = GlyphInk.boxHeight(
-          '0',
-          bigStyle,
-          textScaler: textScaler,
-        );
-        final secondBaseline = GlyphInk.baseline(
-          '0',
-          bigStyle,
-          textScaler: textScaler,
-        );
-
-        final second = session == null
-            ? null
-            : _secondLine(
-                context,
-                state,
-                session,
-                bigStyle,
-                landscape: landscape,
-              );
-        // A count-down For Time has no second line while it runs, so the
-        // clock is the content above the timeline and the zone under the
-        // empty slot must still hold a centred bar.
-        final secondLineWhileRunning =
-            session == null || !_countsDownForTime(session);
-        final zoneReserve = secondLineWhileRunning
-            ? 40.0
-            : secondSlot + _timelineHeight + 24;
-        final clockSlot = landscape
-            ? math.max(
-                80.0,
-                area - topPad - phaseSlot - secondSlot - zoneReserve,
-              )
-            : area * _clockShare;
-        final clock = session == null
-            ? null
-            : _ClockSpec.fit(
-                reference: _clockReference(session),
-                maxWidth: width * 0.94,
-                slotHeight: clockSlot,
-                resolve: (style) => GlyphInk.resolve(context, style),
-              );
-
-        // Layout rule 2: where the content above the timeline's glyphs end.
-        // Measured from what the slot is sized for (the big digits' line
-        // and their overshoot, the clock's longest value), not the ticking
-        // text, so it is one number per workout (layout rule 1).
-        final double aboveInset;
-        if (second != null) {
-          final own =
-              GlyphInk.belowBaselineEm(second.text, second.style.fontWeight!) *
-              textScaler.scale(second.style.fontSize!);
-          final digits =
-              GlyphInk.belowBaselineEm('0', bigStyle.fontWeight!) *
-              textScaler.scale(bigStyle.fontSize!);
-          aboveInset = (secondSlot - secondBaseline) - math.max(own, digits);
-        } else if (clock != null && session != null) {
-          aboveInset =
-              secondSlot +
-              (clockSlot - clock.boxHeight) / 2 +
-              GlyphInk.bottomInset(_clockReference(session), clock.style);
-        } else {
-          aboveInset = secondSlot;
-        }
-
-        return Column(
-          children: [
-            SizedBox(height: topPad),
-            SizedBox(
-              height: phaseSlot,
-              child: _buildPhaseWord(state, session, fontSize: 28),
-            ),
-            SizedBox(
-              height: clockSlot,
-              child: clock == null ? null : _buildClock(state, clock),
-            ),
-            SizedBox(
-              height: secondSlot,
-              child: second == null
-                  ? null
-                  : Align(
-                      alignment: Alignment.topCenter,
-                      child: Baseline(
-                        baseline: secondBaseline,
-                        baselineType: TextBaseline.alphabetic,
-                        child: second.widget,
-                      ),
-                    ),
-            ),
-            Expanded(
-              child: CentredTimeline(
-                aboveInkInset: aboveInset,
-                height: _timelineHeight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: _sidePad),
-                  child: session == null
-                      ? const SizedBox.shrink()
-                      : _buildTimeline(session),
-                ),
-              ),
-            ),
-            _absorbCanvasTaps(_buildLiveSlab(state)),
-          ],
-        );
-      },
+    return LiveFrame(
+      landscape: landscape,
+      header: widget.session?.header(state),
+      clockReference: session == null ? null : _clockReference(session),
+      // A count-down For Time has no second line while it runs, so the
+      // clock is the content above the timeline and the zone under the
+      // empty slot must still hold a centred bar.
+      secondLineWhileRunning: session == null || !_countsDownForTime(session),
+      phaseWord: (fontSize) =>
+          _buildPhaseWord(state, session, fontSize: fontSize),
+      clock: (clock) => _buildClock(state, clock),
+      secondLine: (context, big) => session == null
+          ? null
+          : _secondLine(context, state, session, big, landscape: landscape),
+      timeline: session == null
+          ? const SizedBox.shrink()
+          : _buildTimeline(session),
+      slab: _absorbCanvasTaps(_buildLiveSlab(state)),
     );
   }
 
@@ -606,7 +563,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
 
   /// The digits in the phase colour at the size fixed for this workout,
   /// with the wash behind them.
-  Widget _buildClock(TimerNotifierState state, _ClockSpec clock) {
+  Widget _buildClock(TimerNotifierState state, ClockSpec clock) {
     final seconds = _displaySeconds(state);
     final timeString = _displayString(state, seconds);
     final isPaused = state is TimerPaused;
@@ -662,39 +619,13 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
   // ===================================================================
 
   TextStyle _phaseStyle(Color color, double size) =>
-      AppTypography.sectionHeader.copyWith(
-        color: color,
-        fontSize: size,
-        fontWeight: FontWeight.w900,
-        letterSpacing: size * 0.06,
-        height: 1,
-      );
-
-  /// The big number on the second line ("2/10", the AMRAP count).
-  TextStyle _bigNumberStyle(double size) => AppTypography.timerDisplay.copyWith(
-    color: Colors.white,
-    fontSize: size,
-    letterSpacing: -1,
-  );
+      LiveStyles.phase(color, size);
 
   /// The grey words on the second line ("TAP TO COUNT", "CAP 20:00").
-  TextStyle _hintStyle(double size) => AppTypography.sectionHeader.copyWith(
-    color: AppColors.textSecondaryDark,
-    fontSize: size,
-    fontWeight: FontWeight.w800,
-    letterSpacing: size * 0.1,
-    height: 1,
-    fontFeatures: const [FontFeature.tabularFigures()],
-  );
+  TextStyle _hintStyle(double size) => LiveStyles.hint(size);
 
   /// The small unit beside a number ("ROUNDS", "TIME").
-  TextStyle _unitStyle(double size) => AppTypography.labelSmall.copyWith(
-    color: AppColors.textSecondaryDark,
-    fontSize: size,
-    fontWeight: FontWeight.w800,
-    letterSpacing: size * 0.14,
-    height: 1,
-  );
+  TextStyle _unitStyle(double size) => LiveStyles.unit(size);
 
   /// The phase word and its colour, or null when there is no phase to name
   /// (AMRAP, EMOM and For Time work).
@@ -782,7 +713,24 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       style: style,
     );
 
-    if (state is TimerPreparing) return line('TAP TO SKIP', hint);
+    if (state is TimerPreparing) {
+      // In a session the get-ready names the block in its colour; TAP TO
+      // SKIP moves to the session's line.
+      if (widget.session case final session?) {
+        final (text, color) = session.gettingReadyFor;
+        return line(
+          text,
+          fitPhaseStyle(
+            context,
+            text,
+            color,
+            landscape ? 20 : 26,
+            MediaQuery.sizeOf(context).width - 2 * LiveFrame.sidePad,
+          ),
+        );
+      }
+      return line('TAP TO SKIP', hint);
+    }
     if (session.totalRounds != null) {
       return line('${session.currentRound}/${session.totalRounds}', big);
     }
@@ -881,7 +829,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     color: _modeColor,
     fontSize: size,
     letterSpacing: -size * 0.02,
-    height: _ClockSpec.lineHeight,
+    height: ClockSpec.lineHeight,
     leadingDistribution: TextLeadingDistribution.even,
   );
 
@@ -992,7 +940,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
                     label: 'DONE',
                     background: AppColors.soft,
                     foreground: Colors.white,
-                    onTap: _onDone,
+                    onTap: _onDoneTap,
                     semanticsLabel: 'Done, back to setup',
                   ),
                 ],
@@ -1107,7 +1055,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
           label: 'DONE',
           background: AppColors.soft,
           foreground: Colors.white,
-          onTap: _onDone,
+          onTap: _onDoneTap,
           semanticsLabel: 'Done, back to setup',
         ),
       ],
@@ -1221,7 +1169,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       // EMOM end screen (a four-glyph round fraction is the reference so a
       // one to three digit count reads just as big), then capped only by
       // what the wheel's three rows can take above the timeline zone.
-      final heroSize = _ClockSpec.fontSizeFor(
+      final heroSize = ClockSpec.fontSizeFor(
         reference: '0/00',
         style: GlyphInk.resolve(context, _heroStyle(100)),
         maxWidth: maxWidth,
@@ -1270,7 +1218,7 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
     final style = GlyphInk.resolve(
       context,
       _heroStyle(
-        _ClockSpec.fontSizeFor(
+        ClockSpec.fontSizeFor(
           reference: value,
           style: GlyphInk.resolve(context, _heroStyle(100)),
           maxWidth: maxWidth,
@@ -1307,59 +1255,5 @@ class _TimerActivePageState extends ConsumerState<TimerActivePage>
       lastText: lastText,
       lastStyle: lastStyle,
     );
-  }
-}
-
-/// The clock's fixed size for a workout: the font that fits its longest
-/// value in the width, capped by the slot, with the line box trimmed to
-/// the glyphs (even leading at 0.76em) so the box is the ink.
-class _ClockSpec {
-  const _ClockSpec({required this.style, required this.boxHeight});
-
-  factory _ClockSpec.fit({
-    required String reference,
-    required double maxWidth,
-    required double slotHeight,
-    required TextStyle Function(TextStyle style) resolve,
-  }) {
-    final size = fontSizeFor(
-      reference: reference,
-      style: resolve(baseStyle(100)),
-      maxWidth: maxWidth,
-      slotHeight: slotHeight,
-    );
-    final style = resolve(baseStyle(size));
-    return _ClockSpec(
-      style: style,
-      boxHeight: GlyphInk.boxHeight(reference, style),
-    );
-  }
-
-  final TextStyle style;
-  final double boxHeight;
-
-  static const double lineHeight = 0.76;
-
-  static TextStyle baseStyle(double size) =>
-      AppTypography.timerDisplay.copyWith(
-        fontSize: size,
-        letterSpacing: -size * 0.02,
-        height: lineHeight,
-        leadingDistribution: TextLeadingDistribution.even,
-      );
-
-  /// The largest size at which [reference] in [style] (given at 100pt)
-  /// fits [maxWidth] and whose line box fits [slotHeight].
-  static double fontSizeFor({
-    required String reference,
-    required TextStyle style,
-    required double maxWidth,
-    required double slotHeight,
-  }) {
-    final width100 = GlyphInk.boxWidth(reference, style);
-    final height100 = GlyphInk.boxHeight(reference, style);
-    final byWidth = width100 > 0 ? maxWidth / width100 * 100 : slotHeight;
-    final byHeight = height100 > 0 ? slotHeight / height100 * 100 : slotHeight;
-    return math.max(8.0, math.min(byWidth, byHeight));
   }
 }
