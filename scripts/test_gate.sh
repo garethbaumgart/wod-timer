@@ -79,6 +79,10 @@ if [[ "$PLATFORM" != "ios" && -f android/wear/build.gradle.kts ]]; then
   step "Wear OS JVM tests (:wear:testDebugUnitTest)"
   JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
   export JAVA_HOME
+  # A fresh worktree's local.properties holds only flutter.sdk until a `flutter
+  # build` adds sdk.dir; without it or ANDROID_HOME, Gradle stops at "SDK
+  # location not found".
+  export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
   if [[ ! -x android/gradlew ]]; then
     FLUTTER_ROOT="$(fvm flutter --version --machine | python3 -c 'import json,sys; print(json.load(sys.stdin)["flutterRoot"])')"
     cp "$FLUTTER_ROOT/bin/cache/artifacts/gradle_wrapper/gradlew" android/
