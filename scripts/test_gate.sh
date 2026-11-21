@@ -8,6 +8,9 @@
 #   scripts/test_gate.sh --quick         # analyze and Flutter tests only (no Xcode, about 1 min)
 #   scripts/test_gate.sh --full android  # the watch ships with iOS, so Android skips it;
 #                                        # Android (and both) also run the Wear OS module's JVM tests
+#                                        # and, in --full, the release launch check: the store
+#                                        # bundle (R8 on) must start on an emulator (about 2 to 4 min,
+#                                        # scripts/release_launch_check.sh)
 #
 # Exits non-zero on the first failure. Fast by design: unit and widget
 # tests only. The integration_test/ tours (store screenshots, promo and
@@ -30,7 +33,7 @@ for arg in "$@"; do
     --full) MODE=full ;;
     --quick|--no-watch) MODE=quick ;;
     ios|android|both) PLATFORM="$arg" ;;
-    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
     *) echo "unknown option: $arg (use --full | --quick, ios | android | both)" >&2; exit 2 ;;
   esac
 done
@@ -84,6 +87,14 @@ if [[ "$PLATFORM" != "ios" && -f android/wear/build.gradle.kts ]]; then
     chmod +x android/gradlew
   fi
   (cd android && ./gradlew :wear:testDebugUnitTest -q)
+fi
+
+# Squish 1.12.0 (21 Nov 2026): the store build (R8 on) died at every launch
+# while debug builds and every test were green. Only the release build shows
+# that, so the Android gate installs the release bundle and opens it.
+if [[ "$MODE" == "full" && "$PLATFORM" != "ios" ]]; then
+  step "Android release build launches (scripts/release_launch_check.sh)"
+  scripts/release_launch_check.sh
 fi
 
 step "test gate green"
