@@ -452,9 +452,14 @@ class WheelsSetupBody extends StatelessWidget {
     required this.shape,
     super.key,
     this.accessory,
+    this.midTicks = true,
   });
 
   final bool landscape;
+
+  /// Ticks where the mid-round pips will sound. A Sets block has no clock
+  /// and no pips, so its screen draws none (2.6.1).
+  final bool midTicks;
 
   /// Built with the row height for the orientation.
   final List<Widget> Function(double rowHeight) wheels;
@@ -488,7 +493,7 @@ class WheelsSetupBody extends StatelessWidget {
         child: WorkoutTimeline(
           shape: shape,
           height: timelineHeight,
-          midTicks: true,
+          midTicks: midTicks,
         ),
       ),
     );

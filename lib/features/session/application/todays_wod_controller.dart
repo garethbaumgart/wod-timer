@@ -373,6 +373,8 @@ class TodaysWodController extends Notifier<WodRun?> {
         _engine.pause();
         state = run.copyWith(paused: true);
         _haptic.mediumImpact();
+        // The second tap of a double tap lands on RESUME (2.6.1).
+        _block();
       case WodPhase.getReady || WodPhase.finished:
         break;
     }
@@ -380,7 +382,7 @@ class TodaysWodController extends Notifier<WodRun?> {
 
   void resume() {
     final run = state;
-    if (run == null || !run.paused || _settling) return;
+    if (run == null || !run.paused || _blocked() || _settling) return;
     if (run.phase == WodPhase.timer) {
       _timer.resume();
       return;

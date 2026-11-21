@@ -308,6 +308,8 @@ void main() {
       expect(s.run.paused, isTrue);
       s.controller.setDone();
       expect(s.run.phase, WodPhase.setWork, reason: 'paused: no SET DONE');
+      // RESUME is a tap of its own, after the pause's cooldown (2.6.1).
+      s.later();
       s.controller.resume();
       s.later();
       s.controller.setDone();

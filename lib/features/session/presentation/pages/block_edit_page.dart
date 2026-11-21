@@ -188,6 +188,7 @@ class _SetsSetupPageState extends ConsumerState<SetsSetupPage> {
       body: (context, {required landscape}) => WheelsSetupBody(
         landscape: landscape,
         shape: _block.shape,
+        midTicks: false,
         wheels: (rowHeight) => [
           SetupWheel(
             label: 'Sets',
