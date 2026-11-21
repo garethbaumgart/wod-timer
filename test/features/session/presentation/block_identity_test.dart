@@ -3,6 +3,8 @@
 // write one block over another or bring a block into another session.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wod_timer/core/application/providers/shared_preferences_provider.dart';
 import 'package:wod_timer/core/presentation/router/app_routes.dart';
 import 'package:wod_timer/features/session/application/session_draft.dart';
 import 'package:wod_timer/features/session/domain/session_block.dart';
@@ -20,7 +22,14 @@ void main() {
 
   group('the draft', () {
     late ProviderContainer container;
-    setUp(() => container = ProviderContainer());
+    // Every change to the draft is kept as the last session (2.6.1).
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+    });
     tearDown(() => container.dispose());
     SessionDraft draft() => container.read(sessionDraftProvider.notifier);
 

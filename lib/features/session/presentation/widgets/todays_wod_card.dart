@@ -79,7 +79,8 @@ class TodaysWodCard extends ConsumerWidget {
 
   Widget _build(BuildContext context, WidgetRef ref) {
     // Read on every build, as Home reads setup memory: Home is rebuilt each
-    // time it is navigated back to, after START saved a session.
+    // time it is navigated back to, after START or a builder change saved
+    // the session.
     final last = ref.watch(sessionStoreProvider).lastSession;
 
     void openBuilder(List<SessionBlock> blocks, BuilderSource source) {
