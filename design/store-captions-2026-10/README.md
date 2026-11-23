@@ -73,3 +73,17 @@ Outputs are 8-bit sRGB with no alpha, checked with `magick identify`.
   finished). They replaced the 2.2-era set, which showed the capsules cut by the round edge (Google's Wear
   review, 19 Nov 2026). Upload: `play_screenshots.py batch --item en-US wearScreenshots <dir>`.
 - The Wear OS watch in the Play wrist frame (07) is the new EMOM live capture.
+
+## Frame 01 shows Today's WOD (23 Nov 2026)
+
+- Gareth: the first image should be the new home with the mixed feature. Frame 01 (App Store 6.9in and Play phone)
+  is now Home with a Today's WOD card that chains all four timers (EMOM 8, For Time 12, AMRAP 10, Tabata 8, rests
+  between), under the same four-colour headline; the proof reads "Run one, or chain them into Today's WOD. / No
+  account. No ads. No clutter." `raw/APP_IPHONE_67_01.png` is that capture (2.6.1).
+- Capture: `UDID=<iPhone 17 Pro Max sim> OUT=<dir> tool/capture_store_home.sh` runs
+  `integration_test/store_home_test.dart` (seeds the session, holds Home, grabs it at 9:41).
+  `STORE_SESSION=classic` seeds the 2.6.0 mock session instead.
+- `fastlane/screenshots-ipad/en-US/`: the 13-inch iPad set the release script uploads (APP_IPAD_PRO_3GEN_129). Its
+  `01_home.png` is the same Home on the iPad Pro 13-inch (M5) simulator, with the old capture's status bar and home
+  indicator strips pasted on (the iPad simulator ignores the date override; the other nine are the 3 Oct set,
+  downloaded from the live listing, kept as they were).
