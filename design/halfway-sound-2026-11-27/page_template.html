@@ -1,0 +1,359 @@
+<title>Halfway Sound Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap">
+<style>
+  /* Layout: one reading column in the app's own dark clock look. Verdict first, the two
+     reference beeps, then five options, each a pitch-and-time strip beside its play buttons. */
+  :root {
+    color-scheme: dark;
+    --bg: #050510;        /* the app's background */
+    --surface: #0e0e1e;   /* card */
+    --soft: #16172a;      /* controls */
+    --line: #2e2e44;      /* hairlines, ticks */
+    --fg: #ffffff;
+    --muted: #9a9aa2;
+    --brand: #ff6b1a;     /* Wharf orange: the change beep, warnings */
+    --go: #00ff88;        /* work green: the halfway sound, the pick */
+    --font: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+    padding-block: 28px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .page { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px; }
+  .eyebrow { color: var(--brand); font-size: 13px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+  h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.05; font-weight: 800; margin: 6px 0 12px; text-wrap: balance; letter-spacing: -0.01em; }
+  h2 { font-size: 22px; font-weight: 800; margin: 0 0 4px; text-wrap: balance; }
+  p { margin: 0; }
+  .lede { color: var(--muted); max-width: 62ch; font-size: 17px; }
+  .lede strong { color: var(--fg); font-weight: 600; }
+  .sub { color: var(--muted); max-width: 66ch; }
+  section { display: flex; flex-direction: column; gap: 14px; }
+
+  /* Verdict: three findings, state shown as a chip */
+  .findings { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .finding { display: grid; grid-template-columns: 96px 1fr; gap: 6px 18px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .finding .what { font-weight: 800; font-size: 18px; }
+  .finding .body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .chip { display: inline-block; align-self: flex-start; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid currentColor; }
+  .chip.ok { color: var(--go); }
+  .chip.warn { color: var(--brand); }
+  .chip.quiet { color: var(--muted); }
+  .finding p { color: var(--muted); max-width: 62ch; }
+  .finding p b { color: var(--fg); font-weight: 600; }
+
+  /* Play buttons */
+  .plays { display: flex; flex-wrap: wrap; gap: 8px; }
+  button.play {
+    position: relative; overflow: hidden; isolation: isolate;
+    display: inline-flex; align-items: center; gap: 9px;
+    font: inherit; font-size: 15px; font-weight: 500; color: var(--fg);
+    background: var(--soft); border: 1px solid var(--line); border-radius: 999px;
+    padding: 9px 16px 9px 12px; cursor: pointer; min-height: 42px;
+  }
+  button.play::before { /* progress fill */
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--go); opacity: 0.2;
+    transform-origin: left center; transform: scaleX(var(--p, 0));
+  }
+  button.play:hover { border-color: var(--muted); }
+  button.play:focus-visible { outline: 2px solid var(--go); outline-offset: 2px; }
+  button.play[aria-pressed="true"] { border-color: var(--go); }
+  button.play .glyph { width: 14px; height: 14px; flex: none; fill: var(--go); }
+  button.play .glyph .stop { display: none; }
+  button.play[aria-pressed="true"] .glyph .stop { display: inline; }
+  button.play[aria-pressed="true"] .glyph .go { display: none; }
+  button.play small { color: var(--muted); font-size: 13px; font-family: var(--mono); }
+
+  .refs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tip { border-left: 3px solid var(--brand); padding: 2px 0 2px 14px; color: var(--muted); max-width: 64ch; }
+  .tip b { color: var(--fg); font-weight: 600; }
+
+  /* Options */
+  .options { display: flex; flex-direction: column; gap: 14px; }
+  .option {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 14px 24px; align-items: start;
+  }
+  .option.pick { border-color: var(--go); }
+  .option .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .option .letter { font-weight: 800; font-size: 26px; line-height: 1; color: var(--go); }
+  .option .name { font-weight: 800; font-size: 22px; line-height: 1.1; }
+  .option .text { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .option .blurb { color: var(--muted); max-width: 56ch; }
+  .option .facts { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 2px 14px; }
+  .option .facts span { white-space: nowrap; }
+  .option .plays { grid-column: 1 / -1; }
+  .roll { width: 100%; height: auto; display: block; }
+  .roll text { font-family: var(--mono); font-size: 9px; fill: var(--muted); }
+  .roll .axis { stroke: var(--line); stroke-width: 1; fill: none; }
+  .roll .ghost { fill: none; stroke-width: 1; stroke-dasharray: 3 3; }
+  .roll .ghost.change { stroke: var(--brand); }
+  .roll .ghost.count { stroke: var(--muted); }
+  .roll .lab.change { fill: var(--brand); }
+  .roll .lab.own { fill: var(--go); }
+  .roll .pip { fill: var(--go); }
+
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; }
+  .legend div { min-width: 0; }
+  .legend dt { font-weight: 600; }
+  .legend dd { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
+  dl { margin: 0; }
+  .notes { color: var(--muted); display: flex; flex-direction: column; gap: 8px; max-width: 66ch; font-size: 15px; }
+  .notes b { color: var(--fg); font-weight: 600; }
+  .notes a { color: var(--fg); }
+  #fail { color: var(--brand); }
+
+  @media (max-width: 640px) {
+    .option { grid-template-columns: minmax(0, 1fr); }
+    .finding { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
+<main class="page">
+  <header>
+    <div class="eyebrow">Wharf WOD, the halfway cue</div>
+    <h1>Is the halfway sound the right one?</h1>
+    <p class="lede"><strong>The shape is right. The level and the pitch are the weak points.</strong> It is the quietest cue in the app and it plays on the change beep's exact note. Four alternatives are below, each inside a real Tabata round, with the one I would build marked.</p>
+  </header>
+
+  <section aria-labelledby="h-verdict">
+    <h2 id="h-verdict">What the sound is today</h2>
+    <div class="findings">
+      <div class="finding">
+        <div class="what">Shape</div>
+        <div class="body">
+          <span class="chip ok">Right</span>
+          <p><b>Two quick pips.</b> Every other beep in the app sounds once and long, so a double pip cannot be read as a count or a change when it is heard clearly. I checked whether the 60 ms gap blurs into one sound in an echoing room, over 200 simulated rooms: it holds.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="what">Level</div>
+        <div class="body">
+          <span class="chip warn">Quietest cue in the app</span>
+          <p><b>2.5 dB (decibels) under the change beep, and 200 ms of sound against 770 ms.</b> That is about a tenth of the change beep's energy. It was made gentle on purpose on 14 November. With music on and the phone on the floor it is the cue most likely to be missed.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="what">Pitch</div>
+        <div class="body">
+          <span class="chip warn">Same note as the change beep</span>
+          <p><b>1031 Hz (hertz), identical to the beep that ends every round.</b> Only the rhythm separates "halfway" from "round over". The file is called mid, but nothing about its pitch is in the middle.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-ref">
+    <h2 id="h-ref">The two beeps it sits between</h2>
+    <p class="sub">Play these first. Every option below has to be told apart from both.</p>
+    <div class="refs">
+      <button class="play" type="button" id="play-ref-count" data-clip="ref_count" aria-pressed="false"><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><path class="go" d="M2 1l11 6-11 6z"/><rect class="stop" x="2" y="2" width="10" height="10" rx="1"/></svg>The 3, 2, 1 beep <small>436 Hz</small></button>
+      <button class="play" type="button" id="play-ref-change" data-clip="ref_change" aria-pressed="false"><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><path class="go" d="M2 1l11 6-11 6z"/><rect class="stop" x="2" y="2" width="10" height="10" rx="1"/></svg>The change beep <small>1031 Hz</small></button>
+    </div>
+    <p class="tip"><b>Listen on the phone's own speaker, with music playing if you can.</b> Headphones flatter every option. The gym hears a small speaker over a loud room.</p>
+  </section>
+
+  <section aria-labelledby="h-options">
+    <h2 id="h-options">Five sounds, four ways to hear each</h2>
+    <dl class="legend">
+      <div><dt>Alone</dt><dd>Just the halfway sound.</dd></div>
+      <div><dt>In a round</dt><dd>A Tabata work block from the app's own cue log: the halfway sound at 1.5 s, the 3, 2, 1 from 8.5 s, the change at 11.5 s.</dd></div>
+      <div><dt>Over noise</dt><dd>The same round under steady hiss, a rough stand-in for music and a full room.</dd></div>
+      <div><dt>With the voice</dt><dd>An AMRAP's halfway with the Drill Sergeant voice: the sound and "Halfway" start together.</dd></div>
+    </dl>
+    <p class="sub">Each strip shows pitch up the side and time along the bottom, drawn to scale. The dashed outlines are the change beep and the 3, 2, 1 beep at their real length. A thinner bar is a quieter sound.</p>
+    <div class="options" id="options"></div>
+    <p id="fail" role="status" hidden></p>
+  </section>
+
+  <section aria-labelledby="h-notes">
+    <h2 id="h-notes">How these were made, and what is not proven</h2>
+    <div class="notes">
+      <p><b>The clips are the app's own cue log.</b> The timer's real cue code wrote out what it plays and when, and each clip mixes the shipped beep and voice files at those times. Only the halfway file is swapped.</p>
+      <p><b>The new sounds are synthesised.</b> Each uses the harmonic recipe measured in the shipped beeps, so it sounds like the same family. With a voice on, the loudest pairing peaks at 0.4 dB under full scale, the same headroom as today's loudest change beep with a line on it.</p>
+      <p><b>The noise is a stand-in.</b> It is set so the change beep sits 6 dB over the noise in its own band. It shows which sounds survive a masker, not how loud your gym is.</p>
+      <p><b>No standard exists to copy.</b> Timers that have a halfway alert treat it as an optional extra beep; I found no shared convention for what it should sound like.</p>
+      <p><b>I cannot hear.</b> Level, pitch and length are measured. Which one sounds right in the gym is your ear's call.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+  const CLIPS = /*CLIPS*/{}/*END*/;
+
+  // Pips: f in Hz, from / to in ms (sounding, fades included), amp relative to the change beep.
+  const OPTIONS = [
+    { key: "a_now", letter: "A", name: "Now", chip: ["quiet", "Ships today"],
+      blurb: "Two short pips on the change beep's note, turned down. What every phone and watch plays today.",
+      facts: ["1031 Hz", "2 pips of 100 ms", "60 ms gap", "2.5 dB under the change beep"],
+      pips: [{ f: 1031, from: 0, to: 100, amp: 0.75 }, { f: 1031, from: 160, to: 260, amp: 0.75 }] },
+    { key: "b_fuller", letter: "B", name: "Fuller", chip: null,
+      blurb: "The same note, with longer pips at the change beep's level. Fixes how easy it is to miss and nothing else.",
+      facts: ["1031 Hz", "2 pips of 120 ms", "110 ms gap", "level with the change beep"],
+      pips: [{ f: 1031, from: 0, to: 120, amp: 1 }, { f: 1031, from: 230, to: 350, amp: 1 }] },
+    { key: "c_mid_tone", letter: "C", name: "Mid tone", chip: ["ok", "My pick"], pick: true,
+      blurb: "Its own note, a fifth under the change beep and well clear of the count. Three cues, three pitches, so one pip heard through the noise is enough to know which it was.",
+      facts: ["687 Hz", "2 pips of 120 ms", "110 ms gap", "level with the change beep"],
+      pips: [{ f: 687, from: 0, to: 120, amp: 1 }, { f: 687, from: 230, to: 350, amp: 1 }] },
+    { key: "d_rising_pair", letter: "D", name: "Rising pair", chip: null,
+      blurb: "Two different notes, the second higher. Nothing else in the app changes pitch, so it is the hardest to mistake. It is also the closest to a phone notification.",
+      facts: ["687 then 872 Hz", "2 pips of 130 ms", "90 ms gap", "level with the change beep"],
+      pips: [{ f: 687, from: 0, to: 130, amp: 1 }, { f: 872, from: 220, to: 350, amp: 1 }] },
+    { key: "e_watch_chime", letter: "E", name: "Watch chime", chip: null,
+      blurb: "An octave over the change beep and very short: the hourly chime of a digital watch. High notes carry over music, but it is thin next to the other beeps.",
+      facts: ["2062 Hz", "2 pips of 70 ms", "90 ms gap", "3 dB under the change beep"],
+      pips: [{ f: 2062, from: 0, to: 70, amp: 0.71 }, { f: 2062, from: 160, to: 230, amp: 0.71 }] },
+  ];
+  const WAYS = [["alone", "Alone", ""], ["tabata", "In a round", "12.7 s"], ["noise", "Over noise", "12.7 s"], ["voice", "With the voice", ""]];
+
+  // One scale for every strip: 0 to 800 ms across, 380 to 2300 Hz up (log).
+  const W = 320, H = 96, X0 = 34, X1 = 312, Y0 = 76, Y1 = 8;
+  const x = ms => X0 + (ms / 800) * (X1 - X0);
+  const y = f => Y0 - (Math.log(f / 380) / Math.log(2300 / 380)) * (Y0 - Y1);
+  const FULL = 9; // bar thickness at the change beep's level
+
+  function roll(o) {
+    const bar = p => `<rect class="pip" x="${x(p.from).toFixed(1)}" y="${(y(p.f) - FULL * p.amp / 2).toFixed(1)}" width="${(x(p.to) - x(p.from)).toFixed(1)}" height="${(FULL * p.amp).toFixed(1)}" rx="1.5"/>`;
+    const ghost = (cls, f, to) => `<rect class="ghost ${cls}" x="${x(0)}" y="${(y(f) - FULL / 2).toFixed(1)}" width="${(x(to) - x(0)).toFixed(1)}" height="${FULL}" rx="1.5"/>`;
+    const ticks = [0, 200, 400, 600, 800].map(ms => `<path class="axis" d="M${x(ms)} ${Y0 + 6}v4"/><text x="${ms === 800 ? W - 1 : x(ms)}" y="${H - 1}" text-anchor="${ms === 800 ? "end" : "middle"}">${ms}${ms === 800 ? " ms" : ""}</text>`).join("");
+    // The two reference pitches sit on the axis. A pip's own pitch joins them when there is
+    // room; when it would collide (872 against 1031) it is written beside its bar instead.
+    const onAxis = [436, 1031], beside = [];
+    for (const f of new Set(o.pips.map(p => p.f))) {
+      if (onAxis.includes(f)) continue;
+      if (onAxis.every(g => Math.abs(y(g) - y(f)) >= 11)) onAxis.push(f); else beside.push(f);
+    }
+    const cls = f => f === 1031 ? ' class="lab change"' : f === 436 ? "" : ' class="lab own"';
+    const hz = onAxis.map(f => `<text x="${X0 - 5}" y="${(y(f) + 3).toFixed(1)}" text-anchor="end"${cls(f)}>${f}</text>`).join("")
+      + beside.map(f => { const last = o.pips.filter(p => p.f === f).pop(); return `<text class="lab own" x="${(x(last.to) + 5).toFixed(1)}" y="${(y(f) + 3).toFixed(1)}">${f}</text>`; }).join("");
+    return `<svg class="roll" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.name}: ${o.facts.join(", ")}, drawn against the change beep and the 3, 2, 1 beep">
+      <path class="axis" d="M${X0} ${Y0 + 6}H${X1}"/>${ticks}${hz}
+      ${ghost("change", 1031, 770)}${ghost("count", 436, 570)}
+      ${o.pips.map(bar).join("")}</svg>`;
+  }
+
+  const glyph = '<svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><path class="go" d="M2 1l11 6-11 6z"/><rect class="stop" x="2" y="2" width="10" height="10" rx="1"/></svg>';
+  document.getElementById("options").innerHTML = OPTIONS.map(o => `
+    <article class="option${o.pick ? " pick" : ""}">
+      <div class="text">
+        <div class="head"><span class="letter">${o.letter}</span><span class="name">${o.name}</span>${o.chip ? `<span class="chip ${o.chip[0]}">${o.chip[1]}</span>` : ""}</div>
+        <p class="blurb">${o.blurb}</p>
+        <div class="facts">${o.facts.map(f => `<span>${f}</span>`).join("")}</div>
+      </div>
+      ${roll(o)}
+      <div class="plays">${WAYS.map(([way, label, len]) => `<button class="play" type="button" id="play-${o.key}-${way}" data-clip="${o.key}_${way}" aria-pressed="false" aria-label="${o.name}, ${label.toLowerCase()}">${glyph}${label}${len ? ` <small>${len}</small>` : ""}</button>`).join("")}</div>
+    </article>`).join("");
+
+  // Playback: one clip at a time. An <audio> element first (it plays with an iPhone's
+  // silent switch on). If the frame refuses data: audio, Web Audio decodes the same bytes.
+  const cache = {};
+  let current = null, ctx = null, useWebAudio = false;
+  const AC = window.AudioContext || window.webkitAudioContext;
+
+  // Ask once, without playing anything, whether an <audio> element may load a clip here.
+  try {
+    const probe = new Audio("data:audio/mpeg;base64," + CLIPS.ref_count);
+    probe.onerror = () => { useWebAudio = true; };
+  } catch (e) { useWebAudio = true; }
+
+  function stop() {
+    if (!current) return;
+    const me = current; current = null;
+    try { me.player.pause(); me.player.currentTime = 0; } catch (e) {}
+    cancelAnimationFrame(me.raf);
+    me.btn.setAttribute("aria-pressed", "false");
+    me.btn.style.setProperty("--p", "0");
+  }
+
+  function fail(text) {
+    const el = document.getElementById("fail");
+    el.textContent = text; el.hidden = false;
+  }
+
+  function bytes(id) {
+    const bin = atob(CLIPS[id]); const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+
+  // Called inside the tap, so a phone lets the context start.
+  function unlock() {
+    if (!AC) return;
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      ctx = ctx || new AC();
+      if (ctx.state === "suspended") ctx.resume();
+    } catch (e) {}
+  }
+
+  async function viaWebAudio(me, id) {
+    if (me.fellBack) return; me.fellBack = true;
+    try {
+      if (!AC) throw new Error("no Web Audio");
+      ctx = ctx || new AC();
+      if (ctx.state !== "running") await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 700))]);
+      if (ctx.state !== "running") {
+        if (current === me) stop();
+        fail("Tap the button once more to start the sound.");
+        return;
+      }
+      const decoded = await ctx.decodeAudioData(bytes(id));
+      if (current !== me) return;
+      const src = ctx.createBufferSource(); src.buffer = decoded; src.connect(ctx.destination);
+      const t0 = ctx.currentTime; src.start();
+      me.player = { pause() { try { src.stop(); } catch (e) {} }, get currentTime() { return ctx.currentTime - t0; }, set currentTime(v) {}, duration: decoded.duration };
+      src.onended = () => { if (current === me) stop(); };
+      document.getElementById("fail").hidden = true;
+    } catch (e) {
+      if (current === me) stop();
+      fail("This browser would not play that clip. Opening the page in Safari or Chrome should fix it.");
+    }
+  }
+
+  function play(btn) {
+    if (current && current.btn === btn) { stop(); return; }
+    stop();
+    const id = btn.dataset.clip;
+    if (!CLIPS[id]) { fail("That clip is missing from the page."); return; }
+    const me = { btn, player: { pause() {}, currentTime: 0, duration: 1 }, raf: 0, fellBack: false };
+    current = me;
+    btn.setAttribute("aria-pressed", "true");
+    const tick = () => {
+      if (current !== me) return;
+      const d = me.player.duration || 1;
+      btn.style.setProperty("--p", Math.min(1, me.player.currentTime / d).toFixed(3));
+      me.raf = requestAnimationFrame(tick);
+    };
+    if (useWebAudio) {
+      unlock(); viaWebAudio(me, id); tick(); return;
+    }
+    const audio = cache[id] || (cache[id] = new Audio("data:audio/mpeg;base64," + CLIPS[id]));
+    me.player = audio;
+    const refused = () => {
+      if (current !== me) return;
+      useWebAudio = true;
+      me.player = { pause() {}, currentTime: 0, duration: 1 };
+      viaWebAudio(me, id);
+    };
+    audio.onended = () => { if (current === me) stop(); };
+    audio.onerror = refused;
+    try { audio.currentTime = 0; } catch (e) {}
+    const started = audio.play();
+    if (started && started.catch) started.catch(err => { if (!err || err.name !== "AbortError") refused(); });
+    tick();
+  }
+
+  document.addEventListener("click", e => {
+    const btn = e.target.closest("button.play");
+    if (btn) play(btn);
+  });
+</script>

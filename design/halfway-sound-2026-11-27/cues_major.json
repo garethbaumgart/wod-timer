@@ -1,0 +1,386 @@
+{
+  "for_time": [
+    {
+      "ms": 100,
+      "asset": "audio/major/get_ready.mp3"
+    },
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/major/countdown_go.mp3"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/major/halfway.mp3"
+    },
+    {
+      "ms": 60000,
+      "asset": "audio/major/ten_seconds.mp3"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/major/complete.mp3"
+    }
+  ],
+  "amrap": [
+    {
+      "ms": 100,
+      "asset": "audio/major/get_ready.mp3"
+    },
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/major/countdown_go.mp3"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/major/halfway.mp3"
+    },
+    {
+      "ms": 60000,
+      "asset": "audio/major/ten_seconds.mp3"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/major/good_job.mp3"
+    }
+  ],
+  "emom": [
+    {
+      "ms": 100,
+      "asset": "audio/major/get_ready.mp3"
+    },
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/major/countdown_go.mp3"
+    },
+    {
+      "ms": 25000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 37000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 38000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 39000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/major/next_round.mp3"
+    },
+    {
+      "ms": 55000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 55000,
+      "asset": "audio/major/halfway.mp3"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/major/last_round.mp3"
+    },
+    {
+      "ms": 85000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 90000,
+      "asset": "audio/major/ten_seconds.mp3"
+    },
+    {
+      "ms": 97000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 98000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 99000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 100000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 100000,
+      "asset": "audio/major/good_job.mp3"
+    }
+  ],
+  "tabata": [
+    {
+      "ms": 100,
+      "asset": "audio/major/get_ready.mp3"
+    },
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/major/countdown_go.mp3"
+    },
+    {
+      "ms": 20000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 27000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 28000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 29000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 30000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 30000,
+      "asset": "audio/major/rest.mp3"
+    },
+    {
+      "ms": 37000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 38000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 39000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/major/next_round.mp3"
+    },
+    {
+      "ms": 50000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 55000,
+      "asset": "audio/major/halfway.mp3"
+    },
+    {
+      "ms": 57000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 58000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 59000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 60000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 60000,
+      "asset": "audio/major/rest.mp3"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/major/last_round.mp3"
+    },
+    {
+      "ms": 80000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 87000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 88000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 89000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 90000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 90000,
+      "asset": "audio/major/rest.mp3"
+    },
+    {
+      "ms": 97000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 98000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 99000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 100000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 100000,
+      "asset": "audio/major/good_job.mp3"
+    }
+  ]
+}

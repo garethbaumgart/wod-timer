@@ -1,0 +1,262 @@
+{
+  "for_time": [
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    }
+  ],
+  "amrap": [
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    }
+  ],
+  "emom": [
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 100000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 127000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 128000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 129000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 130000,
+      "asset": "audio/beeps/high.wav"
+    }
+  ],
+  "tabata": [
+    {
+      "ms": 7000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 8000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 9000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 10000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 20000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 27000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 28000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 29000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 30000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 37000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 38000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 39000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 40000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 50000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 57000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 58000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 59000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 60000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 67000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 68000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 69000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 70000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 80000,
+      "asset": "audio/beeps/mid.wav"
+    },
+    {
+      "ms": 87000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 88000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 89000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 90000,
+      "asset": "audio/beeps/high.wav"
+    },
+    {
+      "ms": 97000,
+      "asset": "audio/beeps/low_3.wav"
+    },
+    {
+      "ms": 98000,
+      "asset": "audio/beeps/low_2.wav"
+    },
+    {
+      "ms": 99000,
+      "asset": "audio/beeps/low_1.wav"
+    },
+    {
+      "ms": 100000,
+      "asset": "audio/beeps/high.wav"
+    }
+  ]
+}
