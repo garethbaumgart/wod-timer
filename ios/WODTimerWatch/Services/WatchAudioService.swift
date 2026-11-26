@@ -123,9 +123,10 @@ final class WatchAudioService {
         playBeep("high")
     }
 
-    /// The mid-round pips (2.5.0): two quick pips, quieter than the high
-    /// beep, halfway through an EMOM interval, a Tabata work block or an
-    /// AMRAP / For Time clock. A beep, so only Silent stops it.
+    /// The mid-round pips (2.5.0): two quick pips halfway through an EMOM
+    /// interval, a Tabata work block or an AMRAP / For Time clock. Their
+    /// own pitch (687 Hz) at the high beep's level since 27 Nov 2026. A
+    /// beep, so only Silent stops it.
     func playMidBeep() {
         playBeep("mid")
     }
