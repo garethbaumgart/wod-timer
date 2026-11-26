@@ -22,6 +22,11 @@ struct HomeView: View {
     @State private var refresh = 0
     /// The Return to App row shows until the athlete has read it (2.4.0).
     @State private var stayOnScreenSeen = UserDefaults.standard.bool(forKey: StayOnScreenView.seenKey)
+    /// Home says once that Workouts is not allowed (27 Nov 2026): without
+    /// it no Health session runs, and until now only a label at the foot
+    /// of Home and a bell on the timer said so.
+    @State private var workoutsOffNotice = false
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Every Home screen lists the modes in this order.
     static let modeOrder = Palette.modeOrder
@@ -54,6 +59,22 @@ struct HomeView: View {
                         .frame(height: HomeGrid.height(safeHeight: screen.size.height))
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                    if let tracker = viewModel.tracker as? HealthWorkoutTracker, tracker.workoutsRefused {
+                        // First under the timers while it lasts: the one
+                        // thing wrong with this watch's setup.
+                        NavigationLink {
+                            HealthSettingsView(tracker: tracker, alerts: viewModel.alerts, note: viewModel.sessionNote)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(HealthSettingsView.workoutsOffTitle)
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Palette.error)
+                                Text(HealthSettingsView.workoutsOffRow)
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .foregroundStyle(Palette.label)
+                            }
+                        }
+                    }
                     if !stayOnScreenSeen {
                         NavigationLink {
                             StayOnScreenView { stayOnScreenSeen = true }
@@ -111,11 +132,27 @@ struct HomeView: View {
             .navigationDestination(item: $openedMode) { code in
                 setup(code)
             }
+            .alert(HealthSettingsView.workoutsOffTitle, isPresented: $workoutsOffNotice) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(HealthSettingsView.workoutsOffNotice)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                // Back from Settings: the row and the Health page follow
+                // what the athlete just changed there.
+                if phase == .active { (viewModel.tracker as? HealthWorkoutTracker)?.refreshPermissions() }
+            }
             .onAppear {
                 refresh += 1
-                // The one Health permission (save workouts), asked here as
-                // workout apps do, never during a countdown.
-                (viewModel.tracker as? HealthWorkoutTracker)?.requestAuthorizationIfNeeded()
+                // The Health permissions (save workouts, read the heart
+                // rate), asked here as workout apps do, never during a
+                // countdown. Once they stand, an athlete whose Workouts
+                // permission is off is told what that costs, one time.
+                if let tracker = viewModel.tracker as? HealthWorkoutTracker {
+                    tracker.requestAuthorizationIfNeeded { _ in
+                        if tracker.takeRefusalNotice() { workoutsOffNotice = true }
+                    }
+                }
                 // The alerts permission (2.4.0), asked the same way: the
                 // system taps the wrist at each change when no Health
                 // session keeps the app alive.
