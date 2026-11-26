@@ -72,13 +72,29 @@ Future<void> pumpSeconds(WidgetTester tester, double seconds) async {
 
 Future<void> goBack(WidgetTester tester) async {
   await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
-  await tester.pumpAndSettle();
+  await settle(tester);
 }
 
 /// Open a mode from Home and tap START once the 500ms guard has passed.
+/// pumpAndSettle with a ceiling. On an Android tablet some screens never
+/// report settled (the rounds wheel, and DONE back to setup), and the
+/// default waits ten minutes before it fails the tour (26 Nov 2026): three
+/// seconds is more than any transition here takes, so the tour carries on.
+Future<void> settle(WidgetTester tester) async {
+  try {
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(seconds: 3),
+    );
+  } on FlutterError {
+    // Still animating after three seconds: go on.
+  }
+}
+
 Future<void> openAndStart(WidgetTester tester, String mode) async {
   await tester.tap(find.text(mode));
-  await tester.pumpAndSettle();
+  await settle(tester);
   await pumpSeconds(tester, 0.8);
   await tester.tap(find.text('START'));
   await tester.pump();
@@ -98,7 +114,7 @@ Future<void> spin(WidgetTester tester, String label, int steps) async {
   );
   final rowHeight = tester.getRect(rows).height / 3;
   await tester.drag(rows, Offset(0, -steps * rowHeight));
-  await tester.pumpAndSettle();
+  await settle(tester);
 }
 
 /// Turn the bezel to [minutes] by touching the ring at that angle.
@@ -110,7 +126,7 @@ Future<void> turnBezel(WidgetTester tester, int minutes) async {
       rect.center +
       Offset(radius * math.sin(radians), -radius * math.cos(radians));
   await tester.tapAt(point);
-  await tester.pumpAndSettle();
+  await settle(tester);
 }
 
 /// Running → paused. HOLD TO STOP only exists on the paused screen.
@@ -148,7 +164,7 @@ Future<void> holdStop(WidgetTester tester) async {
 /// From an end screen: DONE lands on the mode's setup; back to Home.
 Future<void> doneToHome(WidgetTester tester) async {
   await tester.tap(find.text('DONE'));
-  await tester.pumpAndSettle();
+  await settle(tester);
   await goBack(tester);
 }
 
@@ -167,14 +183,14 @@ void main() {
       );
     }
     app.main();
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     // ---------- Home ----------
     await hold(tester, 'home');
 
     // ---------- Setup screens ----------
     await tester.tap(find.text('AMRAP'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'amrap_setup');
     await turnBezel(tester, 12);
     await hold(tester, 'amrap_setup_turned', tenths: 20);
@@ -182,45 +198,45 @@ void main() {
     await goBack(tester);
 
     await tester.tap(find.text('FOR TIME'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'fortime_setup');
     await tester.tap(find.text('COUNT DOWN'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'fortime_setup_countdown');
     await tester.tap(find.text('COUNT UP'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await goBack(tester);
 
     await tester.tap(find.text('EMOM'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'emom_setup');
     await goBack(tester);
 
     await tester.tap(find.text('TABATA'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'tabata_setup');
     await spin(tester, 'ROUNDS', 1);
     await hold(tester, 'tabata_setup_drifted');
     await tester.tap(find.text('RESET TO CLASSIC'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await goBack(tester);
 
     // ---------- Settings + pickers ----------
     await tester.tap(find.byIcon(Icons.settings_outlined));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'settings');
 
     await tester.tap(find.text('Voice'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'settings_voice_picker');
     await tester.tap(find.text('Major (Drill Sergeant)'));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     await tester.tap(find.text('Orientation'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'settings_orientation_picker');
     await tester.tap(find.text('Auto (follow device)'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await goBack(tester);
 
     // ---------- AMRAP live: prep, work, counted, paused, stopped ----------
@@ -265,7 +281,7 @@ void main() {
     final wheel = find.byType(RoundsWheel);
     final itemHeight = tester.getRect(wheel).height / 1.9;
     await tester.drag(wheel, Offset(0, -itemHeight));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'active_amrap_complete_fixed', tenths: 20);
     await doneToHome(tester);
 
@@ -316,7 +332,7 @@ void main() {
 
     // ---------- Tabata live: work, rest, next, last rest, finished -------
     await tester.tap(find.text('TABATA'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     // 2 rounds keeps the run short: prep 10 + (20+10)*2 = 70s.
     await spin(tester, 'ROUNDS', -6);
     await pumpSeconds(tester, 0.8);
@@ -378,20 +394,20 @@ void main() {
 
     // ---------- Landscape: home, setups, active, paused, end ---------
     await tester.tap(find.byIcon(Icons.settings_outlined));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Orientation'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Landscape only'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await pumpSeconds(tester, 2); // let the rotation finish
     await goBack(tester);
     await hold(tester, 'home_landscape');
     await tester.tap(find.text('TABATA'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'tabata_setup_landscape');
     await goBack(tester);
     await tester.tap(find.text('FOR TIME'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await hold(tester, 'fortime_setup_landscape');
     await goBack(tester);
     await openAndStart(tester, 'AMRAP');
@@ -418,11 +434,11 @@ void main() {
 
     // ---------- Restore orientation ----------
     await tester.tap(find.byIcon(Icons.settings_outlined));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Orientation'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Auto (follow device)'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await pumpSeconds(tester, 2);
     await goBack(tester);
     print('MARK_TOUR_DONE');

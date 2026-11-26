@@ -99,7 +99,7 @@ fixed:
 | App Store, Apple Watch (8) | 2.0-era captures: no session glyph, the old Home rows | `fastlane/screenshots-watch/en-US/01..08`: eight 368x448 captures of 2.7.0 on the Apple Watch SE 44mm simulator (Home 2x2, EMOM, Tabata work, AMRAP and For Time with the heart rate, EMOM setup, Tabata next, a finished For Time with average and peak) |
 | App Store 6.9in and Play phone, frame 07 (wrist) | The Apple Watches showed the 1.3.0 app (a green clock, a round pause button) | The 2.7.0 watch: App Store shows the live EMOM with the heart rate, Home and a finished For Time, and its proof reads "Your heart rate on the timer. / Beeps and taps with your wrist down."; Play keeps its proof and shows Wear OS with the Apple Watch's Tabata and Home |
 | App Store, 13-inch iPad (10) | Nine of ten from 3 Oct: small setup dials, no "+ THEN", end screens without the fact tiles | `fastlane/screenshots-ipad/en-US/`: all ten re-captured from 2.6.2 on the iPad Pro 13-inch simulator |
-| Play, 7-inch and 10-inch tablets (8 each) | 1.3-era captures, letterboxed under a black band (a 3:4 capture on a 9:16 canvas) | `play-tablet/en-US/01..08`: eight full-bleed 1440x2560 captures of 2.6.2 from the Pixel Tablet emulator set to 9:16, used for both slots |
+| Play, 7-inch and 10-inch tablets (8 each) | 1.3-era captures, letterboxed under a black band (a 3:4 capture on a 9:16 canvas) | `play-tablet/en-US/01..08`: eight 1440x2560 boards, the phone set's headlines over Pixel Tablet emulator captures of the current app in a slate frame, used for both slots. Board 02 is the tablet's own claim: "The whole gym can read it." |
 
 Frames 01 to 06 and 08 of the phone sets re-rendered pixel-identical to the live ones (0 px at 2% fuzz), the Wear
 OS set (2.5.2) and the feature graphic are current, and nothing in them changed.
@@ -119,6 +119,12 @@ How each was made:
   `integration_test/ux_review_tour_test.dart` (the rest) with a watcher that screenshots at each `MARK_` line.
   The iPad simulator must be in English first (`simctl spawn <udid> defaults write -g AppleLanguages -array en-US`,
   `AppleLocale en_US`, restart): it had been left in Indonesian and the status bar read "Kam 26 Nov". The Pixel
-  Tablet emulator is 16:10; `adb shell wm size 1440x2560` and `wm density 288` make it the 9:16 Play's tablet slots
-  take (800dp wide, the tablet layout), and SystemUI demo mode sets the clock to 9:41.
-  Upload: `play_screenshots.py batch --item en-US sevenInchScreenshots <dir> --item en-US tenInchScreenshots <dir>`.
+  Tablet emulator had been left in Indonesian too ("09.41", 24-hour end screens): `adb root`,
+  `setprop persist.sys.locale en-US`, `setprop ctl.restart zygote`; portrait needs
+  `cmd window user-rotation lock 1` (a `wm size` override turns it sideways); SystemUI demo mode sets 9:41.
+  A tablet is 10:16 and Play's tablet slots take 9:16 only, so the captures go on boards: the generator's
+  `prep_tablet.sh` (paints out the launcher's taskbar) and `produce_tablet.py`, in the portfolio repo's
+  `preview-concepts/wharfwod`. The tour's `pumpAndSettle` calls never return on an Android tablet (the rounds
+  wheel, DONE back to setup), so they now give up after three seconds (`settle`).
+  Upload: `play_screenshots.py batch --item en-US phoneScreenshots <play/en-US> --item en-US sevenInchScreenshots
+  <play-tablet/en-US> --item en-US tenInchScreenshots <play-tablet/en-US>` (one commit: Play caps saves per day).
