@@ -46,6 +46,13 @@ flaws or bugs", then "build them all and ship them all together").
   `fastlane/screenshots-watch/en-US/`), the wrist frame on both stores, the
   13-inch iPad set and Play's two tablet sets were re-captured: see
   `design/store-captions-2026-10/README.md`.
+- **Google Play, the same evening.** The Wear build went up as vc20007:
+  internal first, then `tool/wear/release_smoke.sh` on both round emulators
+  (the exact uploaded bundle, driven by real taps on its labels: the four
+  tiles, an EMOM through pause, Back, screen off and HOLD TO STOP, a For
+  Time through FINISH, the wake lock at every step), then production. The
+  phone set and both tablet sets went up in one commit. Run that smoke
+  between the internal upload and the promote on every Wear release.
 
 Left for a decision, not built:
 

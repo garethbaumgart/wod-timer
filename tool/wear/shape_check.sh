@@ -14,6 +14,9 @@
 # radius. The emulator masks screenshots to the round display, so content in that ring is
 # content at or past the edge. Lists are captured for the eye only (rows pass under the edge
 # as they scroll); look at the sheet for cut text and for the scroll bar on the scrolled shots.
+#
+# This is the DEBUG build's check. The release bundle has its own: tool/wear/release_smoke.sh,
+# run between the internal upload and the promote.
 set -u
 ADB=${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}
 S=$1; OUT=$2; shift 2
