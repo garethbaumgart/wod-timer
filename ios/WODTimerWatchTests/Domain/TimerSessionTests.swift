@@ -1369,6 +1369,142 @@ final class SetupValueRowTests: XCTestCase {
     #endif
 }
 
+// MARK: - Home grid (2.7.0)
+
+/// Home's four timers as a 2x2, as on Wear OS. As full-width rows under a
+/// stacked wordmark, a 40mm showed one and a half timers and a 49mm two
+/// (watch review, 26 Nov 2026). The widths and safe heights below are each
+/// simulator's own: screen width, the list's width, the safe area's height.
+final class HomeGridTests: XCTestCase {
+    private var defaults: UserDefaults!
+
+    /// (name, screen width, list width, safe height), measured 26 Nov 2026.
+    private let watches: [(String, CGFloat, CGFloat, CGFloat)] = [
+        ("40mm", 162, 158, 145), ("42mm", 187, 183, 152), ("44mm", 184, 180, 164),
+        ("46mm", 208, 204, 167), ("49mm", 211, 207, 170),
+    ]
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: "HomeGridTests")
+        defaults.removePersistentDomain(forName: "HomeGridTests")
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: "HomeGridTests")
+        super.tearDown()
+    }
+
+    private func tiles(_ memory: SetupMemory? = nil) -> [HomeGrid.Tile] {
+        HomeView.tiles(memory ?? SetupMemory(defaults: defaults))
+    }
+
+    func testTheGridIsTwoByTwoInHomesOrder() {
+        XCTAssertEqual(HomeGrid.rows(HomeView.modeOrder), [["fortime", "emom"], ["amrap", "tabata"]])
+        XCTAssertEqual(HomeGrid.rows(["a", "b", "c"]), [["a", "b"], ["c"]])
+        XCTAssertEqual(HomeGrid.rows([String]()), [])
+        let all = tiles()
+        XCTAssertEqual(all.map(\.code), HomeView.modeOrder)
+        XCTAssertEqual(all.map(\.title), ["FOR TIME", "EMOM", "AMRAP", "TABATA"])
+        XCTAssertEqual(all.map(\.summary), ["CAP 20:00", "10 × 1:00", "10:00", "8 × 20s / 10s"])
+        XCTAssertEqual(all[1].parts.count, 10, "each tile draws its remembered workout")
+    }
+
+    func testATileLeavesForTimesDirectionToTheSetupScreen() {
+        let memory = SetupMemory(defaults: defaults)
+        memory.save(.forTime(timeCap: TimerDuration(seconds: 300), countUp: false))
+        XCTAssertEqual(memory.summary("fortime"), "CAP 5:00 · DOWN")
+        XCTAssertEqual(memory.tileSummary("fortime"), "CAP 5:00", "a tile is half the screen wide")
+        for code in ["emom", "amrap", "tabata"] {
+            XCTAssertEqual(memory.tileSummary(code), memory.summary(code))
+        }
+    }
+
+    func testEveryWatchShowsTheDefaultsAtTheirDrawnSize() {
+        for (name, screen, list, _) in watches {
+            let metrics = HomeGrid.metrics(screenWidth: screen)
+            let fit = HomeGrid.fit(tiles(), gridWidth: list, metrics: metrics)
+            XCTAssertEqual(fit.title, metrics.title, "\(name): no name is shrunk")
+            XCTAssertEqual(fit.summary, metrics.summary, "\(name): no workout is shrunk")
+            XCTAssertGreaterThanOrEqual(fit.title, 14, name)
+            XCTAssertGreaterThanOrEqual(fit.summary, 12, name)
+        }
+    }
+
+    func testSizesGrowWithTheScreenAndStopAtTheUltra() {
+        let small = HomeGrid.metrics(screenWidth: 162)
+        let large = HomeGrid.metrics(screenWidth: 211)
+        XCTAssertEqual(small.title, 14)
+        XCTAssertEqual(small.summary, 12)
+        XCTAssertGreaterThan(large.title, small.title)
+        XCTAssertGreaterThan(large.summary, small.summary)
+        XCTAssertEqual(HomeGrid.metrics(screenWidth: 400), HomeGrid.metrics(screenWidth: 162 * 1.3))
+        XCTAssertEqual(HomeGrid.metrics(screenWidth: 100), small, "never smaller than the 40mm's")
+    }
+
+    func testAWideWorkoutShrinksAllFourTogetherNeverOneAlone() {
+        let memory = SetupMemory(defaults: defaults)
+        memory.save(.tabata(workDuration: TimerDuration(seconds: 90), restDuration: TimerDuration(seconds: 90),
+                            rounds: RoundCount(value: 20)))
+        let wide = tiles(memory)
+        let metrics = HomeGrid.metrics(screenWidth: 162)
+        let fit = HomeGrid.fit(wide, gridWidth: 158, metrics: metrics)
+        XCTAssertLessThan(fit.summary, metrics.summary, "the four workouts share the size the widest needs")
+        XCTAssertGreaterThanOrEqual(fit.summary, HomeGrid.smallestSummary)
+        XCTAssertEqual(fit.title, metrics.title, "the names are untouched")
+        let room = HomeGrid.tileWidth(gridWidth: 158) - 2 * HomeGrid.textInset
+        if fit.summary > HomeGrid.smallestSummary {
+            let widest = wide.map { HomeGrid.textWidth($0.summary, size: fit.summary, weight: .semibold) }.max() ?? 0
+            XCTAssertLessThanOrEqual(widest, room + 0.5, "and at that size the widest fits")
+        }
+        // The same workout on an Ultra has the room.
+        let ultra = HomeGrid.metrics(screenWidth: 211)
+        XCTAssertGreaterThan(HomeGrid.fit(wide, gridWidth: 207, metrics: ultra).summary, fit.summary)
+    }
+
+    func testCommonSizeKeepsTheBaseWhenEverythingFitsAndNeverGoesUnderTheFloor() {
+        XCTAssertEqual(HomeGrid.commonSize(["10:00"], base: 12, weight: .semibold, room: 200, floor: 9), 12)
+        XCTAssertEqual(HomeGrid.commonSize([], base: 12, weight: .semibold, room: 10, floor: 9), 12)
+        XCTAssertEqual(HomeGrid.commonSize(["20 × 1:30 / 1:30"], base: 12, weight: .semibold, room: 5, floor: 9), 9)
+        let size = HomeGrid.commonSize(["20 × 1:30 / 1:30"], base: 12, weight: .semibold, room: 70, floor: 9)
+        XCTAssertEqual(size * 2, (size * 2).rounded(), "half-point steps")
+        XCTAssertGreaterThan(HomeGrid.textWidth("10:00", size: 12, weight: .semibold),
+                             HomeGrid.textWidth("1:00", size: 12, weight: .semibold))
+    }
+
+    func testTheGridFillsTheSafeAreaSoNoTileMeetsADisplayCorner() {
+        for (name, _, _, safe) in watches {
+            let height = HomeGrid.height(safeHeight: safe)
+            XCTAssertLessThanOrEqual(height, safe, "\(name): inside the safe area, clear of the bottom corners")
+            XCTAssertGreaterThanOrEqual(height, safe - 1, name)
+            XCTAssertGreaterThanOrEqual((height - HomeGrid.gap) / 2, 60, "\(name): a tile a finger can hit")
+        }
+        XCTAssertEqual(HomeGrid.tileWidth(gridWidth: 158), 77)
+        XCTAssertEqual(HomeGrid.height(safeHeight: 40), 2 * 52 + HomeGrid.gap, "never so short the lines touch")
+    }
+
+    func testTheWordmarkStepsAsideOnceTheListScrolls() {
+        XCTAssertFalse(HomeGrid.isScrolled(gridTop: 33, restingTop: 32), "at rest")
+        XCTAssertFalse(HomeGrid.isScrolled(gridTop: 60, restingTop: 32), "pulled down past rest")
+        XCTAssertFalse(HomeGrid.isScrolled(gridTop: 27, restingTop: 32), "a nudge is not a scroll")
+        XCTAssertTrue(HomeGrid.isScrolled(gridTop: 20, restingTop: 32))
+        XCTAssertTrue(HomeGrid.isScrolled(gridTop: -200, restingTop: 32))
+    }
+
+    func testTheWordmarkClearsTheClockOnA40mmAndGrowsWithTheScreen() {
+        XCTAssertEqual(WordmarkLine.size(screenWidth: 162), 15)
+        XCTAssertEqual(WordmarkLine.size(screenWidth: 211), 17)
+        XCTAssertEqual(WordmarkLine.size(screenWidth: 400), 17)
+        // WHARF, a 4pt gap, WOD and the full stop, from the bar's leading
+        // edge (about 10pt in), must end before a four-digit clock starts
+        // (about 112pt in on a 40mm).
+        let size = WordmarkLine.size(screenWidth: 162)
+        let width = HomeGrid.textWidth("WHARF", size: size, weight: .heavy) + 4
+            + HomeGrid.textWidth("WOD.", size: size, weight: .heavy)
+        XCTAssertLessThan(10 + width, 112)
+    }
+}
+
 final class DomainTypesTests: XCTestCase {
     func testTimerTypeLabelsCodesAndTotals() {
         XCTAssertEqual(TimerType.standardTabata.displayLabel, "TABATA")

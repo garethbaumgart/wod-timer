@@ -111,7 +111,14 @@ struct SetupMemory {
         type(code).timelineParts
     }
 
-    /// One-line summary for Home: "10:00", "CAP 20:00 · UP", "10 × 1:00",
+    /// The summary as a Home tile shows it (2.7.0): a tile is half the
+    /// screen wide, so For Time leaves its direction to the setup screen,
+    /// whose START carries it ("CAP 20:00").
+    func tileSummary(_ code: String) -> String {
+        code == "fortime" ? "CAP \(forTime.cap.clock)" : summary(code)
+    }
+
+    /// One-line summary: "10:00", "CAP 20:00 · UP", "10 × 1:00",
     /// "8 × 20s / 10s".
     func summary(_ code: String) -> String {
         switch code {

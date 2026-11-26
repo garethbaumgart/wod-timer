@@ -585,3 +585,180 @@ final class WatchClockTests: XCTestCase {
         XCTAssertEqual(unanchored[1].timeIntervalSince(start), 1, accuracy: 1e-6)
     }
 }
+
+// 2.7.0: the heart rate on the timer and the end screen. The Health
+// session already ran for every WOD to keep the timer alive; the athlete
+// saw none of what it measures (watch review, 26 Nov 2026).
+
+private final class HeartTracker: WorkoutTracking {
+    var heart = HeartReadout.none
+    var status: HealthWorkoutTracker.Status = .running
+    var onStatusChange: ((HealthWorkoutTracker.Status) -> Void)?
+    func begin(_ workout: Workout) {}
+    func go() {}
+    func pause() {}
+    func resume() {}
+    func end(keep: Bool) {}
+}
+
+final class HeartRateTests: XCTestCase {
+    private func makeHeartViewModel() -> (TimerViewModel, HeartTracker) {
+        let tracker = HeartTracker()
+        let haptics = WatchHapticService(player: { _ in }, scheduler: { _, work in work() })
+        return (TimerViewModel(tracker: tracker, haptics: haptics), tracker)
+    }
+
+    private func reading(_ beats: Int, age: TimeInterval = 0, average: Int? = 140, peak: Int? = 160) -> HeartReadout {
+        HeartReadout(current: beats, measuredAt: Date().addingTimeInterval(-age), average: average, peak: peak)
+    }
+
+    // The readout.
+
+    func testAReadingIsNowOnlyWhileItIsFresh() {
+        let taken = Date(timeIntervalSinceReferenceDate: 5000)
+        let heart = HeartReadout(current: 150, measuredAt: taken, average: 140, peak: 160)
+        XCTAssertEqual(heart.now(at: taken), 150)
+        XCTAssertEqual(heart.now(at: taken.addingTimeInterval(HeartReadout.freshFor)), 150)
+        XCTAssertNil(heart.now(at: taken.addingTimeInterval(HeartReadout.freshFor + 1)),
+                     "off the wrist: the session glyph comes back rather than an old number")
+        XCTAssertNil(HeartReadout.none.now(at: taken))
+        XCTAssertNil(HeartReadout(current: 150, measuredAt: nil).now(at: taken))
+        XCTAssertGreaterThanOrEqual(HeartReadout.freshFor, 10, "a session measures about every five seconds")
+    }
+
+    func testTheEndLineNeedsBothNumbers() {
+        XCTAssertEqual(HeartReadout(average: 152, peak: 178).summary, "AVG 152 · PEAK 178")
+        XCTAssertEqual(HeartReadout(average: 152, peak: 178).spokenSummary,
+                       "Heart rate: average 152, peak 178 beats per minute")
+        XCTAssertNil(HeartReadout(average: 152, peak: nil).summary)
+        XCTAssertNil(HeartReadout(current: 150, measuredAt: Date()).summary)
+        XCTAssertNil(HeartReadout.none.summary)
+        XCTAssertNil(HeartReadout.none.spokenSummary)
+    }
+
+    func testBeatsAreWholeAndOnlyInTheRangeAHeartBeats() {
+        XCTAssertEqual(HeartReadout.beats(151.6), 152)
+        XCTAssertEqual(HeartReadout.beats(25), 25)
+        XCTAssertEqual(HeartReadout.beats(250), 250)
+        XCTAssertNil(HeartReadout.beats(0), "a sensor glitch shows nothing")
+        XCTAssertNil(HeartReadout.beats(24.4))
+        XCTAssertNil(HeartReadout.beats(400))
+        XCTAssertNil(HeartReadout.beats(.nan))
+        XCTAssertNil(HeartReadout.beats(.infinity))
+        XCTAssertNil(HeartReadout.beats(nil))
+    }
+
+    // The session: what it asks Health for, and whose readings it keeps.
+
+    func testTheAppWritesWorkoutsAndReadsOnlyTheHeartRate() {
+        XCTAssertEqual(HealthWorkoutTracker.shareTypes, [HKObjectType.workoutType()])
+        XCTAssertEqual(HealthWorkoutTracker.readTypes, [HKQuantityType(.heartRate)])
+        XCTAssertEqual(HealthWorkoutTracker.beatsPerMinute.unitString, "count/min")
+    }
+
+    func testReadingsFromAnotherSessionOrTheWorkoutBeforeAreDropped() {
+        XCTAssertTrue(HealthWorkoutTracker.accepts(fromCurrentBuilder: true, ending: false, nextWaiting: false))
+        XCTAssertTrue(HealthWorkoutTracker.accepts(fromCurrentBuilder: true, ending: true, nextWaiting: false),
+                      "the last readings of a workout that just ended still count: the end screen shows them")
+        XCTAssertFalse(HealthWorkoutTracker.accepts(fromCurrentBuilder: true, ending: true, nextWaiting: true),
+                       "AGAIN is waiting: these belong to the workout before")
+        XCTAssertFalse(HealthWorkoutTracker.accepts(fromCurrentBuilder: false, ending: false, nextWaiting: false))
+    }
+
+    func testATrackerWithNoSessionHasNoHeartRateAndStartClearsTheLast() {
+        let suite = "heart-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let tracker = HealthWorkoutTracker(defaults: defaults)
+        XCTAssertEqual(tracker.heart, .none)
+        tracker.collected(HeartReadout(current: 150, measuredAt: Date(), average: 140, peak: 160), from: nil)
+        XCTAssertEqual(tracker.heart, .none, "a reading with no session of ours behind it is not ours")
+        tracker.setEnabled(false)
+        tracker.begin(Workout.defaultAmrap())
+        XCTAssertEqual(tracker.heart, .none)
+        XCTAssertEqual(NoopWorkoutTracker().heart, .none)
+        XCTAssertEqual(SpyTracker().heart, .none, "a tracker that measures nothing reads as none")
+    }
+
+    // The view model: what the timer shows.
+
+    func testTheTimerShowsAFreshReadingWhileTheClockRuns() {
+        let (vm, tracker) = makeHeartViewModel()
+        vm.start(workout: workout(.emom(intervalDuration: TimerDuration(seconds: 60), rounds: RoundCount(value: 3))))
+        XCTAssertNil(vm.heartRate, "nothing measured yet")
+        tracker.heart = reading(150)
+        vm.debugTick(elapsed: 1)
+        XCTAssertEqual(vm.heartRate, 150)
+        tracker.heart = reading(156)
+        vm.debugTick(elapsed: 2)
+        XCTAssertEqual(vm.heartRate, 156)
+        tracker.heart = reading(156, age: HeartReadout.freshFor + 5)
+        vm.debugTick(elapsed: 3)
+        XCTAssertNil(vm.heartRate, "a stale reading is not the heart rate now")
+    }
+
+    func testNoHeartRateInGetReadyPausedOrAfterTheEnd() {
+        let (vm, tracker) = makeHeartViewModel()
+        tracker.heart = reading(150)
+        vm.start(workout: workout(.amrap(duration: TimerDuration(seconds: 600)), prep: 10))
+        vm.debugTick(elapsed: 1)
+        XCTAssertNil(vm.heartRate, "get ready: the Health workout starts at GO")
+        vm.skipPrep()
+        XCTAssertEqual(vm.heartRate, 150)
+        vm.pause()
+        XCTAssertNil(vm.heartRate, "a paused session measures nothing")
+        vm.resume()
+        vm.debugTick(elapsed: 12)
+        XCTAssertEqual(vm.heartRate, 150)
+        vm.stop()
+        XCTAssertNil(vm.heartRate)
+        XCTAssertEqual(vm.heartSummary, "AVG 140 · PEAK 160", "the end screen keeps the workout's numbers")
+        XCTAssertEqual(vm.heartSpokenSummary, "Heart rate: average 140, peak 160 beats per minute")
+        vm.reset()
+        XCTAssertNil(vm.heartRate)
+    }
+
+    func testWithoutASessionTheEndScreenHasNoHeartLine() {
+        let (vm, _) = makeHeartViewModel()
+        vm.start(workout: workout(.amrap(duration: TimerDuration(seconds: 600))))
+        vm.debugTick(elapsed: 5)
+        vm.stop()
+        XCTAssertNil(vm.heartSummary)
+    }
+
+    // The screens.
+
+    func testTheHeartRateTakesTheGlyphsPlaceOnlyWhileASessionRuns() {
+        XCTAssertEqual(ActiveTimerView.heartRateShown(150, cues: .session), 150)
+        XCTAssertNil(ActiveTimerView.heartRateShown(nil, cues: .session))
+        XCTAssertNil(ActiveTimerView.heartRateShown(150, cues: .alerts), "no session: the bell says what matters")
+        XCTAssertNil(ActiveTimerView.heartRateShown(150, cues: .none))
+        XCTAssertNil(ActiveTimerView.heartRateShown(150, cues: .pending))
+        XCTAssertTrue(HeartRateBadge.label(150).contains("150 beats per minute"))
+        XCTAssertTrue(HeartRateBadge.label(150).contains("Health session on"), "the glyph's meaning is still spoken")
+        XCTAssertNotEqual(Palette.heart, Palette.error, "a heart is never an error")
+    }
+
+    func testTheHeartLineTakesTheConfigLinesPlaceExceptOnATimeCap() {
+        XCTAssertTrue(CompletedView.showsConfigLine(heart: nil, hasHero: true), "no heart rate: as before")
+        XCTAssertTrue(CompletedView.showsConfigLine(heart: nil, hasHero: false))
+        XCTAssertFalse(CompletedView.showsConfigLine(heart: "AVG 152 · PEAK 178", hasHero: true))
+        XCTAssertTrue(CompletedView.showsConfigLine(heart: "AVG 152 · PEAK 178", hasHero: false),
+                      "a time cap has no hero, and room for both lines")
+    }
+
+    func testThePurposeStringSaysWhatTheHeartRateIsFor() {
+        let share = Bundle.main.infoDictionary?["NSHealthShareUsageDescription"] as? String ?? ""
+        XCTAssertTrue(share.lowercased().contains("heart rate"), share)
+        XCTAssertFalse(share.contains("does not read"), "2.6 said the app read nothing; 2.7.0 reads the heart rate")
+        XCTAssertTrue(HealthSettingsView.heartRateLine.contains("Heart Rate"))
+    }
+
+    #if targetEnvironment(simulator)
+    func testCapturesShowNoHeartRateUnlessAsked() {
+        XCTAssertEqual(CaptureScene.heartFromLaunchArguments(), .none, "the test run has no --heart flag")
+        XCTAssertNil(CaptureRoot.viewModel(for: .liveEmom).heartSummary)
+    }
+    #endif
+}
+

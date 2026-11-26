@@ -49,7 +49,7 @@
 		<string>audio</string>
 	</array>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Wharf WOD does not read your health data.</string>
+	<string>Shows your heart rate on the timer during a workout, and the average and peak when you finish. Wharf WOD does not store or share it.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Saves each workout you time to Health, and keeps the clock, beeps and taps running while your wrist is down.</string>
 </dict>

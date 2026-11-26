@@ -11,6 +11,12 @@ struct CompletedView: View {
 
     private static let labelSize: CGFloat = 11
 
+    /// The config line gives its place to the heart line, except on a
+    /// time cap, which shows both.
+    static func showsConfigLine(heart: String?, hasHero: Bool) -> Bool {
+        heart == nil || !hasHero
+    }
+
     var body: some View {
         if let session = viewModel.session {
             let type = session.workout.timerType
@@ -29,12 +35,22 @@ struct CompletedView: View {
                     .font(.system(size: 17, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                Text(LiveRules.configLine(type))
-                    .font(.system(size: Self.labelSize, weight: .bold, design: .rounded))
-                    .tracking(0.6)
-                    .foregroundStyle(Palette.label)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                // The second line (2.7.0): the workout's heart rate when the
+                // session measured one, in the config line's place. The
+                // colour, the hero and the label already say which workout
+                // it was. A time cap has no hero, and room for both.
+                let heart = viewModel.heartSummary
+                if Self.showsConfigLine(heart: heart, hasHero: summary.hero != nil) {
+                    Text(LiveRules.configLine(type))
+                        .font(.system(size: Self.labelSize, weight: .bold, design: .rounded))
+                        .tracking(0.6)
+                        .foregroundStyle(Palette.label)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+                if let heart {
+                    HeartSummaryLine(text: heart, spoken: viewModel.heartSpokenSummary ?? heart, size: Self.labelSize)
+                }
                 if let hero = summary.hero {
                     Group {
                         if case .amrap = type {
@@ -77,6 +93,33 @@ struct CompletedView: View {
             .ignoresSafeArea(edges: .bottom)
             .navigationBarBackButtonHidden(true)
         }
+    }
+}
+
+/// The end screen's heart line (2.7.0): "AVG 152 · PEAK 178" behind a red
+/// heart, at the config line's size.
+struct HeartSummaryLine: View {
+    let text: String
+    let spoken: String
+    let size: CGFloat
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: size - 2, weight: .bold))
+                .foregroundStyle(Palette.heart)
+            Text(text)
+                .font(.system(size: size, weight: .bold, design: .rounded))
+                .tracking(0.6)
+                .monospacedDigit()
+                .foregroundStyle(Palette.label)
+                .lineLimit(1)
+        }
+        // Its own size, always: the hero gives up the height, not this.
+        .fixedSize()
+        .privacySensitive()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
     }
 }
 

@@ -84,6 +84,13 @@ enum CaptureScene: String, CaseIterable {
         return CaptureScene(rawValue: args[i + 1])
     }
 
+    /// `--heart` after the scene shows it with a heart rate (2.7.0): 164
+    /// now, average 152 and peak 178, as a running session would report.
+    static func heartFromLaunchArguments() -> HeartReadout {
+        guard CommandLine.arguments.contains("--heart") else { return .none }
+        return HeartReadout(current: 164, measuredAt: .distantFuture, average: 152, peak: 178)
+    }
+
     /// The four setup screens, which the app only ever shows pushed.
     var isSetup: Bool {
         switch self {
