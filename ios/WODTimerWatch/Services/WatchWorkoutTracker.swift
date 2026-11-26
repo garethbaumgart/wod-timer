@@ -143,8 +143,15 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     /// The switch in Health settings. One additive key: missing reads as
     /// on, so the update turns the session on for everyone.
     private(set) var enabled: Bool
+    /// True while the heart-rate question has never been answered by an
+    /// athlete who has answered the workouts one (2.7.0).
+    private(set) var heartQuestionOpen = false
 
     static let enabledKey = "watch_health_track"
+    /// Set once Home has put the heart-rate question by itself, so a
+    /// sheet closed without an answer is not put up again at every visit
+    /// to Home (one additive key; missing reads as not asked).
+    static let heartAskedKey = "watch_health_heart_asked"
     /// Console on a paired Mac shows the session's life: `log stream
     /// --predicate 'subsystem == "app.mentalmetal.wharfwod.watchkitapp"'`.
     static let log = Logger(subsystem: "app.mentalmetal.wharfwod.watchkitapp", category: "workout")
@@ -167,6 +174,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         enabled = defaults.object(forKey: Self.enabledKey) == nil ? true : defaults.bool(forKey: Self.enabledKey)
         super.init()
         refreshAuthorization()
+        refreshHeartQuestion()
     }
 
     static var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
@@ -208,25 +216,69 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     /// shows a sheet with only the heart-rate question to an athlete who
     /// allowed workouts before 2.7.0.
     func requestAuthorizationIfNeeded(completion: ((Bool) -> Void)? = nil) {
+        request(explicit: false, completion: completion)
+    }
+
+    /// The Health page's button: puts whatever is still open to the
+    /// athlete again, whether or not Home already has.
+    func askForHeartRate() {
+        request(explicit: true, completion: nil)
+    }
+
+    private func request(explicit: Bool, completion: ((Bool) -> Void)?) {
         guard enabled, Self.isAvailable else {
             completion?(false)
             return
         }
-        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] request, _ in
+        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] status, _ in
             DispatchQueue.main.async {
                 guard let self else { return }
-                guard request == .shouldRequest else {
-                    self.refreshAuthorization()
+                self.refreshAuthorization()
+                let open = status == .shouldRequest
+                let workoutsAnswered = self.authorization != .notDetermined
+                self.heartQuestionOpen = open && workoutsAnswered
+                guard Self.shouldPresent(
+                    open: open, workoutsAnswered: workoutsAnswered,
+                    heartAsked: self.defaults.bool(forKey: Self.heartAskedKey), explicit: explicit
+                ) else {
                     completion?(self.authorization == .sharingAuthorized)
                     return
                 }
+                if workoutsAnswered { self.defaults.set(true, forKey: Self.heartAskedKey) }
                 self.store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] _, _ in
                     DispatchQueue.main.async {
                         guard let self else { return }
                         self.refreshAuthorization()
+                        self.refreshHeartQuestion()
                         completion?(self.authorization == .sharingAuthorized)
                     }
                 }
+            }
+        }
+    }
+
+    /// Whether to put the sheet up. With the workouts question open the
+    /// answer is yes every time, as before 2.7.0: the session that keeps
+    /// the timer alive depends on it. With only the heart-rate question
+    /// open (an athlete from before 2.7.0, or one who closed the sheet on
+    /// its second page) Home asks once and then leaves them alone: the
+    /// timer needs nothing from it, and the Health page has the button.
+    static func shouldPresent(open: Bool, workoutsAnswered: Bool, heartAsked: Bool, explicit: Bool) -> Bool {
+        guard open else { return false }
+        if !workoutsAnswered { return true }
+        return explicit || !heartAsked
+    }
+
+    /// Whether the heart-rate question is still unanswered, for the
+    /// Health page's button. Health tells an app that much, though never
+    /// what the answer was.
+    private func refreshHeartQuestion() {
+        guard Self.isAvailable else { return }
+        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] status, _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.refreshAuthorization()
+                self.heartQuestionOpen = status == .shouldRequest && self.authorization != .notDetermined
             }
         }
     }

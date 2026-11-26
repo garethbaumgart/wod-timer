@@ -665,6 +665,23 @@ final class HeartRateTests: XCTestCase {
         XCTAssertFalse(HealthWorkoutTracker.accepts(fromCurrentBuilder: false, ending: false, nextWaiting: false))
     }
 
+    func testHomeAsksTheHeartQuestionOnceThenLeavesItToTheHealthPage() {
+        // Nothing open: no sheet.
+        XCTAssertFalse(HealthWorkoutTracker.shouldPresent(open: false, workoutsAnswered: true, heartAsked: false, explicit: false))
+        XCTAssertFalse(HealthWorkoutTracker.shouldPresent(open: false, workoutsAnswered: true, heartAsked: false, explicit: true))
+        // Workouts never answered: every visit, as before 2.7.0 (the session depends on it).
+        XCTAssertTrue(HealthWorkoutTracker.shouldPresent(open: true, workoutsAnswered: false, heartAsked: false, explicit: false))
+        XCTAssertTrue(HealthWorkoutTracker.shouldPresent(open: true, workoutsAnswered: false, heartAsked: true, explicit: false))
+        // An athlete from before 2.7.0: asked once by Home...
+        XCTAssertTrue(HealthWorkoutTracker.shouldPresent(open: true, workoutsAnswered: true, heartAsked: false, explicit: false))
+        // ...and a sheet closed without an answer is not put up at every visit to Home...
+        XCTAssertFalse(HealthWorkoutTracker.shouldPresent(open: true, workoutsAnswered: true, heartAsked: true, explicit: false))
+        // ...but the Health page's button still asks.
+        XCTAssertTrue(HealthWorkoutTracker.shouldPresent(open: true, workoutsAnswered: true, heartAsked: true, explicit: true))
+        XCTAssertEqual(HealthWorkoutTracker.heartAskedKey, "watch_health_heart_asked")
+        XCTAssertFalse(HealthSettingsView.heartRateOffer.isEmpty)
+    }
+
     func testATrackerWithNoSessionHasNoHeartRateAndStartClearsTheLast() {
         let suite = "heart-tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
