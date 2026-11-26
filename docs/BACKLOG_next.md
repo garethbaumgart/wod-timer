@@ -2,6 +2,44 @@
 
 Notes from Gareth to pick up in the next set of changes. Add new items here as they come in; move each into the release's plan or spec when the build starts.
 
+## Built on review/watch-experience-2026-11-26 (26 Nov 2026), not merged, not shipped
+
+From a review of both watch apps. Three fixes, each with tests:
+
+- **Wear OS: the timer keeps ticking with the screen off.** The foreground
+  service kept the process, but nothing kept the processor: with a workout
+  running and the screen off, `dumpsys power` listed no wake lock of ours, so
+  a real watch may suspend and the beeps and taps stop until the wrist comes
+  back (an emulator never suspends, so no run showed it). A partial wake lock
+  (`AwakeHold`) is held from START to the end, let go while paused, and
+  always time-limited to the workout plus a minute. No new permission
+  (`WAKE_LOCK` was already declared). Wants a real-watch check: wrist down
+  for a whole EMOM, every round felt.
+- **Wear OS: the Back button no longer loses the timer.** Back on the live
+  screen (the lower key on a Galaxy Watch) popped to the setup screen while
+  the workout ran on behind it, and the watch-face chip only brought the
+  setup screen back. Back now does nothing while a workout is under way or
+  paused, and is DONE on the end screen (`TimerViewModel.back`).
+- **Apple Watch: EMOM and Tabata setup fit the screen.** Since RUN IN
+  WORKOUT joined START (2.3.0) the stacked values overflowed: labels over the
+  title and back button, values at about 12pt on a 40mm and 20pt on a 49mm. They
+  sit in one row sized from the room the row really has (`SetupValueRow`):
+  EMOM 26pt on a 40mm to 43pt on a 49mm, Tabata 18pt to 26pt. Both capsules
+  are unchanged. The setup capture scenes are now pushed, as the app shows
+  them: as the root they hid the overlap.
+- `tool/wear/shape_check.sh` gained a third flow: the wake lock while
+  running, paused and stopped, and Back on the live, paused and end screens.
+
+Left for a decision, not built:
+
+- Apple Watch Home shows one and a half timers on a 40mm and two on a 49mm
+  under the wordmark; Wear OS has shown all four since 19 Nov (2x2).
+- A right swipe on the Wear live screen closes the app to the watch face (the
+  workout runs on and the chip brings it back): the window's own
+  swipe-to-dismiss, which `userSwipeEnabled = false` does not stop.
+- **Recommended next feature: heart rate.** Live on the timer and as average
+  and peak on the end screen. See "Still open".
+
 ## Shipped as 2.5.1 (15 Nov 2026): end screens lifted, with fact tiles
 
 - **Option 1 of the end-screen mocks** (https://claude.ai/artifact/BrKtJQCp2aKoXZ91xPAEzP,
