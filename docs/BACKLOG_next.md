@@ -2,43 +2,57 @@
 
 Notes from Gareth to pick up in the next set of changes. Add new items here as they come in; move each into the release's plan or spec when the build starts.
 
-## Built on review/watch-experience-2026-11-26 (26 Nov 2026), not merged, not shipped
+## 2.7.0 (26 Nov 2026): the watch release
 
-From a review of both watch apps. Three fixes, each with tests:
+From a review of both watch apps (Gareth, 26 Nov: "address major experience
+flaws or bugs", then "build them all and ship them all together").
 
-- **Wear OS: the timer keeps ticking with the screen off.** The foreground
-  service kept the process, but nothing kept the processor: with a workout
-  running and the screen off, `dumpsys power` listed no wake lock of ours, so
-  a real watch may suspend and the beeps and taps stop until the wrist comes
-  back (an emulator never suspends, so no run showed it). A partial wake lock
-  (`AwakeHold`) is held from START to the end, let go while paused, and
-  always time-limited to the workout plus a minute. No new permission
-  (`WAKE_LOCK` was already declared). Wants a real-watch check: wrist down
-  for a whole EMOM, every round felt.
-- **Wear OS: the Back button no longer loses the timer.** Back on the live
-  screen (the lower key on a Galaxy Watch) popped to the setup screen while
-  the workout ran on behind it, and the watch-face chip only brought the
-  setup screen back. Back now does nothing while a workout is under way or
-  paused, and is DONE on the end screen (`TimerViewModel.back`).
+- **Apple Watch: heart rate.** On the timer, in the session glyph's slot,
+  while the clock runs; the workout's average and peak on the end screen in
+  the config line's place (a time cap shows both). Read from the Health
+  session's own builder, so the numbers are the ones Health shows. The app
+  asks to read the heart rate on Home, never over a countdown, reads nothing
+  else and keeps no copy. A reading older than 15 s, a pause and the end show
+  no number. New purpose strings; the privacy page and the App Review notes
+  say the same. Wear OS has no heart rate yet: it needs the body sensor
+  permission and Play's Health declaration.
+- **Apple Watch: Home is a 2x2.** The wordmark on one line in the top bar and
+  the four timers as tiles that fill the safe area, as on Wear OS: every
+  watch shows all four at once (a 40mm showed one and a half, a 49mm two).
+  The For Time tile leaves its direction to the setup screen.
 - **Apple Watch: EMOM and Tabata setup fit the screen.** Since RUN IN
   WORKOUT joined START (2.3.0) the stacked values overflowed: labels over the
-  title and back button, values at about 12pt on a 40mm and 20pt on a 49mm. They
-  sit in one row sized from the room the row really has (`SetupValueRow`):
-  EMOM 26pt on a 40mm to 43pt on a 49mm, Tabata 18pt to 26pt. Both capsules
-  are unchanged. The setup capture scenes are now pushed, as the app shows
-  them: as the root they hid the overlap.
-- `tool/wear/shape_check.sh` gained a third flow: the wake lock while
-  running, paused and stopped, and Back on the live, paused and end screens.
+  title and back button, values at about 12pt on a 40mm and 20pt on a 49mm.
+  They sit in one row sized from the room the row really has
+  (`SetupValueRow`): EMOM 26pt on a 40mm to 43pt on a 49mm, Tabata 18pt to
+  26pt. The setup capture scenes are now pushed, as the app shows them.
+- **Wear OS: the timer keeps ticking with the screen off.** The foreground
+  service kept the process, but nothing kept the processor: `dumpsys power`
+  listed no wake lock of ours, so a real watch may suspend and the beeps and
+  taps stop until the wrist comes back (an emulator never suspends). A
+  partial wake lock (`AwakeHold`) is held from START to the end, let go
+  while paused, always time-limited. Wants a real-watch check: wrist down
+  for a whole EMOM, every round felt.
+- **Wear OS: the Back button no longer loses the timer.** Back on the live
+  screen popped to setup while the workout ran on behind it. Back now does
+  nothing while a workout is under way or paused, and is DONE on the end
+  screen.
+- **Tests.** 211 watch unit tests, 77 Wear tests, `tool/wear/shape_check.sh`
+  with a third flow (wake lock and Back), and a UI test target that drives
+  the watch app with real touches (`WODTimerWatchUITests`): every tile opens
+  its setup, a workout runs from a tile to the end screen, and a real Health
+  session answers the permission sheet and shows a measured heart rate.
+- **Store screens.** The Apple Watch set (eight captures of 2.7.0, in
+  `fastlane/screenshots-watch/en-US/`), the wrist frame on both stores, the
+  13-inch iPad set and Play's two tablet sets were re-captured: see
+  `design/store-captions-2026-10/README.md`.
 
 Left for a decision, not built:
 
-- Apple Watch Home shows one and a half timers on a 40mm and two on a 49mm
-  under the wordmark; Wear OS has shown all four since 19 Nov (2x2).
 - A right swipe on the Wear live screen closes the app to the watch face (the
   workout runs on and the chip brings it back): the window's own
   swipe-to-dismiss, which `userSwipeEnabled = false` does not stop.
-- **Recommended next feature: heart rate.** Live on the timer and as average
-  and peak on the end screen. See "Still open".
+- Heart rate on Wear OS (BODY_SENSORS and the Play Health declaration).
 
 ## Shipped as 2.5.1 (15 Nov 2026): end screens lifted, with fact tiles
 
@@ -107,9 +121,6 @@ Left for a decision, not built:
   Rides the 2.4.0 release with the wrist alerts.
 
 ## Still open
-
-- Heart rate on the watch live screen (the session already collects it; a
-  read permission and one line of UI).
 
 - Record "Round 2", "Round 3" and so on, plus "Well done", if wanted (EMOM says "Next round" today).
 
