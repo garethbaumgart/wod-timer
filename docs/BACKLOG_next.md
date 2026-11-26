@@ -2,6 +2,49 @@
 
 Notes from Gareth to pick up in the next set of changes. Add new items here as they come in; move each into the release's plan or spec when the build starts.
 
+## 2.7.1 (27 Nov 2026): the halfway Mid tone, and Workouts switched off by 2.7.0's Health sheet
+
+Built and merged, not shipped when this was written.
+
+- **Halfway pips: the Mid tone.** Gareth asked whether the mid / halfway sound
+  was the right one. Measured, the 2.5.0 pips sat on the change beep's exact
+  pitch (1031 Hz), 2.5 dB under it with about a tenth of its energy: the
+  quietest cue in the app, told from "round over" by rhythm alone. He heard
+  five options inside a real Tabata round
+  (https://claude.ai/artifact/F5n8SQX6Xb5P9msWt5macR) and chose C: two 120 ms
+  pips 110 ms apart at 687 Hz, a fifth under the change beep and clear of the
+  3, 2, 1 beep, at the change beep's level. `mid.wav` replaced on phone, Apple
+  Watch and Wear OS; `tool/audio/mid_beep.py` writes it;
+  `test/tool/beep_files_test.dart` holds the pitch, the level and the three
+  identical copies. The two-pip shape stays: over 200 simulated echoing rooms
+  its gap holds. Options and generator: branch `mock/halfway-sound-2026-11-27`.
+- **Apple Watch: 2.7.0's Health sheet could switch Workouts off.** Gareth, on
+  2.7.0 from TestFlight: no heart rate "even when enabled on the watch", and no
+  countdown or start beep at the start of a workout. His timer showed the bell
+  and his Health page "Workouts: not allowed". 2.7.0 asked every athlete for
+  both permissions (save workouts, read the heart rate). For one who had
+  already allowed workouts, watchOS shows the whole sheet again: Write Access
+  with its switch already ON, then Read Access with it off. A tap on each
+  switch "to enable it" turns Workouts off. No Workouts permission, no Health
+  session: no heart rate, and the app sleeps when the wrist drops, so the get
+  ready's 3, 2, 1 and the start beep are lost. Reproduced on a new simulator
+  (asked as 2.6.2 did, then relaunched as 2.7.0: "Write Access:1", "Read
+  Access:0").
+  - The app asks only for what is still unanswered
+    (`HealthWorkoutTracker.shareTypesToAsk`): an athlete who has answered the
+    workouts question is shown Read Access alone.
+  - Health never shows its sheet twice, so an athlete already there has to turn
+    Workouts on in the watch's Settings. Home now says so once ("Workouts is
+    off": what it costs and where to turn it on), keeps a red row under the
+    timers while it lasts, and the Health page's line names the heart rate and
+    the beeps. Back from Settings, Home reads the permissions again.
+  - `tool/watch/health_permission_check.sh` runs the three Health UI tests, each
+    on a brand-new simulator (Health keeps its answers through an uninstall):
+    a new athlete, an updating athlete who taps every switch, and Workouts not
+    allowed. Not in the gate; run it when the permissions or the session change.
+  - 2.7.0 (build 39) was still waiting for App Review when this was found: it
+    carries the fault for every athlete updating.
+
 ## 2.7.0 (26 Nov 2026): the watch release
 
 From a review of both watch apps (Gareth, 26 Nov: "address major experience

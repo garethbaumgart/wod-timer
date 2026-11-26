@@ -682,6 +682,50 @@ final class HeartRateTests: XCTestCase {
         XCTAssertFalse(HealthSettingsView.heartRateOffer.isEmpty)
     }
 
+    /// 2.7.0 asked an athlete who had already allowed workouts for both
+    /// permissions again. watchOS opens that sheet on the Workouts switch,
+    /// already on, and a tap meant to enable it turns it off (Gareth's
+    /// watch, 27 Nov 2026: heart rate allowed, Workouts not, so no session).
+    func testAnAthleteWhoAnsweredWorkoutsIsAskedForTheHeartRateAlone() {
+        XCTAssertEqual(HealthWorkoutTracker.shareTypesToAsk(for: .notDetermined), HealthWorkoutTracker.shareTypes,
+                       "a new athlete is asked to save workouts")
+        XCTAssertTrue(HealthWorkoutTracker.shareTypesToAsk(for: .sharingAuthorized).isEmpty,
+                      "an athlete who allowed workouts is never shown that switch again")
+        XCTAssertTrue(HealthWorkoutTracker.shareTypesToAsk(for: .sharingDenied).isEmpty)
+        XCTAssertEqual(HealthWorkoutTracker.readTypes, [HealthWorkoutTracker.heartRateType])
+    }
+
+    func testWorkoutsNotAllowedIsSaidOnceEachTimeItIsFoundOff() {
+        XCTAssertTrue(HealthWorkoutTracker.workoutsRefused(enabled: true, authorization: .sharingDenied))
+        XCTAssertFalse(HealthWorkoutTracker.workoutsRefused(enabled: false, authorization: .sharingDenied),
+                       "Track workouts off is the athlete's own choice: nothing to say")
+        XCTAssertFalse(HealthWorkoutTracker.workoutsRefused(enabled: true, authorization: .sharingAuthorized))
+        XCTAssertFalse(HealthWorkoutTracker.workoutsRefused(enabled: true, authorization: .notDetermined),
+                       "not answered yet: Home is still asking")
+        XCTAssertTrue(HealthWorkoutTracker.tellsRefusal(refused: true, told: false))
+        XCTAssertFalse(HealthWorkoutTracker.tellsRefusal(refused: true, told: true), "once, not at every visit to Home")
+        XCTAssertFalse(HealthWorkoutTracker.tellsRefusal(refused: false, told: false))
+        XCTAssertEqual(HealthWorkoutTracker.refusedToldKey, "watch_health_refused_told")
+        // The words say what it costs and where to turn it on.
+        for text in [HealthSettingsView.workoutsOffNotice, HealthSettingsView.permissionLine(.sharingDenied)] {
+            XCTAssertTrue(text.lowercased().contains("no heart rate"), text)
+            XCTAssertTrue(text.contains("wrist"), text)
+            XCTAssertTrue(text.contains("Settings, Privacy & Security, Health"), text)
+        }
+        XCTAssertEqual(HealthSettingsView.workoutsOffTitle, "Workouts is off")
+    }
+
+    func testATrackerWithNoPermissionProblemTakesNoNotice() {
+        let suite = "refusal-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let tracker = HealthWorkoutTracker(defaults: defaults)
+        // The test host has not been refused anything.
+        XCTAssertFalse(tracker.workoutsRefused)
+        XCTAssertFalse(tracker.takeRefusalNotice())
+        XCTAssertNil(defaults.object(forKey: HealthWorkoutTracker.refusedToldKey))
+    }
+
     func testATrackerWithNoSessionHasNoHeartRateAndStartClearsTheLast() {
         let suite = "heart-tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

@@ -152,6 +152,10 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     /// sheet closed without an answer is not put up again at every visit
     /// to Home (one additive key; missing reads as not asked).
     static let heartAskedKey = "watch_health_heart_asked"
+    /// Set once Home has said that Workouts is not allowed, and cleared
+    /// when it is allowed again, so the notice is put up once each time
+    /// the permission is found off (one additive key).
+    static let refusedToldKey = "watch_health_refused_told"
     /// Console on a paired Mac shows the session's life: `log stream
     /// --predicate 'subsystem == "app.mentalmetal.wharfwod.watchkitapp"'`.
     static let log = Logger(subsystem: "app.mentalmetal.wharfwod.watchkitapp", category: "workout")
@@ -230,7 +234,24 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
             completion?(false)
             return
         }
-        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] status, _ in
+        #if targetEnvironment(simulator)
+        // `--legacy-health-request`: ask as 2.6.2 and earlier did (workouts
+        // only), so a UI test can put a simulator where an athlete updating
+        // to 2.7.0 stands (WatchHealthSessionUITests).
+        if CommandLine.arguments.contains("--legacy-health-request") {
+            store.requestAuthorization(toShare: Self.shareTypes, read: []) { [weak self] _, _ in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.refreshAuthorization()
+                    completion?(self.authorization == .sharingAuthorized)
+                }
+            }
+            return
+        }
+        #endif
+        refreshAuthorization()
+        let share = Self.shareTypesToAsk(for: authorization)
+        store.getRequestStatusForAuthorization(toShare: share, read: Self.readTypes) { [weak self] status, _ in
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.refreshAuthorization()
@@ -245,7 +266,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
                     return
                 }
                 if workoutsAnswered { self.defaults.set(true, forKey: Self.heartAskedKey) }
-                self.store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] _, _ in
+                self.store.requestAuthorization(toShare: share, read: Self.readTypes) { [weak self] _, _ in
                     DispatchQueue.main.async {
                         guard let self else { return }
                         self.refreshAuthorization()
@@ -255,6 +276,51 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
                 }
             }
         }
+    }
+
+    /// What to ask to save. An athlete who has already answered the
+    /// workouts question is asked for the heart rate alone. Asked for
+    /// both, watchOS opens its sheet on the Write Access page with the
+    /// Workouts switch already on, and a tap meant to turn it on turns it
+    /// off: 2.7.0 did that to every athlete updating, and Gareth's watch
+    /// came out with the heart rate allowed and Workouts not (27 Nov
+    /// 2026), so no session ran: no heart rate, and no countdown or start
+    /// beep with the wrist down.
+    static func shareTypesToAsk(for authorization: HKAuthorizationStatus) -> Set<HKSampleType> {
+        authorization == .notDetermined ? shareTypes : []
+    }
+
+    /// The athlete wants sessions (Track workouts is on) and Health will
+    /// not let the app save a workout, so none can run: no heart rate, and
+    /// off screen only the alerts. Only the athlete can undo it, in the
+    /// watch's Settings; Health never shows its sheet a second time.
+    var workoutsRefused: Bool {
+        Self.workoutsRefused(enabled: enabled, authorization: authorization)
+    }
+
+    static func workoutsRefused(enabled: Bool, authorization: HKAuthorizationStatus) -> Bool {
+        enabled && authorization == .sharingDenied
+    }
+
+    /// Whether Home should say so now: once each time the permission is
+    /// found off. Marks it said.
+    func takeRefusalNotice() -> Bool {
+        guard Self.tellsRefusal(refused: workoutsRefused, told: defaults.bool(forKey: Self.refusedToldKey)) else {
+            return false
+        }
+        defaults.set(true, forKey: Self.refusedToldKey)
+        return true
+    }
+
+    static func tellsRefusal(refused: Bool, told: Bool) -> Bool {
+        refused && !told
+    }
+
+    /// Reads the permissions again: the athlete may have changed them in
+    /// Settings while the app was off screen.
+    func refreshPermissions() {
+        refreshAuthorization()
+        refreshHeartQuestion()
     }
 
     /// Whether to put the sheet up. With the workouts question open the
@@ -274,7 +340,9 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     /// what the answer was.
     private func refreshHeartQuestion() {
         guard Self.isAvailable else { return }
-        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] status, _ in
+        refreshAuthorization()
+        let share = Self.shareTypesToAsk(for: authorization)
+        store.getRequestStatusForAuthorization(toShare: share, read: Self.readTypes) { [weak self] status, _ in
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.refreshAuthorization()
@@ -285,7 +353,11 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
 
     private func refreshAuthorization() {
         guard Self.isAvailable else { return }
-        authorization = store.authorizationStatus(for: HKObjectType.workoutType())
+        let now = store.authorizationStatus(for: HKObjectType.workoutType())
+        if now != authorization { authorization = now }
+        if now == .sharingAuthorized, defaults.object(forKey: Self.refusedToldKey) != nil {
+            defaults.removeObject(forKey: Self.refusedToldKey)
+        }
     }
 
     // MARK: - WorkoutTracking

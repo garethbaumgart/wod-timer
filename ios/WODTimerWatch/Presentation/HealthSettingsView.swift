@@ -99,12 +99,18 @@ struct HealthSettingsView: View {
             .listRowBackground(Color.clear)
     }
 
+    /// Home's notice and row when Track workouts is on and Health will not
+    /// let the app save one (27 Nov 2026).
+    static let workoutsOffTitle = "Workouts is off"
+    static let workoutsOffRow = "No heart rate, no beeps wrist down"
+    static let workoutsOffNotice = "No heart rate, and the beeps stop when your wrist drops. Turn Workouts on for Wharf WOD in Settings, Privacy & Security, Health."
+
     static func permissionLine(_ authorization: HKAuthorizationStatus) -> String {
         switch authorization {
         case .sharingAuthorized:
             "Workouts: allowed"
         case .sharingDenied:
-            "Workouts: not allowed. Allow Wharf WOD under Settings, Privacy & Security, Health on this watch."
+            "Workouts: not allowed, so no Health session runs: no heart rate, and the beeps stop when your wrist drops. Turn Workouts on for Wharf WOD under Settings, Privacy & Security, Health on this watch."
         default:
             "Workouts: permission not answered yet, so no session runs. Reopen Home to answer it."
         }
