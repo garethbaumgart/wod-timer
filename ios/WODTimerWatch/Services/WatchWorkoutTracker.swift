@@ -12,7 +12,60 @@ import os
 /// while one runs the app keeps ticking in the background, may play
 /// haptics and short audio clips there, comes back on wrist raise, and the
 /// WOD lands in Health as a workout.
+/// What the Health session has measured (2.7.0), in beats a minute: the
+/// heart rate now, and the average and peak of the workout so far. The
+/// session was already running for every WOD to keep the timer alive; the
+/// athlete saw none of what it collects, which the other WOD timers on
+/// the watch lead with (watch review, 26 Nov 2026). Shown on the watch
+/// only: the app keeps no copy and sends nothing anywhere.
+struct HeartReadout: Equatable {
+    var current: Int?
+    /// When `current` was measured.
+    var measuredAt: Date?
+    var average: Int?
+    var peak: Int?
+
+    static let none = HeartReadout()
+
+    /// A reading older than this is not the heart rate now: the watch came
+    /// off the wrist, the sensor lost the skin, or the session stopped
+    /// collecting. The screen goes back to the session glyph rather than
+    /// stand on a stale number. A workout session measures about every
+    /// five seconds, so this rides over two missed readings.
+    static let freshFor: TimeInterval = 15
+
+    /// The heart rate as it stands at `date`, or nil when the last
+    /// reading is too old to call "now".
+    func now(at date: Date) -> Int? {
+        guard let current, let measuredAt else { return nil }
+        return date.timeIntervalSince(measuredAt) <= Self.freshFor ? current : nil
+    }
+
+    /// The end screen's line, once the workout has both numbers.
+    var summary: String? {
+        guard let average, let peak else { return nil }
+        return "AVG \(average) · PEAK \(peak)"
+    }
+
+    /// VoiceOver's form of the same line.
+    var spokenSummary: String? {
+        guard let average, let peak else { return nil }
+        return "Heart rate: average \(average), peak \(peak) beats per minute"
+    }
+
+    /// Whole beats a minute, and only in the range a heart beats: a
+    /// sensor glitch shows nothing rather than a wrong number.
+    static func beats(_ value: Double?) -> Int? {
+        guard let value, value.isFinite else { return nil }
+        let whole = Int(value.rounded())
+        return (25 ... 250).contains(whole) ? whole : nil
+    }
+}
+
 protocol WorkoutTracking: AnyObject {
+    /// What the session has measured of the heart (2.7.0); `.none` with
+    /// no session, no permission to read it, or nothing measured yet.
+    var heart: HeartReadout { get }
     /// Where the session stands. `keepsAppAlive` says whether the app
     /// survives wrist-down on its own; when it does not, the view model
     /// schedules wrist alerts instead (2.4.0, WristAlertPlan).
@@ -30,6 +83,10 @@ protocol WorkoutTracking: AnyObject {
     func end(keep: Bool)
 }
 
+extension WorkoutTracking {
+    var heart: HeartReadout { .none }
+}
+
 /// No session: tests, previews, the simulator capture hooks and the promo
 /// hook, where a Health permission sheet would cover the screen.
 final class NoopWorkoutTracker: WorkoutTracking {
@@ -37,9 +94,12 @@ final class NoopWorkoutTracker: WorkoutTracking {
     /// unless a scene asks for another.
     var status: HealthWorkoutTracker.Status
     var onStatusChange: ((HealthWorkoutTracker.Status) -> Void)?
+    /// A capture scene's heart rate; nothing by default.
+    var heart: HeartReadout
 
-    init(status: HealthWorkoutTracker.Status = .running) {
+    init(status: HealthWorkoutTracker.Status = .running, heart: HeartReadout = .none) {
         self.status = status
+        self.heart = heart
     }
 
     func begin(_ workout: Workout) {}
@@ -74,13 +134,24 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
 
     private(set) var status: Status = .idle
     var onStatusChange: ((Status) -> Void)?
-    /// Health only reveals share decisions; the one the app asks for.
+    /// The heart rate of the workout under way, or of the one just ended
+    /// (the end screen reads its average and peak); cleared at START.
+    private(set) var heart = HeartReadout.none
+    /// Health only reveals share decisions: saving workouts. Whether the
+    /// heart rate may be read it never says; no readings is all that shows.
     private(set) var authorization: HKAuthorizationStatus = .notDetermined
     /// The switch in Health settings. One additive key: missing reads as
     /// on, so the update turns the session on for everyone.
     private(set) var enabled: Bool
+    /// True while the heart-rate question has never been answered by an
+    /// athlete who has answered the workouts one (2.7.0).
+    private(set) var heartQuestionOpen = false
 
     static let enabledKey = "watch_health_track"
+    /// Set once Home has put the heart-rate question by itself, so a
+    /// sheet closed without an answer is not put up again at every visit
+    /// to Home (one additive key; missing reads as not asked).
+    static let heartAskedKey = "watch_health_heart_asked"
     /// Console on a paired Mac shows the session's life: `log stream
     /// --predicate 'subsystem == "app.mentalmetal.wharfwod.watchkitapp"'`.
     static let log = Logger(subsystem: "app.mentalmetal.wharfwod.watchkitapp", category: "workout")
@@ -88,6 +159,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let store = HKHealthStore()
     @ObservationIgnored private var session: HKWorkoutSession?
+    @ObservationIgnored private var builder: HKLiveWorkoutBuilder?
     @ObservationIgnored private var collecting = false
     /// Set by end(keep:) until the session reports ended, so a second end
     /// (DONE after a finish) can't change what happens to the record, and
@@ -102,9 +174,17 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         enabled = defaults.object(forKey: Self.enabledKey) == nil ? true : defaults.bool(forKey: Self.enabledKey)
         super.init()
         refreshAuthorization()
+        refreshHeartQuestion()
     }
 
     static var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
+
+    /// What the app writes: the workout. What it reads (2.7.0): the heart
+    /// rate, for the timer and the end screen, and nothing else.
+    static let shareTypes: Set<HKSampleType> = [HKObjectType.workoutType()]
+    static let heartRateType = HKQuantityType(.heartRate)
+    static let readTypes: Set<HKObjectType> = [heartRateType]
+    static let beatsPerMinute = HKUnit.count().unitDivided(by: .minute())
 
     private func setStatus(_ new: Status) {
         guard new != status else { return }
@@ -129,25 +209,76 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
         }
     }
 
-    /// The one permission the app asks for: to save workouts. Asked when
-    /// Home appears, the standard workout-app moment, with the purpose
-    /// string on the sheet; never during a countdown. Health answers
-    /// without a sheet once the athlete has decided.
+    /// The permissions the app asks for: to save workouts, and (2.7.0) to
+    /// read the heart rate. Asked when Home appears, the standard
+    /// workout-app moment, with the purpose strings on the sheet. Health
+    /// answers without a sheet once the athlete has decided both, and
+    /// shows a sheet with only the heart-rate question to an athlete who
+    /// allowed workouts before 2.7.0.
     func requestAuthorizationIfNeeded(completion: ((Bool) -> Void)? = nil) {
+        request(explicit: false, completion: completion)
+    }
+
+    /// The Health page's button: puts whatever is still open to the
+    /// athlete again, whether or not Home already has.
+    func askForHeartRate() {
+        request(explicit: true, completion: nil)
+    }
+
+    private func request(explicit: Bool, completion: ((Bool) -> Void)?) {
         guard enabled, Self.isAvailable else {
             completion?(false)
             return
         }
-        refreshAuthorization()
-        guard authorization == .notDetermined else {
-            completion?(authorization == .sharingAuthorized)
-            return
-        }
-        store.requestAuthorization(toShare: [HKObjectType.workoutType()], read: []) { [weak self] _, _ in
+        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] status, _ in
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.refreshAuthorization()
-                completion?(self.authorization == .sharingAuthorized)
+                let open = status == .shouldRequest
+                let workoutsAnswered = self.authorization != .notDetermined
+                self.heartQuestionOpen = open && workoutsAnswered
+                guard Self.shouldPresent(
+                    open: open, workoutsAnswered: workoutsAnswered,
+                    heartAsked: self.defaults.bool(forKey: Self.heartAskedKey), explicit: explicit
+                ) else {
+                    completion?(self.authorization == .sharingAuthorized)
+                    return
+                }
+                if workoutsAnswered { self.defaults.set(true, forKey: Self.heartAskedKey) }
+                self.store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] _, _ in
+                    DispatchQueue.main.async {
+                        guard let self else { return }
+                        self.refreshAuthorization()
+                        self.refreshHeartQuestion()
+                        completion?(self.authorization == .sharingAuthorized)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Whether to put the sheet up. With the workouts question open the
+    /// answer is yes every time, as before 2.7.0: the session that keeps
+    /// the timer alive depends on it. With only the heart-rate question
+    /// open (an athlete from before 2.7.0, or one who closed the sheet on
+    /// its second page) Home asks once and then leaves them alone: the
+    /// timer needs nothing from it, and the Health page has the button.
+    static func shouldPresent(open: Bool, workoutsAnswered: Bool, heartAsked: Bool, explicit: Bool) -> Bool {
+        guard open else { return false }
+        if !workoutsAnswered { return true }
+        return explicit || !heartAsked
+    }
+
+    /// Whether the heart-rate question is still unanswered, for the
+    /// Health page's button. Health tells an app that much, though never
+    /// what the answer was.
+    private func refreshHeartQuestion() {
+        guard Self.isAvailable else { return }
+        store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { [weak self] status, _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.refreshAuthorization()
+                self.heartQuestionOpen = status == .shouldRequest && self.authorization != .notDetermined
             }
         }
     }
@@ -160,6 +291,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     // MARK: - WorkoutTracking
 
     func begin(_ workout: Workout) {
+        heart = .none
         // A session still open from an interrupted run is discarded first.
         if session != nil, !ending { end(keep: false) }
         guard enabled else {
@@ -180,7 +312,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     }
 
     private func startWhenAuthorized(_ workout: Workout) {
-        requestAuthorizationIfNeeded { [weak self] authorized in
+        let started: (Bool) -> Void = { [weak self] authorized in
             guard let self, self.pendingWorkout?.id == workout.id else { return }
             guard authorized else {
                 self.setStatus(.denied)
@@ -189,6 +321,15 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
             }
             self.startSession(for: workout)
         }
+        // Workouts already answered: the session starts now. The
+        // heart-rate question is Home's to ask, never a countdown's, and
+        // a workout never waits on it.
+        refreshAuthorization()
+        guard authorization == .notDetermined else {
+            started(authorization == .sharingAuthorized)
+            return
+        }
+        requestAuthorizationIfNeeded(completion: started)
     }
 
     func go() {
@@ -235,8 +376,10 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
             let session = try HKWorkoutSession(healthStore: store, configuration: configuration)
             let builder = session.associatedWorkoutBuilder()
             builder.dataSource = HKLiveWorkoutDataSource(healthStore: store, workoutConfiguration: configuration)
+            builder.delegate = self
             session.delegate = self
             self.session = session
+            self.builder = builder
             collecting = false
             keepOnEnd = true
             session.startActivity(with: Date())
@@ -266,6 +409,7 @@ final class HealthWorkoutTracker: NSObject, WorkoutTracking {
     private func clear(_ ended: HKWorkoutSession, restart: Bool) {
         guard ended === session else { return }
         session = nil
+        builder = nil
         collecting = false
         ending = false
         if restart, let pending = pendingWorkout {
@@ -378,5 +522,40 @@ extension HealthWorkoutTracker: HKWorkoutSessionDelegate {
             return .takenOver
         }
         return .failed(error.localizedDescription)
+    }
+}
+
+extension HealthWorkoutTracker: HKLiveWorkoutBuilderDelegate {
+    /// The builder's own statistics, so the average and peak on the end
+    /// screen are the ones Health and Fitness show for the same workout
+    /// (pauses left out, GO to the end).
+    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
+        guard collectedTypes.contains(Self.heartRateType),
+              let statistics = workoutBuilder.statistics(for: Self.heartRateType) else { return }
+        let unit = Self.beatsPerMinute
+        let reading = HeartReadout(
+            current: HeartReadout.beats(statistics.mostRecentQuantity()?.doubleValue(for: unit)),
+            measuredAt: statistics.mostRecentQuantityDateInterval()?.end ?? Date(),
+            average: HeartReadout.beats(statistics.averageQuantity()?.doubleValue(for: unit)),
+            peak: HeartReadout.beats(statistics.maximumQuantity()?.doubleValue(for: unit))
+        )
+        DispatchQueue.main.async { [weak self] in
+            self?.collected(reading, from: workoutBuilder)
+        }
+    }
+
+    func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
+
+    /// Takes a reading from the session's own builder. Once AGAIN is
+    /// waiting on a session that is still closing, its last readings
+    /// belong to the workout before and are dropped.
+    func collected(_ reading: HeartReadout, from source: HKLiveWorkoutBuilder?) {
+        guard Self.accepts(fromCurrentBuilder: source != nil && source === builder,
+                           ending: ending, nextWaiting: pendingWorkout != nil) else { return }
+        heart = reading
+    }
+
+    static func accepts(fromCurrentBuilder: Bool, ending: Bool, nextWaiting: Bool) -> Bool {
+        fromCurrentBuilder && !(ending && nextWaiting)
     }
 }

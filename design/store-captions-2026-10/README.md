@@ -87,3 +87,44 @@ Outputs are 8-bit sRGB with no alpha, checked with `magick identify`.
   `01_home.png` is the same Home on the iPad Pro 13-inch (M5) simulator, with the old capture's status bar and home
   indicator strips pasted on (the iPad simulator ignores the date override; the other nine are the 3 Oct set,
   downloaded from the live listing, kept as they were).
+
+## 2.7.0: every set checked against the app (26 Nov 2026)
+
+Gareth, before the 2.7.0 release: "make sure the preview screens are current and as good as they can be". Every
+live set was downloaded (`asc_screenshots.py fetch`, the Play images API) and compared with the app. Found and
+fixed:
+
+| Set | Was | Now |
+|---|---|---|
+| App Store, Apple Watch (8) | 2.0-era captures: no session glyph, the old Home rows | `fastlane/screenshots-watch/en-US/01..08`: eight 368x448 captures of 2.7.0 on the Apple Watch SE 44mm simulator (Home 2x2, EMOM, Tabata work, AMRAP and For Time with the heart rate, EMOM setup, Tabata next, a finished For Time with average and peak) |
+| App Store 6.9in and Play phone, frame 07 (wrist) | The Apple Watches showed the 1.3.0 app (a green clock, a round pause button) | The 2.7.0 watch: App Store shows the live EMOM with the heart rate, Home and a finished For Time, and its proof reads "Your heart rate on the timer. / Beeps and taps with your wrist down."; Play keeps its proof and shows Wear OS with the Apple Watch's Tabata and Home |
+| App Store, 13-inch iPad (10) | Nine of ten from 3 Oct: small setup dials, no "+ THEN", end screens without the fact tiles | `fastlane/screenshots-ipad/en-US/`: all ten re-captured from 2.6.2 on the iPad Pro 13-inch simulator |
+| Play, 7-inch and 10-inch tablets (8 each) | 1.3-era captures, letterboxed under a black band (a 3:4 capture on a 9:16 canvas) | `play-tablet/en-US/01..08`: eight 1440x2560 boards, the phone set's headlines over Pixel Tablet emulator captures of the current app in a slate frame, used for both slots. Board 02 is the tablet's own claim: "The whole gym can read it." |
+
+Frames 01 to 06 and 08 of the phone sets re-rendered pixel-identical to the live ones (0 px at 2% fuzz), the Wear
+OS set (2.5.2) and the feature graphic are current, and nothing in them changed.
+
+How each was made:
+
+- **Apple Watch**: build the `WODTimerWatch` scheme for a watch simulator, install
+  `Debug-watchsimulator/WODTimerWatch.app` on the Apple Watch SE 44mm (368x448, the `APP_WATCH_SERIES_4` slot) and
+  `xcrun simctl launch <udid> app.mentalmetal.wharfwod.watchkitapp --capture <scene> [--heart]`, then
+  `simctl io <udid> screenshot`. `--heart` gives the capture a heart rate (164 now, average 152, peak 178). A launch
+  with a scene the app does not know starts the real app, whose permission alerts then sit over every later
+  capture until the simulator is restarted. The release script uploads the folder (`screenshots-watch` is a slot
+  in `ios_release_with_screenshots.sh` since this release; before, the watch set was uploaded by hand).
+- **Wrist frame**: generator `preview-concepts/wharfwod` with `WHARF_ASSETS/watch/` holding `1_live_amrap`,
+  `2_live_emom`, `3_home`, `4_finished`, `5_live_tabata` (from `screenshots-watch`: 04, 02, 01, 08, 03).
+- **iPad and Play tablets**: `integration_test/store_home_test.dart` (frame 01) and
+  `integration_test/ux_review_tour_test.dart` (the rest) with a watcher that screenshots at each `MARK_` line.
+  The iPad simulator must be in English first (`simctl spawn <udid> defaults write -g AppleLanguages -array en-US`,
+  `AppleLocale en_US`, restart): it had been left in Indonesian and the status bar read "Kam 26 Nov". The Pixel
+  Tablet emulator had been left in Indonesian too ("09.41", 24-hour end screens): `adb root`,
+  `setprop persist.sys.locale en-US`, `setprop ctl.restart zygote`; portrait needs
+  `cmd window user-rotation lock 1` (a `wm size` override turns it sideways); SystemUI demo mode sets 9:41.
+  A tablet is 10:16 and Play's tablet slots take 9:16 only, so the captures go on boards: the generator's
+  `prep_tablet.sh` (paints out the launcher's taskbar) and `produce_tablet.py`, in the portfolio repo's
+  `preview-concepts/wharfwod`. The tour's `pumpAndSettle` calls never return on an Android tablet (the rounds
+  wheel, DONE back to setup), so they now give up after three seconds (`settle`).
+  Upload: `play_screenshots.py batch --item en-US phoneScreenshots <play/en-US> --item en-US sevenInchScreenshots
+  <play-tablet/en-US> --item en-US tenInchScreenshots <play-tablet/en-US>` (one commit: Play caps saves per day).

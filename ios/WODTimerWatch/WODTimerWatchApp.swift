@@ -83,6 +83,21 @@ enum CaptureScene: String, CaseIterable {
         guard let i = args.firstIndex(of: "--capture"), i + 1 < args.count else { return nil }
         return CaptureScene(rawValue: args[i + 1])
     }
+
+    /// `--heart` after the scene shows it with a heart rate (2.7.0): 164
+    /// now, average 152 and peak 178, as a running session would report.
+    static func heartFromLaunchArguments() -> HeartReadout {
+        guard CommandLine.arguments.contains("--heart") else { return .none }
+        return HeartReadout(current: 164, measuredAt: .distantFuture, average: 152, peak: 178)
+    }
+
+    /// The four setup screens, which the app only ever shows pushed.
+    var isSetup: Bool {
+        switch self {
+        case .setupAmrap, .setupForTime, .setupEmom, .setupTabata, .handoffEmom, .handoffTabata: true
+        default: false
+        }
+    }
 }
 
 struct CaptureRoot: View {
@@ -108,11 +123,23 @@ struct CaptureRoot: View {
         }
     }
 
+    /// The setup scenes are pushed, as Home pushes them, so the capture
+    /// shows the back button and the title where the athlete sees them.
+    /// Shown as the root they had the whole top bar to themselves, which
+    /// hid how little room the values had under it (26 Nov 2026).
+    @State private var path: [CaptureScene] = []
+
     var body: some View {
-        NavigationStack {
-            content
+        NavigationStack(path: $path) {
+            Group {
+                if scene.isSetup { Color.black } else { content }
+            }
+            .navigationDestination(for: CaptureScene.self) { _ in content }
         }
-        .onAppear(perform: prepare)
+        .onAppear {
+            prepare()
+            if scene.isSetup, path.isEmpty { path = [scene] }
+        }
     }
 
     @ViewBuilder private var content: some View {

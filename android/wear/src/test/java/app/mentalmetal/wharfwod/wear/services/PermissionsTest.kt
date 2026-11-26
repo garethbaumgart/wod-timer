@@ -29,4 +29,8 @@ class PermissionsTest {
         assertTrue(manifest.contains("android.permission.ACTIVITY_RECOGNITION"))
         assertTrue(manifest.contains("android:foregroundServiceType=\"health\""))
     }
+
+    @Test fun `the wake lock that keeps the clock ticking with the screen off has its permission`() {
+        assertTrue(manifest.contains("android.permission.WAKE_LOCK"))
+    }
 }

@@ -51,6 +51,22 @@ struct HealthSettingsView: View {
                 : "Off: the timer runs on screen only; off screen the alerts below tap you at each change.")
             if tracker.enabled {
                 line(Self.permissionLine(tracker.authorization), error: tracker.authorization == .sharingDenied)
+                // Health never says whether the heart rate may be read, so
+                // the page says where it shows and where to allow it.
+                if tracker.authorization == .sharingAuthorized {
+                    if tracker.heartQuestionOpen {
+                        // Never answered: Home asked once and left it there.
+                        Button {
+                            tracker.askForHeartRate()
+                        } label: {
+                            Text("Allow heart rate")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                        }
+                        line(Self.heartRateOffer)
+                    } else {
+                        line(Self.heartRateLine)
+                    }
+                }
             }
             if case let .failed(message) = tracker.status {
                 line("Last session failed: \(message)", error: true)
@@ -93,6 +109,11 @@ struct HealthSettingsView: View {
             "Workouts: permission not answered yet, so no session runs. Reopen Home to answer it."
         }
     }
+
+    /// 2.7.0: the heart rate on the timer and the end screen.
+    static let heartRateLine = "Heart rate: on the timer while you work, average and peak when you finish. If it never shows, allow Heart Rate for Wharf WOD under Settings, Privacy & Security, Health on this watch."
+
+    static let heartRateOffer = "Shows your heart rate on the timer while you work, and the average and peak when you finish. Wharf WOD does not store or share it."
 
     static func alertsLine(_ status: WristAlertStatus) -> String {
         switch status {

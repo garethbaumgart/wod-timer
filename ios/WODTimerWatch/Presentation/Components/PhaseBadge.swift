@@ -12,6 +12,9 @@ enum Palette {
     static let dim = Color(hex: 0x6A6A72)
     static let wheelDim = Color(hex: 0x3A3D58)
     static let error = Color(hex: 0xFF4444)
+    /// The heart beside a heart rate (2.7.0), the red the watch's own
+    /// Heart Rate app uses; never an error.
+    static let heart = Color(hex: 0xFF375F)
     /// START green.
     static let primary = Color(hex: 0x00FF88)
     /// Brand neon orange (same as For Time).

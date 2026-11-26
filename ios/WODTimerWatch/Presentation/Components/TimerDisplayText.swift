@@ -58,18 +58,144 @@ struct SetupValue: View {
         return (base * min(1, max(0.6, usable / 190))).rounded()
     }
 
+    /// True when `size` is already the size to draw at (SetupValueRow fits
+    /// it to the room it measured), so the screen-height rule is skipped.
+    var exact = false
+    var labelSize: CGFloat = SetupValue.standardLabelSize
+
+    static let standardLabelSize: CGFloat = 12
+
+    /// Label letter spacing, a tenth of the size (1.2 at 12pt).
+    static func tracking(_ labelSize: CGFloat) -> CGFloat { labelSize * 0.1 }
+
     var body: some View {
         VStack(spacing: 0) {
             Text(label)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .tracking(1.2)
+                .font(.system(size: labelSize, weight: .bold, design: .rounded))
+                .tracking(Self.tracking(labelSize))
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(labelColor)
             Text(value)
-                .font(.system(size: Self.scaled(size), weight: .heavy, design: .rounded))
+                .font(.system(size: exact ? size : Self.scaled(size), weight: .heavy, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .foregroundStyle(focused ? .white : .white.opacity(0.45))
+        }
+    }
+}
+
+/// The values of an interval setup side by side (26 Nov 2026): EMOM's
+/// EVERY and ROUNDS, Tabata's WORK, REST and ROUNDS. Stacked, with START
+/// and RUN IN WORKOUT under them, they needed more height than any watch
+/// has: the column overflowed both ways, so the labels ran up into the
+/// title and back button and the values shrank to about 12pt on a 40mm (20pt on
+/// a 49mm), the smallest text on a screen that exists to set them. One
+/// row takes the room that is really there (measured, not guessed from
+/// the screen height) and gives every value one size: the largest at
+/// which each cell, as wide as its label or the widest value the Crown
+/// can reach, fits the width, and a label over a value fits the height.
+/// Cell widths are fixed per field, so nothing moves or resizes as the
+/// Crown turns.
+struct SetupValueRow: View {
+    struct Item: Equatable {
+        let label: String
+        let value: String
+        /// The widest value the Crown can reach in this field.
+        let widest: String
+        let labelColor: Color
+    }
+
+    /// How a row is drawn: one value size, one label size, one gap.
+    struct Fit: Equatable {
+        let valueSize: CGFloat
+        let labelSize: CGFloat
+        let gap: CGFloat
+    }
+
+    let items: [Item]
+    let focused: Int
+    let onSelect: (Int) -> Void
+
+    /// The label size and gap a row is tried at, roomiest first. Three
+    /// 12pt labels are wider than a 40mm screen before any value is drawn,
+    /// so a row whose values would fall under `comfortable` takes the
+    /// tighter style when that makes them bigger.
+    static let styles: [(labelSize: CGFloat, gap: CGFloat)] = [(SetupValue.standardLabelSize, 8), (10, 6)]
+    static let comfortable: CGFloat = 20
+    /// No bigger than the single-value screens' numbers.
+    static let maxSize: CGFloat = 44
+    static let minSize: CGFloat = 12
+
+    /// Advance widths of SF Rounded heavy in ems, as BigClock counts them,
+    /// with the "s" of a seconds value ("20s").
+    static func ems(_ text: String) -> CGFloat {
+        text.reduce(CGFloat(0)) { $0 + ($1 == ":" ? 0.34 : $1 == "s" ? 0.58 : 0.64) }
+    }
+
+    static func labelWidth(_ label: String, labelSize: CGFloat) -> CGFloat {
+        let font = GlyphMetrics.font(size: labelSize, weight: .bold)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font, .kern: SetupValue.tracking(labelSize)]
+        return (label as NSString).size(withAttributes: attributes).width.rounded(.up)
+    }
+
+    static func labelLine(_ labelSize: CGFloat) -> CGFloat {
+        GlyphMetrics.font(size: labelSize, weight: .bold).lineHeight
+    }
+
+    /// Height of a value line per point of its size.
+    static var valueLineEm: CGFloat { GlyphMetrics.font(size: 100, weight: .heavy).lineHeight / 100 }
+
+    static func cellWidth(_ item: Item, fit: Fit) -> CGFloat {
+        max(labelWidth(item.label, labelSize: fit.labelSize), (ems(item.widest) * fit.valueSize).rounded(.up))
+    }
+
+    static func rowWidth(_ items: [Item], fit: Fit) -> CGFloat {
+        items.reduce(0) { $0 + cellWidth($1, fit: fit) } + fit.gap * CGFloat(max(0, items.count - 1))
+    }
+
+    static func rowHeight(_ fit: Fit) -> CGFloat {
+        labelLine(fit.labelSize) + fit.valueSize * valueLineEm
+    }
+
+    /// The largest value size at one label size and gap.
+    static func fit(_ items: [Item], width: CGFloat, height: CGFloat, labelSize: CGFloat, gap: CGFloat) -> Fit {
+        var size = min(maxSize, ((height - labelLine(labelSize)) / valueLineEm).rounded(.down))
+        while size > minSize, rowWidth(items, fit: Fit(valueSize: size, labelSize: labelSize, gap: gap)) > width {
+            size -= 1
+        }
+        return Fit(valueSize: max(minSize, size), labelSize: labelSize, gap: gap)
+    }
+
+    /// How the row is drawn in the room it has.
+    static func fit(_ items: [Item], width: CGFloat, height: CGFloat) -> Fit {
+        var best: Fit?
+        for style in styles {
+            let candidate = fit(items, width: width, height: height, labelSize: style.labelSize, gap: style.gap)
+            if candidate.valueSize >= comfortable { return candidate }
+            if candidate.valueSize > (best?.valueSize ?? 0) { best = candidate }
+        }
+        return best ?? Fit(valueSize: minSize, labelSize: SetupValue.standardLabelSize, gap: 8)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let fit = Self.fit(items, width: geo.size.width, height: geo.size.height)
+            HStack(spacing: fit.gap) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    Button { onSelect(index) } label: {
+                        SetupValue(
+                            label: item.label, value: item.value, labelColor: item.labelColor,
+                            size: fit.valueSize, focused: index == focused, exact: true, labelSize: fit.labelSize
+                        )
+                        .frame(width: Self.cellWidth(item, fit: fit))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 }

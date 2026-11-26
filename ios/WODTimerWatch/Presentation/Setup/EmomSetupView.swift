@@ -30,6 +30,15 @@ struct EmomSetupView: View {
         rounds = last.rounds
     }
 
+    /// The row's fields, each with the widest value its Crown range
+    /// reaches (10:00, 30 rounds), which sets the row's one size.
+    static func items(interval: String, rounds: String) -> [SetupValueRow.Item] {
+        [
+            SetupValueRow.Item(label: "EVERY", value: interval, widest: "10:00", labelColor: Palette.work),
+            SetupValueRow.Item(label: "ROUNDS", value: rounds, widest: "30", labelColor: Palette.mode("amrap")),
+        ]
+    }
+
     private var interval: TimerDuration { TimerDuration(seconds: Int(intervalSeconds)) }
     private var roundCount: RoundCount { RoundCount(value: Int(rounds)) }
     private var total: TimerDuration { TimerDuration(seconds: interval.seconds * roundCount.value) }
@@ -37,18 +46,11 @@ struct EmomSetupView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            Button { focusedField = .interval } label: {
-                SetupValue(label: "EVERY", value: interval.clock, labelColor: Palette.work,
-                           size: 36, focused: focusedField == .interval)
-            }
-            .buttonStyle(.plain)
-            Button { focusedField = .rounds } label: {
-                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", labelColor: Palette.mode("amrap"),
-                           size: 36, focused: focusedField == .rounds)
-            }
-            .buttonStyle(.plain)
-            Spacer(minLength: 0)
+            // One row, sized to the room above START (SetupValueRow).
+            SetupValueRow(
+                items: Self.items(interval: interval.clock, rounds: "\(Int(rounds))"),
+                focused: focusedField == .interval ? 0 : 1
+            ) { focusedField = $0 == 0 ? .interval : .rounds }
             StartButton(subtitle: "\(total.clock) total") {
                 SetupMemory().save(type)
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))

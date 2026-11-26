@@ -4,7 +4,7 @@
 # `scripts/test_gate.sh --full <platform>` automatically before uploading
 # when this file exists; run it by hand with
 #
-#   scripts/test_gate.sh                 # --full: analyze, Flutter tests, watch XCTests
+#   scripts/test_gate.sh                 # --full: analyze, Flutter tests, watch XCTests and watch UI tests
 #   scripts/test_gate.sh --quick         # analyze and Flutter tests only (no Xcode, about 1 min)
 #   scripts/test_gate.sh --full android  # the watch ships with iOS, so Android skips it;
 #                                        # Android (and both) also run the Wear OS module's JVM tests
@@ -61,6 +61,22 @@ if [[ "$RUN_WATCH" == "1" ]]; then
     xcodebuild test \
       -workspace Runner.xcworkspace \
       -scheme WODTimerWatch \
+      -destination "platform=watchOS Simulator,id=$WATCH_SIM_ID" \
+      -derivedDataPath "$WATCH_DERIVED_DATA" \
+      -quiet
+  )
+  # Real touches (26 Nov 2026): the unit tests cannot tap, so nothing else
+  # proves that Home's tiles open their setup screens and that a workout runs
+  # from a tile to its end screen. About a minute. The Health-session test
+  # in the same target (the real permission sheet and a measured heart rate)
+  # is run by hand: it wants a watch that has never run the app.
+  step "watch UI tests (WatchFlowUITests on simulator $WATCH_SIM_ID)"
+  (
+    cd ios
+    xcodebuild test \
+      -workspace Runner.xcworkspace \
+      -scheme WODTimerWatchUITests \
+      -only-testing:WODTimerWatchUITests/WatchFlowUITests \
       -destination "platform=watchOS Simulator,id=$WATCH_SIM_ID" \
       -derivedDataPath "$WATCH_DERIVED_DATA" \
       -quiet

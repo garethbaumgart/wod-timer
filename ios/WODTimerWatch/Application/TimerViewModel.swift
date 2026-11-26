@@ -26,6 +26,24 @@ final class TimerViewModel {
         return session.elapsed.seconds >= timeCap.seconds
     }
 
+    /// The heart rate now, in beats a minute (2.7.0): the Health
+    /// session's latest reading while the workout clock runs and the
+    /// reading is fresh, otherwise nil. Kept up to date by the engine's
+    /// ticks rather than worked out per frame, so the frames Always On
+    /// draws ahead of time show the latest reading instead of calling it
+    /// stale.
+    private(set) var heartRate: Int?
+
+    /// The end screen's heart line ("AVG 152 · PEAK 178"), when the
+    /// session measured the workout.
+    var heartSummary: String? { tracker.heart.summary }
+    var heartSpokenSummary: String? { tracker.heart.spokenSummary }
+
+    private func refreshHeartRate(at date: Date = Date()) {
+        let now = phase == .running || phase == .resting ? tracker.heart.now(at: date) : nil
+        if now != heartRate { heartRate = now }
+    }
+
     // MARK: - Dependencies
 
     private let engine = TimerEngine()
@@ -98,16 +116,26 @@ final class TimerViewModel {
             return true
         }
         #if targetEnvironment(simulator)
-        if CaptureScene.fromLaunchArguments() != nil || CommandLine.arguments.contains("--promo-autostart") {
+        // `--ui-test`: the UI tests drive the whole app with no sheet in
+        // the way (WODTimerWatchUITests).
+        let arguments = CommandLine.arguments
+        if CaptureScene.fromLaunchArguments() != nil || arguments.contains("--promo-autostart")
+            || arguments.contains("--ui-test") {
             return true
         }
         #endif
         return false
     }
 
-    /// The tracker for this run: the Health session on a watch.
+    /// The tracker for this run: the Health session on a watch. On a
+    /// simulator run without services, `--heart` gives it a heart rate.
     static func defaultTracker() -> WorkoutTracking {
-        runsWithoutServices ? NoopWorkoutTracker() : HealthWorkoutTracker()
+        guard runsWithoutServices else { return HealthWorkoutTracker() }
+        #if targetEnvironment(simulator)
+        return NoopWorkoutTracker(heart: CaptureScene.heartFromLaunchArguments())
+        #else
+        return NoopWorkoutTracker()
+        #endif
     }
 
     /// The alerts for this run: local notifications on a watch.
@@ -146,6 +174,7 @@ final class TimerViewModel {
                 blockRoundCount()
             }
             planAlerts()
+            refreshHeartRate()
         case .failure:
             break
         }
@@ -167,6 +196,8 @@ final class TimerViewModel {
             haptics.play(.pause)
             tracker.pause()
             alerts.cancelAll()
+            // A paused session measures nothing: no number rather than an old one.
+            refreshHeartRate()
         case .failure:
             break
         }
@@ -207,6 +238,7 @@ final class TimerViewModel {
             haptics.play(.pause)
             tracker.end(keep: completed.elapsed.seconds >= Self.keepHealthRecordAfter)
             alerts.cancelAll()
+            refreshHeartRate()
         case .failure:
             break
         }
@@ -229,6 +261,7 @@ final class TimerViewModel {
             alerts.cancelAll()
             audio.playHighBeep()
             audio.playGoodJob()
+            refreshHeartRate()
         case .failure:
             break
         }
@@ -250,6 +283,7 @@ final class TimerViewModel {
             session = updated
             phase = updated.state
             planAlerts()
+            refreshHeartRate()
         }
     }
 
@@ -292,6 +326,7 @@ final class TimerViewModel {
         endedEarly = false
         lastWorkout = nil
         resetCueState()
+        refreshHeartRate()
     }
 
     // MARK: - Clock
@@ -424,6 +459,7 @@ final class TimerViewModel {
                 playEndCues()
             }
         }
+        refreshHeartRate()
     }
 
     /// The end is a change like any other: the high beep with the line on
@@ -654,6 +690,7 @@ extension TimerViewModel {
         session = current
         phase = current.state
         if current.state == .completed { stopClock() }
+        refreshHeartRate()
     }
 
     func debugCountRounds(_ n: Int) {

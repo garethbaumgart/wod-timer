@@ -31,9 +31,16 @@ struct ActiveTimerView: View {
             // button's slot: Apple asks a workout app to show when a
             // session is running, and the athlete sees at a glance
             // whether the wrist will be tapped once the screen is gone.
+            // Since 2.7.0 the heart rate takes the slot while the session
+            // measures one: a number only a running session can show
+            // says the same thing, and is the one the athlete wants.
             ToolbarItem(placement: .topBarLeading) {
                 if viewModel.phase != .completed {
-                    WristCueGlyph(state: viewModel.wristCueState)
+                    if let beats = Self.heartRateShown(viewModel.heartRate, cues: viewModel.wristCueState) {
+                        HeartRateBadge(beats: beats)
+                    } else {
+                        WristCueGlyph(state: viewModel.wristCueState)
+                    }
                 }
             }
         }
@@ -42,6 +49,12 @@ struct ActiveTimerView: View {
                 dismiss()
             }
         }
+    }
+
+    /// The heart rate stands in for the session glyph only: with no
+    /// session there is none to show, and the bell says what matters.
+    static func heartRateShown(_ beats: Int?, cues: TimerViewModel.WristCueState) -> Int? {
+        cues == .session ? beats : nil
     }
 
     /// Each frame shows the clock for its own moment (2.2.1), so the
@@ -278,6 +291,36 @@ struct WristCueGlyph: View {
                 .foregroundStyle(state == .none ? Palette.error : Palette.label)
                 .accessibilityLabel(Self.label(state))
         }
+    }
+}
+
+/// The heart rate now (2.7.0): a red heart and the beats a minute, in the
+/// session glyph's slot. Digits keep one width, so the number never
+/// shuffles as it changes. Marked private, so Always On hides it for an
+/// athlete who has the watch hide sensitive data with the wrist down.
+struct HeartRateBadge: View {
+    let beats: Int
+
+    static let numberSize: CGFloat = 15
+
+    static func label(_ beats: Int) -> String {
+        "Heart rate \(beats) beats per minute. Health session on: cues continue with your wrist down"
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Palette.heart)
+            Text("\(beats)")
+                .font(.system(size: Self.numberSize, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+        }
+        .fixedSize()
+        .privacySensitive()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Self.label(beats))
     }
 }
 

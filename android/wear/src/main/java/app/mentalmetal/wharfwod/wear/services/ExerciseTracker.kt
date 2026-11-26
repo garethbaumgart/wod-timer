@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.health.services.client.ExerciseClient
@@ -30,6 +31,8 @@ import kotlinx.coroutines.launch
  * session is opt-in ("Record as workout"): it makes the WOD the watch's one
  * recognised exercise, which ends whatever another app is recording, so
  * Wharf WOD stays out of the way of Fitbit or Samsung Health unless asked.
+ * Under both sits [AwakeHold]: the service keeps the process, a partial wake
+ * lock keeps the processor ticking once the screen is off (26 Nov 2026).
  *
  * The session requests no data types, so the only runtime permission is
  * ACTIVITY_RECOGNITION, which the health foreground service needs as well:
@@ -79,6 +82,7 @@ class ExerciseTracker(private val context: Context, store: KeyValueStore) : Work
         private set
     private var exercising = false
     private var pendingType: ExerciseType? = null
+    private val awake = AwakeHold(PartialWakeLock(context))
 
     fun setRecordWorkout(on: Boolean) {
         recordWorkout = on
@@ -98,6 +102,7 @@ class ExerciseTracker(private val context: Context, store: KeyValueStore) : Work
                 putExtra(WorkoutService.EXTRA_TITLE, workout.timerType.displayLabel)
             })
             status = Status.SERVICE_ONLY
+            awake.begin(workout)
         } catch (e: Exception) {
             Log.w(TAG, "foreground service refused: ${e.message}")
             status = Status.NO_PERMISSION
@@ -130,17 +135,20 @@ class ExerciseTracker(private val context: Context, store: KeyValueStore) : Work
     }
 
     override fun pause() {
+        awake.pause()
         if (!exercising) return
         scope.launch { runCatching { client?.pauseExerciseAsync()?.await() } }
     }
 
     override fun resume() {
+        awake.resume()
         if (!exercising) return
         scope.launch { runCatching { client?.resumeExerciseAsync()?.await() } }
     }
 
     override fun end(keep: Boolean) {
         pendingType = null
+        awake.end()
         if (exercising) {
             exercising = false
             scope.launch {
@@ -152,5 +160,22 @@ class ExerciseTracker(private val context: Context, store: KeyValueStore) : Work
             context.stopService(Intent(context, WorkoutService::class.java))
         }
         status = Status.IDLE
+    }
+}
+
+/**
+ * The watch's partial wake lock: the processor keeps running with the
+ * screen off. Not reference counted, so one release always lets go, and
+ * every acquire carries its time limit.
+ */
+private class PartialWakeLock(context: Context) : CpuLock {
+    private val lock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
+        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WharfWOD:timer")
+        .apply { setReferenceCounted(false) }
+
+    override fun acquire(timeoutMs: Long) = lock.acquire(timeoutMs)
+
+    override fun release() {
+        if (lock.isHeld) lock.release()
     }
 }

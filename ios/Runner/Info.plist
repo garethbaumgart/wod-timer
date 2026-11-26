@@ -69,7 +69,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Wharf WOD does not read your health data.</string>
+	<string>The Apple Watch app shows your heart rate on its timer during a workout, and the average and peak when you finish. Wharf WOD does not store or share it.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>The Apple Watch app saves each workout you time to Health.</string>
 </dict>

@@ -34,6 +34,19 @@ struct TabataSetupView: View {
         rounds = last.rounds
     }
 
+    static let fieldOrder: [Field] = [.work, .rest, .rounds]
+
+    /// The row's fields, each with the widest value its Crown range
+    /// reaches (2:00 of work or rest, 20 rounds), which sets the row's one
+    /// size.
+    static func items(work: String, rest: String, rounds: String) -> [SetupValueRow.Item] {
+        [
+            SetupValueRow.Item(label: "WORK", value: work, widest: "2:00", labelColor: Palette.work),
+            SetupValueRow.Item(label: "REST", value: rest, widest: "2:00", labelColor: Palette.rest),
+            SetupValueRow.Item(label: "ROUNDS", value: rounds, widest: "20", labelColor: Palette.mode("amrap")),
+        ]
+    }
+
     private var work: TimerDuration { TimerDuration(seconds: Int(workSeconds)) }
     private var rest: TimerDuration { TimerDuration(seconds: Int(restSeconds)) }
     private var roundCount: RoundCount { RoundCount(value: Int(rounds)) }
@@ -52,25 +65,11 @@ struct TabataSetupView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            HStack(spacing: 6) {
-                Button { focusedField = .work } label: {
-                    SetupValue(label: "WORK", value: work.phase, labelColor: Palette.work,
-                               size: 32, focused: focusedField == .work)
-                }
-                .buttonStyle(.plain)
-                Button { focusedField = .rest } label: {
-                    SetupValue(label: "REST", value: rest.phase, labelColor: Palette.rest,
-                               size: 32, focused: focusedField == .rest)
-                }
-                .buttonStyle(.plain)
-            }
-            Button { focusedField = .rounds } label: {
-                SetupValue(label: "ROUNDS", value: "\(Int(rounds))", labelColor: Palette.mode("amrap"),
-                           size: 32, focused: focusedField == .rounds)
-            }
-            .buttonStyle(.plain)
-            Spacer(minLength: 0)
+            // One row, sized to the room above START (SetupValueRow).
+            SetupValueRow(
+                items: Self.items(work: work.phase, rest: rest.phase, rounds: "\(Int(rounds))"),
+                focused: Self.fieldOrder.firstIndex(of: focusedField) ?? 0
+            ) { focusedField = Self.fieldOrder[$0] }
             StartButton(subtitle: "\(total.clock) total") {
                 SetupMemory().save(type)
                 viewModel.start(workout: WorkoutFactory.create(timerType: type))
