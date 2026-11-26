@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -115,6 +116,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
             composable("live") {
+                // Back belongs to the timer here, never to the back stack (TimerViewModel.back).
+                BackHandler { app.timer.back() }
                 // Back to setup when the workout was started from it; to Home when the app
                 // opened straight onto a running workout and there is nothing under it.
                 LiveScreen(app.timer, ambient) {

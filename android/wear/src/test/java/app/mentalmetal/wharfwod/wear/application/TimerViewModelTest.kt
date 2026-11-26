@@ -369,4 +369,49 @@ class TimerViewModelTest {
         r.vm.start(emom(interval = 20, rounds = 1))
         assertEquals("and so does a new workout", listOf("RUNNING:1:10"), r.pipMoments(0.0, 12.0))
     }
+
+    // 26 Nov 2026: the watch's Back button popped the live screen to setup
+    // while the timer kept running behind it, with no way back to it.
+    @Test fun `Back never leaves a workout that is under way`() {
+        val r = Rig()
+        r.vm.start(tabata(prep = 5))
+        r.vm.back()
+        assertEquals("get ready carries on", TimerState.PREPARING, r.vm.phase)
+        r.tick(0.0, 6.0)
+        r.vm.back()
+        assertEquals("work carries on", TimerState.RUNNING, r.vm.phase)
+        r.tick(6.0, 26.0)
+        r.vm.back()
+        assertEquals("rest carries on", TimerState.RESTING, r.vm.phase)
+        r.vm.pause()
+        r.vm.back()
+        assertEquals("a paused workout stays paused", TimerState.PAUSED, r.vm.phase)
+        assertEquals(1, r.vm.session?.currentRound)
+        assertEquals("the session is never ended by Back", listOf("begin:tabata", "go", "pause"), r.tracker.calls)
+        assertEquals("nor the clock stopped", listOf("start", "pause"), r.ticker.calls)
+    }
+
+    @Test fun `Back on the end screen is DONE`() {
+        val r = Rig()
+        r.vm.start(emom(interval = 5, rounds = 1))
+        r.tick(0.0, 5.0)
+        assertEquals(TimerState.COMPLETED, r.vm.phase)
+        r.vm.back()
+        assertEquals(TimerState.READY, r.vm.phase)
+        assertEquals(null, r.vm.session)
+
+        val stopped = Rig()
+        stopped.vm.start(amrap())
+        stopped.tick(0.0, 3.0)
+        stopped.vm.stop()
+        stopped.vm.back()
+        assertEquals("a stopped workout too", TimerState.READY, stopped.vm.phase)
+    }
+
+    @Test fun `Back with no workout does nothing`() {
+        val r = Rig()
+        r.vm.back()
+        assertEquals(TimerState.READY, r.vm.phase)
+        assertEquals(emptyList<String>(), r.tracker.calls)
+    }
 }

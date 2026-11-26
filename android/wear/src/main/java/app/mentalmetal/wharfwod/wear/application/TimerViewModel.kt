@@ -204,6 +204,17 @@ class TimerViewModel(
         session = session?.adjustRounds(delta)
     }
 
+    /**
+     * The watch's Back button (the lower key on a Galaxy Watch, easy to
+     * press with a bent wrist). It never leaves a workout that is under
+     * way: until 26 Nov 2026 it popped to the setup screen while the timer
+     * kept running behind it, with no way back to it. On the end screen it
+     * is DONE.
+     */
+    fun back() {
+        if (phase == TimerState.COMPLETED) reset()
+    }
+
     fun restart() {
         val workout = lastWorkout ?: return
         if (phase != TimerState.COMPLETED) return

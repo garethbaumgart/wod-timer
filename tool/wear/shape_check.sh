@@ -92,5 +92,35 @@ for f in done-direct-after from-home-after; do
   b=$(bright "$DIR/$f.png")
   if [ "$b" -lt 2 ]; then echo "BLANK SCREEN after DONE: $f.png"; fail=1; else echo "after DONE ($f): a screen is showing ($b% lit)"; fi
 done
+# 3. The Back button and the wake lock (26 Nov 2026). Back popped the live screen to setup while
+# the timer ran on behind it, and with the screen off nothing kept the processor ticking (an
+# emulator never suspends, so only the lock itself can be checked here, not the missed beeps).
+words() { $ADB -s "$S" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; $ADB -s "$S" shell cat /sdcard/ui.xml | grep -oE 'text="[^"]+"' | tr '\n' ' '; }
+locks() { $ADB -s "$S" shell dumpsys power | grep -c "PARTIAL_WAKE_LOCK.*WharfWOD:timer"; }
+expect() { # what, got, wanted
+  if [ "$2" = "$3" ]; then echo "$1: ok"; else echo "FLOW $1: got '$2', wanted '$3'"; fail=1; fi
+}
+has() { case "$2" in *"$3"*) echo "$1: ok" ;; *) echo "FLOW $1: no '$3' in: $2"; fail=1 ;; esac; }
+expect "no workout, no wake lock" "$(locks)" 0
+$ADB -s "$S" shell am start -n $ACT --es scene emom:60:10 --es then run >/dev/null 2>&1; sleep 3
+expect "running holds the wake lock" "$(locks)" 1
+$ADB -s "$S" shell input keyevent KEYCODE_BACK; sleep 1.5
+has "Back mid-workout stays on the timer" "$(words)" 'text="PAUSE"'
+$ADB -s "$S" shell input keyevent KEYCODE_SLEEP; sleep 5
+expect "screen off keeps the wake lock" "$(locks)" 1
+$ADB -s "$S" shell input keyevent KEYCODE_WAKEUP; sleep 1.5
+tapf 500 760 1.5
+expect "paused lets go of the wake lock" "$(locks)" 0
+$ADB -s "$S" shell input keyevent KEYCODE_BACK; sleep 1.5
+has "Back while paused stays paused" "$(words)" 'text="RESUME"'
+tapf 640 760 1.5
+expect "resumed holds it again" "$(locks)" 1
+tapf 500 760 1.2
+$ADB -s "$S" shell input swipe $((W*360/1000)) $((W*760/1000)) $((W*361/1000)) $((W*761/1000)) 1500; sleep 1.8
+expect "stopped lets go of the wake lock" "$(locks)" 0
+has "the end screen shows" "$(words)" 'text="DONE"'
+$ADB -s "$S" shell input keyevent KEYCODE_BACK; sleep 2
+has "Back on the end screen is DONE" "$(words)" 'text="EMOM"'
+$ADB -s "$S" shell am force-stop $PKG
 [ $fail = 0 ] && echo "PASS: nothing in the edge ring on any fixed screen" || echo "FAIL"
 exit $fail
